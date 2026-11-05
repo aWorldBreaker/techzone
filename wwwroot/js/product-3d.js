@@ -19,7 +19,23 @@
 
     var modelUrl = box.getAttribute('data-model-url') || '';
     var loaded = false;
-    var initialOrbit = viewer.getAttribute('camera-orbit') || '0deg 75deg 105%';
+    // Sprint 5 fix follow-up (Worker D): viewport hep (<480px) thi khung
+    // viewer hep hon cao — model rong (VD tai nghe) bi cat 2 ben o radius
+    // goc. Noi radius khoi tao +25% chi khi hep; desktop giu nguyen goc
+    // da chot trong map. Chi ap luc load (khong theo doi resize sau do);
+    // reset dung lai orbit da dieu chinh nay.
+    var NARROW_WIDTH = 480, NARROW_RADIUS_BOOST = 1.25;
+    function adjustOrbitForViewport(orbit) {
+        if (!window.matchMedia || window.innerWidth >= NARROW_WIDTH) return orbit;
+        var parts = String(orbit).trim().split(/\s+/);
+        if (parts.length < 3) return orbit;
+        var m = parts[2].match(/^([\d.]+)%$/);
+        if (!m) return orbit;
+        parts[2] = (parseFloat(m[1]) * NARROW_RADIUS_BOOST).toFixed(1).replace(/\.0$/, '') + '%';
+        return parts.join(' ');
+    }
+    var initialOrbit = adjustOrbitForViewport(viewer.getAttribute('camera-orbit') || '0deg 75deg 105%');
+    if (initialOrbit !== viewer.getAttribute('camera-orbit')) viewer.setAttribute('camera-orbit', initialOrbit);
     var initialTarget = viewer.getAttribute('camera-target') || 'auto auto auto';
     var initialFov = viewer.getAttribute('field-of-view') || '45deg';
 

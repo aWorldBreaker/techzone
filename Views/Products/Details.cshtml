@@ -281,9 +281,13 @@
 
 <partial name="_RecentlyViewed" model="recentlyViewed" />
 
-@* Sprint 5: viewer 3D dung chung — chi nap thu vien model-viewer + product-3d.js
-   tren trang chi tiet (product-3d.js tu thoat neu trang khong co viewer). *@
-@section Scripts {
-    <script type="module" src="~/js/model-viewer.min.js"></script>
-    <script src="~/js/product-3d.js"></script>
+@* Sprint 5 Mang 2: chi nap thu vien model-viewer + product-3d.js khi trang
+   co viewer (model3d is not null) — trang khong co model (VD iPhone Id 2)
+   khong tai thua ~955KB thu vien. *@
+@if (model3d is not null)
+{
+    @section Scripts {
+        <script type="module" src="~/js/model-viewer.min.js"></script>
+        <script src="~/js/product-3d.js"></script>
+    }
 }

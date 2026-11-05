@@ -1,0 +1,101 @@
+@model TechZone.Models.ProductFilterViewModel
+@{
+    ViewData["Title"] = "Danh mục sản phẩm";
+}
+
+<h1>Sản phẩm @if (Model.CategoryId.HasValue)
+{
+    <span>— @Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten</span>
+}</h1>
+<p class="text-muted">@Model.TongSo sản phẩm</p>
+
+<form method="get" class="filter-bar" aria-label="Lọc sản phẩm">
+    <div class="form-group">
+        <label for="CategoryId">Danh mục</label>
+        <select id="CategoryId" name="CategoryId" class="form-control" asp-items="@(new SelectList(Model.DanhMuc, "Id", "Ten", Model.CategoryId))">
+            <option value="">Tất cả</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="BrandId">Hãng</label>
+        <select id="BrandId" name="BrandId" class="form-control" asp-items="@(new SelectList(Model.ThuongHieu, "Id", "Ten", Model.BrandId))">
+            <option value="">Tất cả</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="Chip">Chip</label>
+        <select id="Chip" name="Chip" class="form-control" asp-items="@(new SelectList(Model.Chips, Model.Chip))">
+            <option value="">Tất cả</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="Ram">RAM</label>
+        <select id="Ram" name="Ram" class="form-control" asp-items="@(new SelectList(Model.Rams, Model.Ram))">
+            <option value="">Tất cả</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="DungLuong">Dung lượng</label>
+        <select id="DungLuong" name="DungLuong" class="form-control" asp-items="@(new SelectList(Model.DungLuongs, Model.DungLuong))">
+            <option value="">Tất cả</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="GiaTu">Giá từ (đ)</label>
+        <input id="GiaTu" name="GiaTu" type="number" min="0" step="100000" class="form-control" value="@Model.GiaTu" />
+    </div>
+    <div class="form-group">
+        <label for="GiaDen">Giá đến (đ)</label>
+        <input id="GiaDen" name="GiaDen" type="number" min="0" step="100000" class="form-control" value="@Model.GiaDen" />
+    </div>
+    <div class="form-group">
+        <label for="SapXep">Sắp xếp</label>
+        <select id="SapXep" name="SapXep" class="form-control">
+            <option value="mac-dinh" selected="@(Model.SapXep == "mac-dinh")">Mặc định</option>
+            <option value="gia-tang" selected="@(Model.SapXep == "gia-tang")">Giá tăng dần</option>
+            <option value="gia-giam" selected="@(Model.SapXep == "gia-giam")">Giá giảm dần</option>
+            <option value="ban-chay" selected="@(Model.SapXep == "ban-chay")">Bán chạy</option>
+            <option value="moi-nhat" selected="@(Model.SapXep == "moi-nhat")">Mới nhất</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="TuKhoa">Tìm kiếm</label>
+        <input id="TuKhoa" name="TuKhoa" type="search" class="form-control" value="@Model.TuKhoa" placeholder="Tên sản phẩm..." />
+    </div>
+    <button type="submit" class="btn btn-primary">Lọc</button>
+    <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
+</form>
+
+@if (!Model.KetQua.Any())
+{
+    <p>Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+}
+else
+{
+    <div class="product-grid">
+        @foreach (var p in Model.KetQua)
+        {
+            <partial name="_ProductCard" model="p" />
+        }
+    </div>
+
+    @if (Model.TongTrang > 1)
+    {
+        <nav class="mt" aria-label="Phân trang">
+            @for (var i = 1; i <= Model.TongTrang; i++)
+            {
+                <a class="chip" asp-action="Index"
+                   asp-route-Trang="@i"
+                   asp-route-CategoryId="@Model.CategoryId"
+                   asp-route-BrandId="@Model.BrandId"
+                   asp-route-Chip="@Model.Chip"
+                   asp-route-Ram="@Model.Ram"
+                   asp-route-DungLuong="@Model.DungLuong"
+                   asp-route-GiaTu="@Model.GiaTu"
+                   asp-route-GiaDen="@Model.GiaDen"
+                   asp-route-SapXep="@Model.SapXep"
+                   asp-route-TuKhoa="@Model.TuKhoa">@i</a>
+            }
+        </nav>
+    }
+}

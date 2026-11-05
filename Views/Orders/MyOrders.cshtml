@@ -1,0 +1,42 @@
+@model List<TechZone.Models.Order>
+@{
+    ViewData["Title"] = "Đơn hàng của tôi";
+}
+
+<h1>Đơn hàng của tôi</h1>
+
+@if (!Model.Any())
+{
+    <p>Bạn chưa có đơn hàng nào.</p>
+    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Mua sắm ngay</a>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Mã đơn</th><th>Ngày đặt</th><th>Sản phẩm</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>#@o.Id</td>
+                    <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@string.Join(", ", o.ChiTiet.Select(d => d.Product.Ten + " × " + d.SoLuong))</td>
+                    <td>@o.ThanhToan.ToString("N0")đ</td>
+                    <td>@o.TrangThai</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@o.Id">Xem</a>
+                        @if (o.TrangThai == TechZone.Models.OrderStatus.ChoXacNhan)
+                        {
+                            <form asp-action="Huy" method="post" class="inline-form">
+                                <input type="hidden" name="id" value="@o.Id" />
+                                <button type="submit" class="link-button" onclick="return confirm('Hủy đơn #@o.Id?');">Hủy đơn</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

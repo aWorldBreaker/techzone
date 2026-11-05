@@ -1,0 +1,38 @@
+@model List<TechZone.Models.Product>
+@{
+    ViewData["Title"] = "Admin — Quản lý sản phẩm";
+}
+<div class="section-head">
+    <h1>Quản lý sản phẩm (@Model.Count)</h1>
+    <a class="btn btn-primary" asp-action="ProductForm">+ Thêm sản phẩm</a>
+</div>
+
+<table class="table">
+    <thead>
+        <tr><th>Sản phẩm</th><th>Danh mục</th><th>Hãng</th><th>Giá bán</th><th>Tồn kho</th><th>Đã bán</th><th></th></tr>
+    </thead>
+    <tbody>
+        @foreach (var p in Model)
+        {
+            <tr>
+                <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
+                <td>@p.Category.Ten</td>
+                <td>@p.Brand.Ten</td>
+                <td>
+                    @p.GiaBan.ToString("N0")đ
+                    @if (p.GiaKhuyenMai.HasValue) { <s class="text-muted">@p.Gia.ToString("N0")đ</s> }
+                </td>
+                <td>@p.TonKho</td>
+                <td>@p.LuotBan</td>
+                <td>
+                    <a asp-action="ProductForm" asp-route-id="@p.Id">Sửa</a>
+                    <form asp-action="XoaSanPham" method="post" class="inline-form">
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button type="submit" class="link-button" onclick="return confirm('Xóa @p.Ten?');">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

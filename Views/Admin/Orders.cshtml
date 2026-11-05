@@ -1,0 +1,42 @@
+@model List<TechZone.Models.Order>
+@{
+    ViewData["Title"] = "Admin — Quản lý đơn hàng";
+    var trangThai = (string?)ViewBag.TrangThai;
+    string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
+}
+<h1>Quản lý đơn hàng</h1>
+
+<div class="chip-row">
+    <a class="chip" asp-action="Orders">Tất cả</a>
+    @foreach (var t in cacTrangThai)
+    {
+        <a class="chip" asp-action="Orders" asp-route-trangThai="@t">@t</a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <p>Không có đơn nào @(trangThai is not null ? $"ở trạng thái “{trangThai}”" : "") .</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Mã đơn</th><th>Ngày đặt</th><th>Giao đến</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var o in Model)
+            {
+                <tr>
+                    <td>#@o.Id</td>
+                    <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@o.DiaChiGiao</td>
+                    <td>@o.ThanhToan.ToString("N0")đ</td>
+                    <td>@o.TrangThai</td>
+                    <td><a asp-action="OrderDetails" asp-route-id="@o.Id">Xem / đổi trạng thái</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

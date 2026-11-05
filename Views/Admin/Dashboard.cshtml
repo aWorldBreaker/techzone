@@ -1,0 +1,88 @@
+@model TechZone.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Admin — Dashboard";
+}
+<h1>Dashboard</h1>
+
+<div class="stat-grid">
+    <div class="stat-card"><div class="value">@Model.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div></div>
+    <div class="stat-card"><div class="value">@Model.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
+    <div class="stat-card"><div class="value">@Model.TongDon</div><div class="label">Tổng số đơn</div></div>
+    <div class="stat-card"><div class="value">@Model.TongSanPham</div><div class="label">Sản phẩm</div></div>
+</div>
+
+<section>
+    <h2>Doanh thu 7 ngày gần nhất</h2>
+    <table class="table">
+        <thead><tr><th>Ngày</th><th>Doanh thu</th></tr></thead>
+        <tbody>
+            @foreach (var d in Model.DoanhThu7Ngay)
+            {
+                <tr><td>@d.Ngay</td><td>@d.DoanhThu.ToString("N0")đ</td></tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="mt">
+    <h2>Top bán chạy</h2>
+    <table class="table">
+        <thead><tr><th>Sản phẩm</th><th>Đã bán</th><th>Tồn kho</th><th>Giá bán</th></tr></thead>
+        <tbody>
+            @foreach (var p in Model.TopBanChay)
+            {
+                <tr>
+                    <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
+                    <td>@p.LuotBan</td>
+                    <td>@p.TonKho</td>
+                    <td>@p.GiaBan.ToString("N0")đ</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</section>
+
+<section class="mt">
+    <h2>Sắp hết hàng (tồn kho ≤ 10)</h2>
+    @if (!Model.SapHetHang.Any())
+    {
+        <p class="text-muted">Không có sản phẩm nào sắp hết hàng.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead><tr><th>Sản phẩm</th><th>Tồn kho</th></tr></thead>
+            <tbody>
+                @foreach (var p in Model.SapHetHang)
+                {
+                    <tr><td>@p.Ten</td><td><strong>@p.TonKho</strong></td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section class="mt">
+    <div class="section-head">
+        <h2>Đơn gần đây</h2>
+        <a asp-action="Orders">Xem tất cả đơn →</a>
+    </div>
+    <table class="table">
+        <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+        <tbody>
+            @foreach (var o in Model.DonGanDay)
+            {
+                <tr>
+                    <td><a asp-action="OrderDetails" asp-route-id="@o.Id">#@o.Id</a></td>
+                    <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@o.ThanhToan.ToString("N0")đ</td>
+                    <td>@o.TrangThai</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p class="mt">
+        <a class="btn btn-secondary" asp-action="Products">Quản lý sản phẩm</a>
+        <a class="btn btn-secondary" asp-action="Vouchers">Quản lý voucher</a>
+    </p>
+</section>

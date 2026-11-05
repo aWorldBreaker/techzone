@@ -1,0 +1,47 @@
+@model TechZone.Models.Order
+@{
+    ViewData["Title"] = $"Admin — Đơn #{Model.Id}";
+    string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
+}
+<h1>Đơn hàng #@Model.Id</h1>
+<p>Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm") • Trạng thái: <strong>@Model.TrangThai</strong></p>
+<p>Khách: @Model.User?.HoTen (@Model.User?.Email)</p>
+<p>Giao đến: @Model.DiaChiGiao</p>
+<p>Phương thức: @Model.PhuongThucTT</p>
+
+<table class="table">
+    <thead><tr><th>Sản phẩm</th><th>Phiên bản</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th></tr></thead>
+    <tbody>
+        @foreach (var d in Model.ChiTiet)
+        {
+            <tr>
+                <td><a asp-controller="Products" asp-action="Details" asp-route-id="@d.ProductId">@d.Product.Ten</a></td>
+                <td>@d.Variant?.TenBienThe</td>
+                <td>@d.DonGia.ToString("N0")đ</td>
+                <td>@d.SoLuong</td>
+                <td>@d.ThanhTien.ToString("N0")đ</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="summary summary-narrow">
+    <div class="summary-row"><span>Tạm tính</span><span>@Model.TongTien.ToString("N0")đ</span></div>
+    @if (Model.GiamGia > 0)
+    {
+        <div class="summary-row"><span>Giảm voucher (@Model.MaVoucher)</span><span>- @Model.GiamGia.ToString("N0")đ</span></div>
+    }
+    <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
+    <div class="summary-row total"><span>Tổng thanh toán</span><span>@Model.ThanhToan.ToString("N0")đ</span></div>
+</div>
+
+<form asp-action="DoiTrangThai" method="post" class="mt">
+    <input type="hidden" name="id" value="@Model.Id" />
+    <div class="form-group">
+        <label for="trangThaiMoi">Đổi trạng thái</label>
+        <select id="trangThaiMoi" name="trangThaiMoi" class="form-control" asp-items="@(new SelectList(cacTrangThai, Model.TrangThai))"></select>
+    </div>
+    <button type="submit" class="btn btn-primary">Cập nhật trạng thái</button>
+    <a asp-action="Orders" class="btn btn-secondary">Về danh sách đơn</a>
+</form>
+<p class="text-muted mt">Hủy đơn sẽ hoàn lại tồn kho cho các sản phẩm trong đơn.</p>

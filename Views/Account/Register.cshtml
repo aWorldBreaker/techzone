@@ -1,0 +1,37 @@
+@model TechZone.Controllers.RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+}
+<div class="auth-box">
+    <h1>Đăng ký tài khoản</h1>
+    <form asp-action="Register" method="post">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="form-group">
+            <label asp-for="HoTen">Họ tên</label>
+            <input asp-for="HoTen" class="form-control" />
+            <span asp-validation-for="HoTen" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Email">Email</label>
+            <input asp-for="Email" class="form-control" type="email" />
+            <span asp-validation-for="Email" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="SoDienThoai">Số điện thoại</label>
+            <input asp-for="SoDienThoai" class="form-control" />
+            <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="MatKhau">Mật khẩu (tối thiểu 6 ký tự)</label>
+            <input asp-for="MatKhau" class="form-control" type="password" />
+            <span asp-validation-for="MatKhau" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="NhapLaiMatKhau">Nhập lại mật khẩu</label>
+            <input asp-for="NhapLaiMatKhau" class="form-control" type="password" />
+            <span asp-validation-for="NhapLaiMatKhau" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Đăng ký</button>
+    </form>
+    <p class="mt">Đã có tài khoản? <a asp-action="Login">Đăng nhập</a></p>
+</div>

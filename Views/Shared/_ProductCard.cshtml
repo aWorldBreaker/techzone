@@ -1,0 +1,39 @@
+@model TechZone.Models.Product
+@{
+    // Gia hien thi lay tu model (GiaBan), khong tu viet tay trong view.
+    var giam = Model.GiaKhuyenMai.HasValue && Model.Gia > 0
+        ? (int)Math.Round((1 - Model.GiaKhuyenMai.Value / Model.Gia) * 100)
+        : 0;
+}
+<article class="product-card">
+    <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id" class="product-image">
+        <img src="@Model.AnhDaiDien" alt="@Model.Ten" loading="lazy" />
+        @if (giam > 0)
+        {
+            <span class="badge-giam">-@giam%</span>
+        }
+    </a>
+    <div class="product-info">
+        <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">@Model.Ten</a></h3>
+        @if (Model.Specs is not null)
+        {
+            <p class="product-specs">
+                @string.Join(" • ", new[] { Model.Specs.Chip, Model.Specs.Ram, Model.Specs.Rom, Model.Specs.Pin }
+                    .Where(s => !string.IsNullOrWhiteSpace(s)))
+            </p>
+        }
+        <p class="product-price">
+            <strong>@Model.GiaBan.ToString("N0")đ</strong>
+            @if (Model.GiaKhuyenMai.HasValue)
+            {
+                <s>@Model.Gia.ToString("N0")đ</s>
+            }
+        </p>
+        <p class="product-meta">@Model.DanhGiaTB.ToString("0.0") sao • Đã bán @Model.LuotBan • Bảo hành 24 tháng</p>
+        <form asp-controller="Cart" asp-action="Add" method="post">
+            <input type="hidden" name="productId" value="@Model.Id" />
+            <input type="hidden" name="soLuong" value="1" />
+            <button type="submit" class="btn btn-primary btn-block">Thêm vào giỏ</button>
+        </form>
+    </div>
+</article>

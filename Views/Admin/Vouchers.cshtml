@@ -1,0 +1,61 @@
+@model List<TechZone.Models.Voucher>
+@{
+    ViewData["Title"] = "Admin — Quản lý voucher";
+}
+<h1>Quản lý voucher</h1>
+
+<table class="table">
+    <thead><tr><th>Mã</th><th>Loại</th><th>Giá trị</th><th>Đơn tối thiểu</th><th>Hết hạn</th><th>Đã dùng / Số lượng</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var v in Model)
+        {
+            <tr>
+                <td><strong>@v.Ma</strong></td>
+                <td>@v.LoaiGiam</td>
+                <td>@(v.LoaiGiam == "PhanTram" ? v.GiaTri.ToString("N0") + "%" : v.GiaTri.ToString("N0") + "đ")</td>
+                <td>@v.DieuKien.ToString("N0")đ</td>
+                <td>@v.NgayHetHan.ToString("dd/MM/yyyy")</td>
+                <td>@v.DaDung / @v.SoLuong</td>
+                <td>
+                    <form asp-action="XoaVoucher" method="post" class="inline-form">
+                        <input type="hidden" name="id" value="@v.Id" />
+                        <button type="submit" class="link-button" onclick="return confirm('Xóa voucher @v.Ma?');">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2 class="mt">Thêm voucher mới</h2>
+<form asp-action="ThemVoucher" method="post">
+    <div class="form-group">
+        <label for="Ma">Mã (vd: TECHZONE500)</label>
+        <input id="Ma" name="Ma" class="form-control" required maxlength="50" />
+    </div>
+    <div class="form-group">
+        <label for="LoaiGiam">Loại giảm</label>
+        <select id="LoaiGiam" name="LoaiGiam" class="form-control">
+            <option value="Tien">Giảm số tiền cố định</option>
+            <option value="PhanTram">Giảm theo %</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="GiaTri">Giá trị (đ hoặc %)</label>
+        <input id="GiaTri" name="GiaTri" class="form-control" type="number" min="0" step="1000" required />
+    </div>
+    <div class="form-group">
+        <label for="DieuKien">Đơn tối thiểu (đ)</label>
+        <input id="DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1000" value="0" />
+    </div>
+    <div class="form-group">
+        <label for="NgayHetHan">Ngày hết hạn</label>
+        <input id="NgayHetHan" name="NgayHetHan" class="form-control" type="date" required />
+    </div>
+    <div class="form-group">
+        <label for="SoLuong">Số lượng mã</label>
+        <input id="SoLuong" name="SoLuong" class="form-control" type="number" min="1" value="100" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Thêm voucher</button>
+</form>
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

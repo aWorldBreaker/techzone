@@ -1,0 +1,122 @@
+@using TechZone.Models
+@{
+    ViewData["Title"] = "Trang chủ";
+    var flashSale = (List<FlashSale>)ViewBag.FlashSale;
+    var noiBat = (List<Product>)ViewBag.NoiBat;
+    var banChay = (List<Product>)ViewBag.BanChay;
+    var danhMuc = (List<Category>)ViewBag.DanhMuc;
+    var ketThuc = (DateTime?)ViewBag.FlashSaleKetThuc;
+}
+
+<section class="hero">
+    <div>
+        <h1>Điện thoại Xiaomi mới — Giảm đến 20% • Trả góp 0%</h1>
+        <p class="lead">Xiaomi 15 5G — Snapdragon 8 Gen 3 • Màn hình AMOLED 120Hz • Camera Leica 50MP. Chính hãng, bảo hành 24 tháng, giao nhanh 2h nội thành.</p>
+        <div class="hero-actions">
+            <a class="btn btn-primary" asp-controller="Products" asp-action="Details" asp-route-id="1">Mua ngay — 12.990.000đ</a>
+            <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
+        </div>
+        <p class="text-muted">Ưu đãi đến hết hôm nay • Trả góp 0% lãi suất • Miễn phí giao hàng đơn từ 2.000.000đ</p>
+    </div>
+    <div class="hero-image">
+        <img src="/images/xiaomi15.png" alt="Điện thoại Xiaomi 15 5G" />
+    </div>
+</section>
+
+@if (flashSale.Any() && ketThuc.HasValue)
+{
+    <section class="section" aria-label="Flash Sale">
+        <div class="section-head">
+            <h2>Flash Sale — Kết thúc trong ngày</h2>
+            <span class="text-muted">Kết thúc lúc @ketThuc.Value.ToString("HH:mm") hôm nay</span>
+        </div>
+        <div class="flash-countdown" id="flash-countdown" data-ket-thuc="@ketThuc.Value.ToString("o")">
+            <span><b id="cd-gio">--</b><small>giờ</small></span>
+            <span><b id="cd-phut">--</b><small>phút</small></span>
+            <span><b id="cd-giay">--</b><small>giây</small></span>
+        </div>
+        <div class="product-grid">
+            @foreach (var f in flashSale)
+            {
+                <article class="product-card">
+                    <a asp-controller="Products" asp-action="Details" asp-route-id="@f.ProductId" class="product-image">
+                        <img src="@f.Product.AnhDaiDien" alt="@f.Product.Ten" loading="lazy" />
+                        <span class="badge-giam">Flash Sale</span>
+                    </a>
+                    <div class="product-info">
+                        <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@f.ProductId">@f.Product.Ten</a></h3>
+                        <p class="product-price">
+                            <strong>@f.GiaSale.ToString("N0")đ</strong>
+                            <s>@f.Product.Gia.ToString("N0")đ</s>
+                        </p>
+                        <p class="product-meta">Đã bán @f.DaBan / @f.GioiHanSL • Còn @(f.GioiHanSL - f.DaBan)</p>
+                        <form asp-controller="Cart" asp-action="Add" method="post">
+                            <input type="hidden" name="productId" value="@f.ProductId" />
+                            <input type="hidden" name="soLuong" value="1" />
+                            <button type="submit" class="btn btn-primary btn-block">Thêm vào giỏ</button>
+                        </form>
+                    </div>
+                </article>
+            }
+        </div>
+    </section>
+}
+
+<section class="section">
+    <div class="section-head">
+        <h2>Danh mục</h2>
+        <a asp-controller="Products" asp-action="Index">Xem tất cả →</a>
+    </div>
+    <div class="chip-row">
+        @foreach (var c in danhMuc)
+        {
+            <a class="chip" asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id">@c.Ten</a>
+        }
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Sản phẩm nổi bật</h2>
+        <a asp-controller="Products" asp-action="Index">Xem tất cả →</a>
+    </div>
+    <div class="product-grid">
+        @foreach (var p in noiBat)
+        {
+            <partial name="_ProductCard" model="p" />
+        }
+    </div>
+</section>
+
+<section class="section">
+    <div class="section-head">
+        <h2>Bán chạy nhất</h2>
+        <a asp-controller="Products" asp-action="Index" asp-route-SapXep="ban-chay">Xem tất cả →</a>
+    </div>
+    <div class="product-grid">
+        @foreach (var p in banChay)
+        {
+            <partial name="_ProductCard" model="p" />
+        }
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Dem nguoc Flash Sale (chi chay tren trinh duyet, khong anh huong gia tren server).
+        (function () {
+            var el = document.getElementById('flash-countdown');
+            if (!el) return;
+            var ketThuc = new Date(el.dataset.ketThuc);
+            function tick() {
+                var ms = ketThuc - new Date();
+                if (ms <= 0) { el.textContent = 'Đã kết thúc'; return; }
+                var s = Math.floor(ms / 1000);
+                document.getElementById('cd-gio').textContent = String(Math.floor(s / 3600)).padStart(2, '0');
+                document.getElementById('cd-phut').textContent = String(Math.floor(s % 3600 / 60)).padStart(2, '0');
+                document.getElementById('cd-giay').textContent = String(s % 60).padStart(2, '0');
+            }
+            tick(); setInterval(tick, 1000);
+        })();
+    </script>
+}

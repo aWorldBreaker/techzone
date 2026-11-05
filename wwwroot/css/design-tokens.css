@@ -1,0 +1,106 @@
+/* TechZone — Design Tokens (SINGLE SOURCE OF TRUTH)
+   Nguồn: UI UX Pro Max v2.15.0 — Style Minimalism & Swiss Style
+   (variance 2, motion 2, density 3), Typography Rubik / Nunito Sans.
+   GHI ĐÈ theo user đã duyệt 2026-11-05: palette xanh lá #059669 + cam
+   #EA580C trong MASTER.md gốc KHÔNG dùng. Chỉ dùng navy trầm #1E3A5F
+   làm màu nhấn duy nhất. File MASTER.md trên đĩa vẫn còn palette cũ —
+   file này mới là chuẩn. Mọi nơi (code ASP.NET, web artifact) phải
+   dùng đúng các token dưới đây, không tự bịa token khác. */
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Rubik:wght@500;600;700&display=swap');
+
+:root {
+  /* Colors — approved */
+  --color-primary: #1E3A5F;          /* navy trầm, màu nhấn duy nhất */
+  --color-primary-hover: #16293F;
+  --color-on-primary: #FFFFFF;
+  --color-background: #FFFFFF;
+  --color-foreground: #0F172A;       /* chữ xám đậm */
+  --color-card: #FFFFFF;
+  --color-muted: #F1F5F9;
+  --color-muted-foreground: #475569;
+  --color-border: #E2E8F0;
+  --color-destructive: #DC2626;
+  --color-on-destructive: #FFFFFF;
+  --color-success-bg: #E8F5E9;
+  --color-success-fg: #1B5E20;
+  --color-success-border: #A5D6A7;
+  --color-error-bg: #FDECEA;
+  --color-error-fg: #7B1F16;
+  --color-error-border: #F5C6CB;
+  --color-warning-bg: #FFF3CD;
+  --color-warning-fg: #664D03;
+  --color-info-bg: #D1E7DD;
+  --color-info-fg: #0F5132;
+  --color-danger-soft-bg: #F8D7DA;
+  --color-danger-soft-fg: #842029;
+
+  /* Typography */
+  --font-heading: 'Rubik', 'Nunito Sans', sans-serif;
+  --font-body: 'Nunito Sans', system-ui, sans-serif;
+  --font-size-base: 16px;
+  --line-height-body: 1.5;
+  --line-height-heading: 1.25;
+
+  /* Spacing (8pt, spacious) */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Radius — tối đa 8px, không 12px/16px */
+  --radius: 8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.10);
+
+  /* Motion */
+  --transition: all 200ms ease;
+}
+
+/* Components — dùng đúng class này ở mọi nơi */
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--color-primary-hover); }
+.btn-secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.input {
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 16px;
+  transition: border-color 200ms ease;
+}
+.input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.15);
+}

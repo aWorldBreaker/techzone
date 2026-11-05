@@ -1,0 +1,53 @@
+@model TechZone.Models.CheckoutViewModel
+@{
+    ViewData["Title"] = "Đặt hàng";
+}
+
+<h1>Đặt hàng</h1>
+
+<div class="cart-layout">
+    <form asp-action="Checkout" method="post">
+        <div class="form-group">
+            <label asp-for="HoTenNhan">Họ tên người nhận</label>
+            <input asp-for="HoTenNhan" class="form-control" />
+            <span asp-validation-for="HoTenNhan" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="SoDienThoai">Số điện thoại</label>
+            <input asp-for="SoDienThoai" class="form-control" />
+            <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="DiaChi">Địa chỉ giao hàng</label>
+            <textarea asp-for="DiaChi" class="form-control" rows="2"></textarea>
+            <span asp-validation-for="DiaChi" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label>Phương thức thanh toán (giả lập)</label>
+            <div>
+                <label><input type="radio" asp-for="PhuongThucTT" value="COD" checked /> Thanh toán khi nhận hàng (COD)</label>
+            </div>
+            <div>
+                <label><input type="radio" asp-for="PhuongThucTT" value="ChuyenKhoan" /> Chuyển khoản ngân hàng (giả lập)</label>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Đặt hàng — @Model.GioHang.TongCong.ToString("N0")đ</button>
+        <p class="text-muted">Bằng cách đặt hàng, bạn đồng ý với Điều khoản &amp; Chính sách bảo mật của TechZone.</p>
+    </form>
+
+    <aside class="summary" aria-label="Tóm tắt đơn hàng">
+        <h2>Tóm tắt đơn hàng</h2>
+        @foreach (var line in Model.GioHang.Lines)
+        {
+            <div class="summary-row"><span>@line.Product.Ten × @line.SoLuong</span><span>@line.ThanhTien.ToString("N0")đ</span></div>
+        }
+        <div class="summary-row"><span>Tạm tính</span><span>@Model.GioHang.TamTinh.ToString("N0")đ</span></div>
+        @if (Model.GioHang.GiamGia > 0)
+        {
+            <div class="summary-row"><span>Giảm voucher (@Model.GioHang.MaVoucher)</span><span>- @Model.GioHang.GiamGia.ToString("N0")đ</span></div>
+        }
+        <div class="summary-row"><span>Phí ship</span><span>@(Model.GioHang.PhiShip == 0 ? "Miễn phí" : Model.GioHang.PhiShip.ToString("N0") + "đ")</span></div>
+        <div class="summary-row total"><span>Tổng cộng</span><span>@Model.GioHang.TongCong.ToString("N0")đ</span></div>
+        <p class="text-muted">Giao nhanh trong 2h (nội thành HN/HCM) • Đổi trả 30 ngày</p>
+    </aside>
+</div>

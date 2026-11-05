@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - TechZone</title>
+    <link rel="stylesheet" href="~/css/site.css" />
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="logo" asp-controller="Home" asp-action="Index">Tech<span>Zone</span></a>
+            <form class="search" asp-controller="Products" asp-action="Index" method="get" role="search">
+                <input type="search" name="TuKhoa" placeholder="Tìm điện thoại, laptop, tai nghe..." aria-label="Tìm sản phẩm" />
+                <button type="submit">Tìm</button>
+            </form>
+            <nav class="header-actions" aria-label="Tài khoản và giỏ hàng">
+                <a asp-controller="Products" asp-action="Index">Sản phẩm</a>
+                <a asp-controller="Cart" asp-action="Index">Giỏ hàng</a>
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="Orders" asp-action="MyOrders">Đơn của tôi</a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Dashboard">Admin</a>
+                    }
+                    <span class="hello">Xin chào, @User.Identity.Name</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
+                        <button type="submit" class="link-button">Đăng xuất</button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-sm">Đăng ký</a>
+                }
+            </nav>
+        </div>
+        <nav class="category-nav" aria-label="Danh mục">
+            <div class="container">
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="1">Điện thoại</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="2">Laptop</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="3">Tablet</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="4">Tai nghe</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="5">Đồng hồ</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="6">Phụ kiện</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="7">Gaming</a>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="8">Linh kiện PC</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container main-content">
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success" role="alert">@ok</div>
+        }
+        @if (TempData["Error"] is string err)
+        {
+            <div class="alert alert-error" role="alert">@err</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="trust">
+                <div><strong>Bảo hành 24 tháng</strong><span>Chính hãng, bảo hành tận nơi</span></div>
+                <div><strong>Trả góp 0%</strong><span>Hỗ trợ trả góp 0% lãi suất</span></div>
+                <div><strong>Giao nhanh 2h</strong><span>Miễn phí giao nội thành HN/HCM</span></div>
+                <div><strong>Đổi trả 30 ngày</strong><span>Đổi trả dễ dàng, không phí</span></div>
+            </div>
+            <p>© 2026 TechZone — 123 Đường Công Nghệ, Quận 1, TP.HCM — Hotline: 1900 1234 — Email: hotro@techzone.vn</p>
+        </div>
+    </footer>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

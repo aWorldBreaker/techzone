@@ -1,130 +1,73 @@
-# TechZone — Website bán đồ công nghệ
+# TechZone — Website thương mại điện tử đồ công nghệ (đồ án demo)
 
-Đồ án: website thương mại điện tử B2C, 1 shop, 2 vai trò Khách / Admin.
-ASP.NET Core 8 + EF Core + SQLite (demo) + Razor MVC + Identity.
+TechZone hiện dùng **ASP.NET Core 8 MVC + Razor Views + EF Core + SQLite + ASP.NET Identity**. Đây là đồ án/demo B2C tại Việt Nam, **không** tích hợp thu tiền thật hoặc phát hành hóa đơn điện tử hợp pháp. Không dùng prompt React/NestJS/PostgreSQL đời đầu để viết lại hệ thống.
 
-## Chạy
+## Nguồn tài liệu hiện hành
+
+- [`AGENTS.md`](AGENTS.md): quy tắc vận hành cho Muse/Codex trong repository.
+- [`docs/PLAN-STATUS.md`](docs/PLAN-STATUS.md): những gì có code, những gì phải kiểm thử, thứ tự ưu tiên.
+- [`docs/IMPLEMENTATION-GUIDE.md`](docs/IMPLEMENTATION-GUIDE.md): quy trình đọc source, triển khai và xác minh an toàn.
+- [`TEST-REPORT.md`](TEST-REPORT.md): mẫu ghi kết quả 15 luồng nghiệm thu; mặc định **NOT_RUN** cho đến khi có bằng chứng.
+- `MASTER.md`, `SCOPE.md`, `DATABASE-MIGRATION.md` (nếu có trong workspace nội bộ): đọc khi tồn tại, đối chiếu với mã nguồn và quyết định mới nhất; không giả định chúng đã được commit.
+
+## Chạy local
+
+Yêu cầu .NET 8 SDK. Từ thư mục chứa `TechZone.csproj`:
 
 ```bash
-cd TechZone
-dotnet restore
-dotnet run
+dotnet --info
+dotnet restore TechZone.csproj
+dotnet build TechZone.csproj
+dotnet run --project TechZone.csproj
 ```
 
-Mở `https://localhost:5001` (hoặc cổng http in ra ở terminal).
-Lần chạy đầu tiên tự tạo file `techzone.db` (SQLite) và seed dữ liệu mẫu.
-Muốn seed lại từ đầu: xóa `techzone.db` rồi chạy lại.
+Dùng URL HTTP/HTTPS **do terminal in ra** thay vì mặc định một port cố định. SQLite dùng đường dẫn `Data Source=techzone.db` trong `appsettings.json`. Khi khởi động, `SeedData.InitializeAsync` gọi `MigrateAsync` và seed dữ liệu demo. **Không chạy trực tiếp trên DB cũ hoặc DB có dữ liệu quan trọng trước khi backup và kiểm tra đường chuyển đổi legacy.**
 
-> Chưa có `dotnet` trên máy thì cài .NET 8 SDK rồi chạy lệnh trên.
-> Code trong repo này chưa từng được build trên máy viết code (không có dotnet),
-> nên lần build đầu có thể lộ lỗi nhỏ — xem mục "Kiểm chứng" bên dưới.
+### DB legacy / rollback
 
-## Tài khoản demo (seed sẵn)
+Mã nguồn có `Data/LegacyDbConverter.cs` để xử lý database cũ được tạo bởi `EnsureCreated`; không giả định rằng việc chạy `dotnet run` sẽ tự chuyển đổi an toàn mọi DB legacy. Hãy thử migration trên **bản sao**, xác thực dữ liệu/khóa ngoại, kiểm tra restore backup trước khi dùng DB thật. Xem `docs/IMPLEMENTATION-GUIDE.md`.
 
-| Vai trò | Email | Mật khẩu |
-|---------|-------|----------|
-| Admin | admin@techzone.vn | Admin@123 |
-| Khách | khach@techzone.vn | Khach@123 |
+### Kiểm thử
 
-## Luồng demo (theo SCOPE.md)
+```bash
+dotnet test TechZone.Tests/TechZone.Tests.csproj
+# Chỉ dùng runner dự phòng khi có lỗi môi trường testhost được xác minh:
+dotnet run --project TechZone.Tests.Runner/TechZone.Tests.Runner.csproj
+```
 
-### 1. Khách mua hàng + voucher + COD
-1. Trang chủ → tìm "Xiaomi 15" → xem chi tiết (thông số Snapdragon 8 Gen 3, RAM 12GB...).
-2. Chọn phiên bản Đen / 256GB → Thêm vào giỏ.
-3. Giỏ hàng → nhập mã `TECHZONE500` → Áp dụng (giảm 500.000đ, đơn tối thiểu 5.000.000đ).
-4. Đặt hàng → nhập tên / SĐT / địa chỉ → chọn COD → Đặt hàng.
-5. Xem đơn ở "Đơn của tôi": trạng thái Chờ xác nhận. Đơn #3 mẫu đã có sẵn để xem.
+**Trạng thái:** Repository có unit/integration tests và runner dự phòng. Tài liệu này không tuyên bố các lệnh trên đã PASS ở commit hiện tại. Kết quả phải được ghi vào `TEST-REPORT.md`.
 
-### 2. Flash Sale
-1. Trang chủ → mục Flash Sale (đồng hồ đếm ngược đến 23:59 hôm nay).
-2. Mua Xiaomi 15 5G giá sale 12.990.000đ (gốc 15.990.000đ) hoặc Tai nghe Xiaomi Buds 5 giá 1.090.000đ.
-3. Hết giới hạn số lượng là hết deal (cột `GioiHanSL` / `DaBan` trong bảng FlashSales).
+## Chức năng đã có mã nguồn
 
-### 3. Admin
-1. Đăng nhập `admin@techzone.vn` → vào Dashboard: doanh thu tháng, đơn chờ xác nhận, top bán chạy, sản phẩm sắp hết hàng, doanh thu 7 ngày.
-2. Quản lý sản phẩm → Thêm sản phẩm mới (nhập đúng giá + thông số thật) → khách thấy ngay ở trang danh mục.
-3. Quản lý đơn hàng → mở đơn #3 (Chờ xác nhận) → đổi sang Đang giao → Đã giao.
-4. Khách vào chi tiết sản phẩm vừa giao → gửi đánh giá sao → điểm trung bình của sản phẩm cập nhật.
-5. Quản lý voucher → thêm mã mới (vd: `GIAM200` giảm 200.000đ).
+- Catalog, tìm kiếm/lọc, chi tiết sản phẩm, biến thể, so sánh, wishlist, đánh giá/Q&A, session cart.
+- Checkout demo và đơn hàng; `CheckoutService` có giao dịch DB, cập nhật tồn kho có điều kiện, idempotency key.
+- Admin: sản phẩm, giá, tồn kho, đơn hàng, voucher, combo, flash sale slots, banner, khách hàng, thông báo, duyệt đánh giá.
+- Loyalty Đồng/Bạc/Vàng/Bạch kim; voucher, điểm, đổi trả/hoàn đơn, VAT *demo*.
+- 3D viewer cho sản phẩm có mapping; có xoay/zoom/ẩn-hiện/reset và fallback ảnh.
 
-## Thiết kế hệ thống
+**Có code không đồng nghĩa đã được chạy và nghiệm thu.** Đọc ma trận ở `docs/PLAN-STATUS.md`.
 
-### Cơ sở dữ liệu — 15 bảng
-14 bảng theo SCOPE.md (Users qua Identity `AspNetUsers`, Addresses, Categories,
-Brands, Products, ProductImages, ProductVariants, Carts, CartItems, Orders,
-OrderDetails, Vouchers, FlashSales, Reviews) **+ 1 bảng thêm: ProductSpecs**.
+## Tài nguyên tại bản snapshot GitHub 2026-11-05
 
-**Lựa chọn về ProductSpecs:** tách thành bảng riêng, quan hệ 1-1 với Products,
-thay vì nhét chip/RAM/ROM/Pin/Màn hình/Camera vào bảng Products. Lý do: thông số
-khác nhau theo loại sản phẩm — đồng hồ không có chip/RAM, chuột không có pin,
-SSD không có màn hình. Các trường trong ProductSpecs đều nullable: chỉ điền
-trường nào sản phẩm thật sự có, không bịa thông số cho sản phẩm không có.
-Bộ lọc danh mục (hãng / chip / RAM / dung lượng / giá) đọc trực tiếp từ bảng này.
+Commit `a3eb8d2d42d02e03e6ebc3a848f368cd33e61c31` chứa **13 file ảnh sản phẩm** (cộng `placeholder.svg`) và **4 GLB** tại `wwwroot/models/`: smartphone, laptop, headphones, gamepad. Một số asset là minh họa/generic, không phải sản phẩm 3D chính thức của hãng; gamepad chưa được map vào sản phẩm bán trong seed. Cần kiểm thử HTTP 200, render 3D và giấy phép ảnh trước khi public. Không lặp lại báo cáo cũ rằng ảnh/GLB còn thiếu ở GitHub HEAD này.
 
-### Giỏ hàng
-Bản demo dùng **giỏ hàng session** (`Services/CartService`): dùng được cho cả khách
-vãng lai chưa đăng nhập, giá/tồn kho đọc lại từ DB mỗi lần hiển thị nên luôn mới.
-Bảng Carts + CartItems đã map sẵn trong DbContext để giai đoạn sau đồng bộ giỏ
-session vào DB khi khách đăng nhập — không phải sửa schema.
+## Thiết kế đã duyệt
 
-### Thanh toán & vận chuyển (giả lập)
-- COD hoặc chuyển khoản: đều là giả lập, không thu tiền thật.
-- Phí ship: miễn phí đơn từ 2.000.000đ sau giảm, không thì 30.000đ.
+Hiện dùng **giao diện sáng, navy trầm**, chữ `#0F172A`, điểm nhấn `#1E3A5F`, CSS ở `wwwroot/css/`. Đây là quyết định mới hơn prompt ban đầu về giao diện tối/cyan. Tránh viết lại UI hoặc đổi framework nếu chưa được yêu cầu.
 
-### Design system
-Minimalism & Swiss Style (UI UX Pro Max), nhưng **palette trong MASTER.md đã bị
-ghi đè theo ý đã duyệt**: nền trắng, chữ xám đậm `#0F172A`, chỉ 1 màu nhấn
-xanh navy trầm `#1E3A5F`. Không dùng xanh lá `#059669` / cam `#EA580C` của skill.
-Font Rubik (tiêu đề) + Nunito Sans (nội dung), bo góc tối đa 8px, khoảng cách rộng.
-File: `wwwroot/css/site.css`.
+## Cảnh báo bảo mật và nghiệp vụ trước khi triển khai công khai
 
-## Dữ liệu seed — thật, không bịa
+1. `Data/SeedData.cs` tạo **tài khoản demo với thông tin đăng nhập tĩnh**. Không dùng mặc định này trên môi trường public/production. Không đưa mật khẩu vào tài liệu hay log.
+2. `OrdersController.Details()`/`HoaDon()` và tra cứu bảo hành có thể truy cập đơn **guest** theo ID. Cần thêm cơ chế xác thực quyền riêng tư cho guest trước public.
+3. `ProductForm` thiếu server-side validation đầy đủ đối với giá và tồn kho; `AccountController.Register` gán email xác nhận ngay; cần đánh giá theo môi trường chạy.
+4. Giá Flash Sale trên trang chi tiết và trong checkout có thể lệch vì chưa dùng cùng một luồng tính; cần thử các mốc giờ và quota.
+5. VAT 8%/10% trong `appsettings.json` đang được đánh dấu `DaXacMinh=false`. **Không dùng để khai thuế thật** nếu chưa được chuyên gia thuế xác minh từng nhóm hàng.
+6. Không có bằng chứng kiểm thử runtime/CI cho commit trong tài liệu này.
 
-13 sản phẩm, 8 danh mục (Điện thoại, Laptop, Tablet, Tai nghe, Đồng hồ,
-Phụ kiện, Gaming, Linh kiện PC), 9 hãng. Giá và thông số theo giá bán lẻ thực tế
-tháng 11/2026, ví dụ:
-- Xiaomi 15 5G: 12.990.000đ (gốc 15.990.000đ), Snapdragon 8 Gen 3, RAM 12GB,
-  ROM 256GB, Pin 5000mAh, 6.7" AMOLED, Camera 50MP.
-- iPhone 15 Pro: 28.990.000đ (gốc 31.990.000đ), A17 Pro, 8GB/256GB.
-- Laptop ASUS TUF Gaming F15: 18.490.000đ (gốc 24.650.000đ),
-  i5-12450H/8GB/512GB/RTX 3050.
-- Tai nghe Sony WH-CH520: 890.000đ (gốc 1.150.000đ), Bluetooth 5.2, Pin 50h.
-- Voucher `TECHZONE500` giảm 500.000đ (đơn ≥ 5.000.000đ, hết hạn 31/12/2026).
-- 3 đơn mẫu có tổng tiền khớp với chi tiết đơn (đã tính tay trong `Data/SeedData.cs`).
+## Phương thức thanh toán
 
-## Ảnh sản phẩm — ảnh thật, không ảnh AI
+Các phương thức COD/chuyển khoản/ví trong demo được **giả lập**. UI/biên nhận phải tiếp tục ghi rõ đây không phải thanh toán thật.
 
-`wwwroot/images/` chỉ có ảnh chụp thật lấy từ image-search:
-- `xiaomi15.png` — ảnh thật Xiaomi 15 → dùng cho Xiaomi 15 5G.
-- `iphone15pro.jpg` — ảnh thật iPhone 15 Pro → dùng cho iPhone 15 Pro.
-- `rog-laptop.png` — ảnh laptop gaming ASUS (ROG Strix) → dùng tạm cho
-  Laptop ASUS TUF Gaming F15 (cùng hãng ASUS, cùng dòng gaming).
-- `earbuds.jpg` — ảnh thật tai nghe true wireless → dùng cho Tai nghe
-  Xiaomi Buds 5 (đúng loại true wireless).
+## Tiêu chí hoàn thành
 
-### Chỗ còn thiếu ảnh thật
-- **9/13 sản phẩm dùng `placeholder.svg`** (Samsung A55, OPPO Reno11, Lenovo LOQ 15,
-  iPad Gen 10, 2 đồng hồ, chuột Logitech, SSD 980 PRO, Sony WH-CH520).
-  Lý do: chưa có ảnh hãng cho các sản phẩm này trong máy. Đặc biệt lưu ý
-  **Sony WH-CH520 là tai nghe on-ear, không dùng ảnh `earbuds.jpg`** (tai nghe
-  nhét tai) cho nó — dùng sai loại còn tệ hơn dùng placeholder.
-- Muốn đủ ảnh: tải ảnh chính thức từ trang hãng / nhà phân phối cho từng sản phẩm,
-  bỏ vào `wwwroot/images/`, thêm dòng `ProductImage` trong `SeedData.cs`
-  (hoặc thêm form upload ảnh ở Admin — hiện Admin chưa có upload ảnh, chỉ quản lý
-  tên/giá/tồn kho/thông số; xem "Chưa làm" bên dưới).
-
-## Chưa làm (nằm ngoài scope sương sương)
-- Upload ảnh sản phẩm ở trang Admin (hiện chỉ gán ảnh qua seed).
-- Đăng nhập Google / Facebook, thanh toán thật (VNPay/MoMo), vận chuyển thật (GHN/GHTK).
-- Wishlist, chat với shop, gợi ý AI, app mobile.
-- Phân trang admin chưa có (danh sách sản phẩm/đơn hiện toàn bộ).
-- Chuyển sang SQL Server: đổi connection string trong `appsettings.json` và
-  `UseSqlite` → `UseSqlServer` trong `Program.cs`, thêm migration
-  (`dotnet ef migrations add Init` rồi `dotnet ef database update`).
-
-## Kiểm chứng (chưa chạy build)
-- Máy viết code **không có dotnet** nên chưa chạy `dotnet build` / `dotnet run`.
-  Trước khi demo, chạy `dotnet build` một lần trên máy có .NET 8 SDK để bắt lỗi
-  biên dịch (nếu có) rồi mới `dotnet run`.
-- Đã kiểm tra bằng mắt: mọi giá seed đều có trong `SeedData.cs`, tổng tiền 3 đơn
-  mẫu đã tính khớp, ảnh gán đúng sản phẩm (trừ 2 trường hợp đã ghi rõ ở trên).
+Một hạng mục chỉ được báo `PASS` sau khi chạy thành công trong môi trường kiểm tra. Sử dụng `TEST-REPORT.md` để ghi 15 luồng, log, hình ảnh, hash commit và các vấn đề còn lại. Không xóa các ghi chú `NOT_RUN` chỉ vì đã bổ sung code.

@@ -4,6 +4,7 @@
 }
 
 <h1>Đơn hàng của tôi</h1>
+<p><a asp-controller="Returns" asp-action="Index">Yêu cầu của tôi</a> (đổi trả / bảo hành) • <a asp-controller="Returns" asp-action="TraCuu">Tra cứu bảo hành</a></p>
 
 @if (!Model.Any())
 {
@@ -27,7 +28,10 @@ else
                     <td>@o.TrangThai</td>
                     <td>
                         <a asp-action="Details" asp-route-id="@o.Id">Xem</a>
-                        @if (o.TrangThai == TechZone.Models.OrderStatus.ChoXacNhan)
+                        <a asp-controller="Returns" asp-action="Create" asp-route-orderId="@o.Id">Đổi trả / Bảo hành</a>
+                        @if (o.TrangThai == TechZone.Models.OrderStatus.ChoXacNhan
+                            || o.TrangThai == TechZone.Models.OrderStatus.DaXacNhan
+                            || o.TrangThai == TechZone.Models.OrderStatus.DangDongGoi)
                         {
                             <form asp-action="Huy" method="post" class="inline-form">
                                 <input type="hidden" name="id" value="@o.Id" />

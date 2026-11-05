@@ -1,18 +1,30 @@
 /* TechZone — Design Tokens (SINGLE SOURCE OF TRUTH)
    Nguồn: UI UX Pro Max v2.15.0 — Style Minimalism & Swiss Style
-   (variance 2, motion 2, density 3), Typography Rubik / Nunito Sans.
-   GHI ĐÈ theo user đã duyệt 2026-11-05: palette xanh lá #059669 + cam
-   #EA580C trong MASTER.md gốc KHÔNG dùng. Chỉ dùng navy trầm #1E3A5F
-   làm màu nhấn duy nhất. File MASTER.md trên đĩa vẫn còn palette cũ —
-   file này mới là chuẩn. Mọi nơi (code ASP.NET, web artifact) phải
-   dùng đúng các token dưới đây, không tự bịa token khác. */
+   (variance 2, motion 2, density 3), Typography Be Vietnam Pro.
+   PALETTE MỚI (concept landing 2026-11-05, user chốt): bỏ navy trầm
+   #1E3A5F; màu chính xanh điện #2563EB; cam san hô #FF6B35 cho giá
+   bán + badge sale; teal #0EA5A4 làm điểm nhấn (mã đúng trong concept,
+   MASTER.md trên đĩa vẫn còn palette cũ (xanh lá #059669 + cam
+   #EA580C) — file này mới là chuẩn. Mọi nơi (code ASP.NET, web
+   artifact) phải dùng đúng các token dưới đây, không tự bịa token khác. */
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700&family=Rubik:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap');
 
 :root {
-  /* Colors — approved */
-  --color-primary: #1E3A5F;          /* navy trầm, màu nhấn duy nhất */
-  --color-primary-hover: #16293F;
+  color-scheme: light; /* để input/select/scrollbar native theo đúng theme */
+  /* Colors — concept landing mới 2026-11-05 */
+  --color-primary: #2563EB;          /* xanh điện, màu chính */
+  --color-primary-hover: #1D4ED8;
+  --color-primary-text: #2563EB;   /* chữ màu chính — ở dark dùng xanh nhạt #60A5FA để đủ tương phản */
+  --color-accent: #FF6B35;           /* cam san hô — giá bán + badge sale */
+  --color-accent-hover: #E85A24;
+  --color-teal: #0EA5A4;             /* điểm nhấn — mã đúng trong concept */
+  --color-teal-hover: #0F766E;
+  --color-primary-ring: rgba(37, 99, 235, .15);   /* focus ring, glow đếm ngược */
+  --color-primary-ghost: rgba(37, 99, 235, .05);  /* sọc chéo Flash Sale */
+  --color-veil: rgba(255, 255, 255, .60);         /* veil phủ nền WebGL */
+  --color-shine: rgba(255, 255, 255, .45);        /* vệt sáng Flash Sale */
+  --color-dot-light: rgba(255, 255, 255, .28);    /* chấm trắng trên voucher */
   --color-on-primary: #FFFFFF;
   --color-background: #FFFFFF;
   --color-foreground: #0F172A;       /* chữ xám đậm */
@@ -35,9 +47,16 @@
   --color-danger-soft-bg: #F8D7DA;
   --color-danger-soft-fg: #842029;
 
-  /* Typography */
-  --font-heading: 'Rubik', 'Nunito Sans', sans-serif;
-  --font-body: 'Nunito Sans', system-ui, sans-serif;
+  /* Typography — MỘT stack duy nhất cho mọi chữ. Đổi 2026-11-05 sang
+     Be Vietnam Pro (user chốt "Áp dụng đi"): Rubik render dấu tiếng Việt
+     chưa đẹp (dấu chật/lệch). Be Vietnam Pro thiết kế riêng cho tiếng
+     Việt, dấu đặt đúng chỗ. Fallback Noto Sans cũng hỗ trợ tiếng Việt
+     tốt, để khi Google Fonts không tải được thì dấu vẫn đúng. Phân cấp
+     chỉ bằng cỡ/chữ đậm/màu — kể cả khi font web không tải được thì mọi
+     chữ vẫn rớt về cùng một font hệ thống. */
+  --font-sans: 'Be Vietnam Pro', 'Noto Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-body: var(--font-sans);
   --font-size-base: 16px;
   --line-height-body: 1.5;
   --line-height-heading: 1.25;
@@ -63,6 +82,36 @@
   --transition: all 200ms ease;
 }
 
+/* Dark mode (2026-11-05, user: "Thêm dark mode đi đẹp r đấy" — hài lòng
+   bản sáng, muốn thêm bản tối). Script trong <head> của _Layout đặt
+   data-theme trước khi trang vẽ: localStorage 'techzone-theme', chưa có
+   thì theo prefers-color-scheme (máy user đang dark mode → lần đầu mở
+   thấy bản tối). Nút header chuyển tay, không tải lại trang. Giữ nguyên
+   primary #2563EB, accent #FF6B35, teal #0EA5A4, sao amber — chỉ đổi các
+   bề mặt/chữ/border/alert/shadow/veil theo tông tối. */
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --color-background: #0F172A;       /* nền tối */
+  --color-card: #1E293B;             /* nền thẻ */
+  --color-foreground: #E2E8F0;       /* chữ sáng */
+  --color-muted: #1E293B;            /* nền muted/input/bảng */
+  --color-muted-foreground: #94A3B8; /* chữ mờ */
+  --color-border: #334155;           /* border tối */
+  --color-primary-ring: rgba(96, 165, 250, .35); /* focus ring/glow rõ trên nền tối */
+  --color-primary-ghost: rgba(96, 165, 250, .08);/* sọc chéo Flash Sale */
+  --color-primary-text: #60A5FA;   /* chữ xanh nhạt trên nền tối, tương phản ~7:1 (xanh #2563EB chỉ ~3.5:1) */
+  --color-veil: rgba(15, 23, 42, .40);  /* veil phủ nền WebGL ở dark */
+  --color-shine: rgba(255, 255, 255, .35); /* vệt sáng Flash Sale */
+  --color-success-bg: #14532D; --color-success-fg: #BBF7D0; --color-success-border: #166534;
+  --color-error-bg: #450A0A; --color-error-fg: #FECACA; --color-error-border: #7F1D1D;
+  --color-warning-bg: #451A03; --color-warning-fg: #FDE68A; --color-warning-border: #92400E;
+  --color-info-bg: #134E4A; --color-info-fg: #99F6E4; --color-info-border: #0F766E;
+  --color-danger-soft-bg: #4C0519; --color-danger-soft-fg: #FBCFE8; --color-danger-soft-border: #9D174D;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, .40);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, .50);
+}
+
 /* Components — dùng đúng class này ở mọi nơi */
 .btn-primary {
   background: var(--color-primary);
@@ -76,7 +125,7 @@
 .btn-primary:hover { background: var(--color-primary-hover); }
 .btn-secondary {
   background: transparent;
-  color: var(--color-primary);
+  color: var(--color-primary-text);
   border: 2px solid var(--color-primary);
   padding: 12px 24px;
   border-radius: var(--radius);
@@ -102,5 +151,5 @@
 .input:focus {
   border-color: var(--color-primary);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.15);
+  box-shadow: 0 0 0 3px var(--color-primary-ring);
 }

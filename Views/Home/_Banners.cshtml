@@ -1,0 +1,24 @@
+@model List<TechZone.Models.Banner>
+
+@if (Model.Any())
+{
+    <div class="banner-strip" aria-label="Khuyến mãi nổi bật">
+        @foreach (var banner in Model)
+        {
+            <div class="banner-item">
+                @if (!string.IsNullOrEmpty(banner.LinkUrl))
+                {
+                    <a href="@banner.LinkUrl">
+                        <img src="@banner.AnhUrl" alt="@banner.TieuDe" loading="lazy" />
+                        <span>@banner.TieuDe</span>
+                    </a>
+                }
+                else
+                {
+                    <img src="@banner.AnhUrl" alt="@banner.TieuDe" loading="lazy" />
+                    <span>@banner.TieuDe</span>
+                }
+            </div>
+        }
+    </div>
+}

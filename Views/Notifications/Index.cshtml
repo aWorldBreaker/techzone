@@ -1,0 +1,37 @@
+@model List<TechZone.Models.Notification>
+@{
+    ViewData["Title"] = "Thông báo";
+}
+
+<h1>Thông báo</h1>
+
+@* TempData Success/Error da duoc _Layout hien. *@
+
+@if (Model.Any(n => !n.DaDoc))
+{
+    <form asp-action="DanhDauDaDoc" method="post" class="mt">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn btn-secondary btn-sm">Đánh dấu tất cả đã đọc</button>
+    </form>
+}
+
+@if (!Model.Any())
+{
+    <p class="text-muted mt">Bạn chưa có thông báo nào.</p>
+}
+else
+{
+    <ul class="notif-list mt">
+        @foreach (var n in Model)
+        {
+            <li class="notif-item @(n.DaDoc ? "" : "notif-unread")">
+                <strong>@n.TieuDe</strong>
+                @if (!string.IsNullOrEmpty(n.NoiDung))
+                {
+                    <p>@n.NoiDung</p>
+                }
+                <span class="text-muted">@n.NgayTao.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+            </li>
+        }
+    </ul>
+}

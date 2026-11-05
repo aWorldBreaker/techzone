@@ -1,0 +1,64 @@
+@model List<TechZone.Models.ReturnRequest>
+@{
+    ViewData["Title"] = "Yêu cầu của tôi";
+    var baoHanh = (List<TechZone.Models.WarrantyClaim>)ViewBag.BaoHanh;
+}
+
+<h1>Yêu cầu của tôi</h1>
+<p><a asp-controller="Orders" asp-action="MyOrders">← Về danh sách đơn của tôi</a> • <a asp-action="TraCuu">Tra cứu bảo hành</a></p>
+
+<h2>Đổi trả</h2>
+@if (!Model.Any())
+{
+    <p>Bạn chưa có yêu cầu đổi trả nào.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Mã</th><th>Đơn</th><th>Sản phẩm</th><th>Lý do</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var r in Model)
+            {
+                <tr>
+                    <td>#@r.Id</td>
+                    <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@r.OrderId">#@r.OrderId</a></td>
+                    <td>@r.Product.Ten</td>
+                    <td>@r.LyDo</td>
+                    <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@r.TrangThai</td>
+                    <td><a asp-action="Details" asp-route-id="@r.Id" asp-route-loai="doitra">Xem</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h2>Bảo hành</h2>
+@if (!baoHanh.Any())
+{
+    <p>Bạn chưa có yêu cầu bảo hành nào.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr><th>Mã</th><th>Đơn</th><th>Sản phẩm</th><th>Mô tả lỗi</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var w in baoHanh)
+            {
+                <tr>
+                    <td>#@w.Id</td>
+                    <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@w.OrderId">#@w.OrderId</a></td>
+                    <td>@w.Product.Ten</td>
+                    <td>@w.MoTaLoi</td>
+                    <td>@w.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@w.TrangThai</td>
+                    <td><a asp-action="Details" asp-route-id="@w.Id" asp-route-loai="baohanh">Xem</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

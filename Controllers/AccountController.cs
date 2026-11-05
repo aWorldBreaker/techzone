@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using TechZone.Models;
+using TechZone.Services;
 
 namespace TechZone.Controllers;
 
@@ -39,11 +41,13 @@ public class AccountController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly LoyaltyService _loyalty;
 
-    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager)
+    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, LoyaltyService loyalty)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _loyalty = loyalty;
     }
 
     [HttpGet]
@@ -100,5 +104,50 @@ public class AccountController : Controller
     {
         await _signInManager.SignOutAsync();
         return RedirectToAction("Index", "Home");
+    }
+
+    /// <summary>
+    /// Trang tai khoan (nhom B): hang thanh vien, diem, tien do len hang,
+    /// 10 giao dich diem gan nhat.
+    /// </summary>
+    [Authorize]
+    public async Task<IActionResult> Profile()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user is null) return Challenge();
+        var hang = await _loyalty.HangAsync(user.Id);
+        var tongDiem = await _loyalty.TongDiemAsync(user.Id);
+        var tongChiTieu = await _loyalty.TongChiTieuAsync(user.Id);
+        string? hangTiepTheo;
+        decimal mucTiepTheo;
+        switch (hang)
+        {
+            case "Bạc":
+                hangTiepTheo = "Vàng";
+                mucTiepTheo = _loyalty.NguongVang;
+                break;
+            case "Vàng":
+                hangTiepTheo = "Bạch kim";
+                mucTiepTheo = _loyalty.NguongBachKim;
+                break;
+            case "Bạch kim":
+                hangTiepTheo = null;
+                mucTiepTheo = 0;
+                break;
+            default:
+                hangTiepTheo = "Bạc";
+                mucTiepTheo = _loyalty.NguongBac;
+                break;
+        }
+        ViewBag.Hang = hang;
+        ViewBag.TongDiem = tongDiem;
+        ViewBag.TongChiTieu = tongChiTieu;
+        ViewBag.HangTiepTheo = hangTiepTheo;
+        ViewBag.MucTiepTheo = mucTiepTheo;
+        ViewBag.ConThieu = mucTiepTheo > 0
+            ? Math.Max(0, mucTiepTheo - tongChiTieu)
+            : 0;
+        ViewBag.LichSuDiem = await _loyalty.LichSuAsync(user.Id, 10);
+        return View(user);
     }
 }

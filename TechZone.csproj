@@ -16,4 +16,15 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Test project nam trong repo: SDK Web glob moi *.cs duoi thu muc nay
+       nen phai loai tru 2 thu muc test khoi bien dich cua project chinh. -->
+  <ItemGroup>
+    <Compile Remove="TechZone.Tests\**" />
+    <Compile Remove="TechZone.Tests.Runner\**" />
+    <None Remove="TechZone.Tests\**" />
+    <None Remove="TechZone.Tests.Runner\**" />
+    <Content Remove="TechZone.Tests\**" />
+    <Content Remove="TechZone.Tests.Runner\**" />
+  </ItemGroup>
+
 </Project>

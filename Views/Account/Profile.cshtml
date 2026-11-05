@@ -1,0 +1,79 @@
+@model TechZone.Models.ApplicationUser
+@{
+    ViewData["Title"] = "Tài khoản của tôi";
+    var hang = (string)ViewBag.Hang;
+    var tongDiem = (int)ViewBag.TongDiem;
+    var tongChiTieu = (decimal)ViewBag.TongChiTieu;
+    var hangTiepTheo = (string?)ViewBag.HangTiepTheo;
+    var mucTiepTheo = (decimal)ViewBag.MucTiepTheo;
+    var conThieu = (decimal)ViewBag.ConThieu;
+    var lichSu = (List<TechZone.Models.PointTransaction>)ViewBag.LichSuDiem;
+    var lopHang = hang switch
+    {
+        "Bạch kim" => "tier-bachkim",
+        "Vàng" => "tier-vang",
+        "Bạc" => "tier-bac",
+        _ => "tier-dong"
+    };
+    var phanTram = hangTiepTheo is null || mucTiepTheo <= 0
+        ? 100
+        : (int)Math.Min(100, tongChiTieu / mucTiepTheo * 100);
+}
+
+<h1>Tài khoản của tôi</h1>
+
+<section class="profile-info" aria-label="Thông tin tài khoản">
+    <p><strong>Họ tên:</strong> @Model.HoTen</p>
+    <p><strong>Email:</strong> @Model.Email</p>
+    <p><strong>Số điện thoại:</strong> @(string.IsNullOrEmpty(Model.SoDienThoai) ? "Chưa cập nhật" : Model.SoDienThoai)</p>
+</section>
+
+<section class="profile-loyalty mt" aria-label="Hạng thành viên và điểm">
+    <h2>Hạng thành viên</h2>
+    <p>
+        <span class="tier-badge @lopHang">Hạng @hang</span>
+        <span class="points-display">@tongDiem.ToString("N0") điểm</span>
+    </p>
+    <p class="text-muted">Tổng chi tiêu hợp lệ (đơn không hủy, đã trừ tiền hoàn): @tongChiTieu.ToString("N0")đ — 1 điểm = 1.000đ khi đổi.</p>
+    @if (hangTiepTheo is not null)
+    {
+        <p>Còn <strong>@conThieu.ToString("N0")đ</strong> nữa lên hạng @hangTiepTheo.</p>
+        <progress class="tier-progress-bar" max="100" value="@phanTram" aria-label="Tiến độ lên hạng @hangTiepTheo">@phanTram%</progress>
+    }
+    else
+    {
+        <p>Bạn đang ở hạng cao nhất — hạng Bạch kim (giảm thêm 2% + miễn phí ship).</p>
+    }
+</section>
+
+<section class="mt" aria-label="Lịch sử điểm">
+    <h2>Lịch sử điểm</h2>
+    @if (!lichSu.Any())
+    {
+        <p class="text-muted">Bạn chưa có giao dịch điểm nào. Mua hàng để tích điểm: cứ 100.000đ được 1 điểm.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ngày</th>
+                    <th>Loại</th>
+                    <th>Điểm</th>
+                    <th>Mã đơn</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var gd in lichSu)
+                {
+                    <tr>
+                        <td>@gd.NgayTao.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(gd.Loai == "Earn" ? "Tích điểm" : "Đổi điểm")</td>
+                        <td>@(gd.Loai == "Earn" ? "+" : "-")@gd.Diem.ToString("N0")</td>
+                        <td>@(gd.OrderId.HasValue ? $"Đơn #{gd.OrderId.Value}" : "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>

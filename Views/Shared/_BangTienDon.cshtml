@@ -1,0 +1,39 @@
+@model TechZone.Models.Order
+@inject TechZone.Services.VatService Vat
+@{
+    // Bang tien chuan cho moi trang hien don (Details / HoaDon / Admin):
+    // TamTinhGoc (tien hang truoc giam) - cac khoan giam = SauGiam
+    // = TruocThue + TongVat; + PhiShip = TongThanhToan.
+    // Audit P1-3: truoc day "Tam tinh" hien Model.TongTien (da tru giam) roi
+    // lai tru tiep cac khoan giam -> cac dong khong cong ra tong. O day
+    // TamTinh lay tu chi tiet (truoc giam), khong tru 2 lan. Gia niem yet
+    // DA GOM VAT nen VAT chi tach ra, khong cong them len tong (B-10).
+    var bang = Vat.TinhVatDon(Model);
+}
+<div class="summary summary-narrow">
+    <div class="summary-row"><span>Tạm tính (tiền hàng)</span><span>@bang.TamTinhGoc.ToString("N0")đ</span></div>
+    @if (Model.GiamGia > 0)
+    {
+        <div class="summary-row"><span>Giảm voucher (@Model.MaVoucher)</span><span>- @Model.GiamGia.ToString("N0")đ</span></div>
+    }
+    @if (Model.GiamGiaDiem > 0)
+    {
+        <div class="summary-row"><span>Giảm do đổi điểm (@Model.DiemDaDung điểm)</span><span>- @Model.GiamGiaDiem.ToString("N0")đ</span></div>
+    }
+    @if (Model.GiamGiaHang > 0)
+    {
+        <div class="summary-row"><span>Giảm hạng Vàng</span><span>- @Model.GiamGiaHang.ToString("N0")đ</span></div>
+    }
+    @if (Model.GiamGiaCombo > 0)
+    {
+        <div class="summary-row"><span>Giảm combo</span><span>- @Model.GiamGiaCombo.ToString("N0")đ</span></div>
+    }
+    <div class="summary-row"><span>Trước thuế (chưa VAT)</span><span>@bang.TruocThue.ToString("N0")đ</span></div>
+    @foreach (var (suat, tienVat) in bang.VatTheoSuat)
+    {
+        <div class="summary-row"><span>Thuế GTGT @((suat * 100).ToString("0.##"))% (đã bao gồm trong giá)</span><span>@tienVat.ToString("N0")đ</span></div>
+    }
+    <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
+    <div class="summary-row total"><span>Tổng thanh toán</span><span>@bang.TongThanhToan.ToString("N0")đ</span></div>
+    <p class="text-muted">Giá niêm yết đã bao gồm VAT — tiền thuế chỉ tách ra để hiển thị, tổng thanh toán không đổi.</p>
+</div>

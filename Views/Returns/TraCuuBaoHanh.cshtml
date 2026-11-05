@@ -1,0 +1,44 @@
+@model TechZone.Models.Order?
+@{
+    ViewData["Title"] = "Tra cứu bảo hành";
+}
+
+<h1>Tra cứu bảo hành</h1>
+<p>Nhập mã đơn hàng để xem thời hạn bảo hành (24 tháng kể từ ngày đặt hàng).</p>
+
+<form asp-action="TraCuu" method="post" class="warranty-lookup">
+    <div class="form-group">
+        <label for="maDon">Mã đơn hàng</label>
+        <input type="number" name="maDon" id="maDon" class="form-control input-narrow" min="1" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Tra cứu</button>
+</form>
+
+@if (Model is not null)
+{
+    var hanBaoHanh = Model.NgayDat.AddMonths(24);
+    var conLai = (hanBaoHanh.Date - DateTime.Now.Date).Days;
+    var conBaoHanh = conLai >= 0;
+    <h2>Đơn #@Model.Id — Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy")</h2>
+    <table class="table">
+        <thead>
+            <tr><th>Sản phẩm</th><th>Số lượng</th><th>Hạn bảo hành</th><th>Còn lại</th><th>Trạng thái</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var d in Model.ChiTiet)
+            {
+                <tr>
+                    <td>@d.Product.Ten</td>
+                    <td>@d.SoLuong</td>
+                    <td>@hanBaoHanh.ToString("dd/MM/yyyy")</td>
+                    <td>@(conBaoHanh ? $"{conLai} ngày" : "—")</td>
+                    <td>@(conBaoHanh ? "Còn bảo hành" : "Hết bảo hành")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <p><a asp-action="Create" asp-route-orderId="@Model.Id">Gửi yêu cầu đổi trả / bảo hành cho đơn này</a></p>
+    }
+}

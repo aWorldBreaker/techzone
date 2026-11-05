@@ -1,0 +1,56 @@
+@model List<TechZone.Models.Notification>
+@{
+    ViewData["Title"] = "Admin — Gửi thông báo";
+    var users = ViewBag.Users as List<TechZone.Models.ApplicationUser> ?? new List<TechZone.Models.ApplicationUser>();
+}
+<h1>Gửi thông báo</h1>
+
+<form asp-action="GuiThongBao" method="post">
+    <div class="form-group">
+        <label for="UserId">Gửi tới</label>
+        <select id="UserId" name="userId" class="form-control" required>
+            <option value="all">Tất cả khách hàng</option>
+            @foreach (var u in users)
+            {
+                <option value="@u.Id">@u.HoTen (@u.Email)</option>
+            }
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="TieuDe">Tiêu đề</label>
+        <input id="TieuDe" name="tieuDe" class="form-control" required maxlength="200" />
+    </div>
+    <div class="form-group">
+        <label for="NoiDung">Nội dung</label>
+        <textarea id="NoiDung" name="noiDung" class="form-control" rows="4" maxlength="1000"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Gửi thông báo</button>
+</form>
+
+<section class="mt">
+    <h2>20 thông báo gần nhất</h2>
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Chưa có thông báo nào.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead><tr><th>Ngày gửi</th><th>Người nhận</th><th>Tiêu đề</th><th>Nội dung</th><th>Đã đọc</th></tr></thead>
+            <tbody>
+                @foreach (var n in Model)
+                {
+                    <tr>
+                        <td>@n.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@(n.User?.HoTen ?? n.User?.Email ?? n.UserId)</td>
+                        <td><strong>@n.TieuDe</strong></td>
+                        <td>@n.NoiDung</td>
+                        <td>@(n.DaDoc ? "Rồi" : "Chưa")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

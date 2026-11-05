@@ -1,0 +1,58 @@
+@model TechZone.Models.Order
+@inject TechZone.Services.VatService Vat
+@{
+    ViewData["Title"] = $"Hóa đơn VAT — Đơn #{Model.Id}";
+    // Thue suat tung dong (snapshot luc dat; don cu chua co snapshot thi suy
+    // lai tu danh muc + NgayDat) de hien cot thue suat tren hoa don.
+    var bangVat = Vat.TinhVatDon(Model);
+    var chiTiet = Model.ChiTiet.ToList();
+}
+
+<div class="invoice">
+    <h1>HÓA ĐƠN GIÁ TRỊ GIA TĂNG — BẢN DEMO</h1>
+    <p class="alert alert-error"><strong>Hóa đơn demo</strong> — không có giá trị pháp lý, chưa tích hợp hệ thống phát hành hóa đơn điện tử hợp pháp. Chỉ dùng để đối chiếu số tiền trong đồ án.</p>
+    <p class="text-muted">Giá niêm yết đã bao gồm VAT — tiền thuế dưới đây chỉ tách ra để hiển thị, tổng thanh toán không đổi. Yêu cầu xuất hóa đơn khác với nghĩa vụ thuế của shop.</p>
+
+    <section class="invoice-buyer">
+        <h2>Thông tin người mua</h2>
+        <p>Tên công ty: <strong>@Model.VatTenCongTy</strong></p>
+        <p>Mã số thuế: <strong>@Model.VatMaSoThue</strong></p>
+        <p>Địa chỉ công ty: @Model.VatDiaChiCongTy</p>
+        <p>Đơn hàng: #@Model.Id • Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+        <p>Giao đến: @Model.DiaChiGiao</p>
+    </section>
+
+    <table class="table">
+        <thead>
+            <tr><th>Sản phẩm</th><th>Phiên bản</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th><th>Thuế suất</th><th>Tiền thuế</th></tr>
+        </thead>
+        <tbody>
+            @for (var i = 0; i < chiTiet.Count; i++)
+            {
+                var d = chiTiet[i];
+                var dongVat = bangVat.Lines[i];
+                <tr>
+                    <td>@d.Product.Ten</td>
+                    <td>@d.Variant?.TenBienThe</td>
+                    <td>@d.DonGia.ToString("N0")đ
+                        @if (!string.IsNullOrEmpty(d.TenKhuyenMai))
+                        {
+                            <span>(@d.TenKhuyenMai, giá gốc <s>@d.GiaGoc.ToString("N0")đ</s>)</span>
+                        }
+                    </td>
+                    <td>@d.SoLuong</td>
+                    <td>@d.ThanhTien.ToString("N0")đ</td>
+                    <td>@((dongVat.ThueSuat * 100).ToString("0.##"))%</td>
+                    <td>@dongVat.TienVat.ToString("N0")đ</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <partial name="_BangTienDon" model="Model" />
+
+    <p class="mt">
+        <button type="button" class="btn btn-primary" onclick="window.print()">In hóa đơn</button>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">Về đơn hàng</a>
+    </p>
+</div>

@@ -1,0 +1,53 @@
+@model TechZone.Models.ReturnRequest
+@{
+    ViewData["Title"] = "Yêu cầu đổi trả";
+    var order = (TechZone.Models.Order)ViewBag.Order;
+}
+
+<h1>Yêu cầu đổi trả</h1>
+<p>Đơn #@order.Id • Ngày đặt: @order.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+
+@if (Model.ProductId == 0)
+{
+    <p>Chọn sản phẩm trong đơn cần đổi trả:</p>
+    <table class="table">
+        <thead>
+            <tr><th>Sản phẩm</th><th>Số lượng</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var d in order.ChiTiet)
+            {
+                <tr>
+                    <td>@d.Product.Ten</td>
+                    <td>@d.SoLuong</td>
+                    <td>
+                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Đổi trả</a>
+                        |
+                        <a asp-action="Warranty" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Bảo hành</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p><a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">← Về đơn hàng</a></p>
+}
+else
+{
+    var product = (TechZone.Models.Product)ViewBag.Product;
+    <p>Sản phẩm: <strong>@product.Ten</strong></p>
+    <form asp-action="Create" method="post" enctype="multipart/form-data" class="return-form">
+        <input type="hidden" asp-for="OrderId" />
+        <input type="hidden" asp-for="ProductId" />
+        <div class="form-group">
+            <label asp-for="LyDo">Lý do đổi trả</label>
+            <textarea asp-for="LyDo" class="form-control" rows="4" required></textarea>
+            <span asp-validation-for="LyDo" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label for="anhKem">Ảnh kèm theo (không bắt buộc, .jpg/.jpeg/.png/.webp, tối đa 5MB)</label>
+            <input type="file" name="anhKem" id="anhKem" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
+        </div>
+        <button type="submit" class="btn btn-primary">Gửi yêu cầu đổi trả</button>
+        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-secondary">Quay lại đơn hàng</a>
+    </form>
+}

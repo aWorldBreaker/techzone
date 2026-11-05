@@ -7,6 +7,8 @@
 
 <div class="cart-layout">
     <form asp-action="Checkout" method="post">
+        @* Key chong dat don trung (Sprint 1): cung key POST 2 lan chi tao 1 don. *@
+        <input type="hidden" asp-for="IdempotencyKey" />
         <div class="form-group">
             <label asp-for="HoTenNhan">Họ tên người nhận</label>
             <input asp-for="HoTenNhan" class="form-control" />
@@ -25,12 +27,42 @@
         <div class="form-group">
             <label>Phương thức thanh toán (giả lập)</label>
             <div>
-                <label><input type="radio" asp-for="PhuongThucTT" value="COD" checked /> Thanh toán khi nhận hàng (COD)</label>
+                <label><input type="radio" asp-for="PhuongThucTT" value="COD" /> Thanh toán khi nhận hàng (COD)</label>
             </div>
             <div>
                 <label><input type="radio" asp-for="PhuongThucTT" value="ChuyenKhoan" /> Chuyển khoản ngân hàng (giả lập)</label>
             </div>
+            <div>
+                <label><input type="radio" asp-for="PhuongThucTT" value="MoMo" /> Ví MoMo (giả lập)</label>
+            </div>
+            <div>
+                <label><input type="radio" asp-for="PhuongThucTT" value="ZaloPay" /> Ví ZaloPay (giả lập)</label>
+            </div>
+            <div>
+                <label><input type="radio" asp-for="PhuongThucTT" value="VNPay" /> Ví VNPay (giả lập)</label>
+            </div>
+            <div class="qr-box" id="qr-box" hidden>
+                <p class="qr-code" aria-hidden="true">QR</p>
+                <p>Mã QR giả lập — quét bằng app ví (demo, không trừ tiền thật)</p>
+                <p class="qr-amount">Cần trả: @Model.GioHang.TongCong.ToString("N0")đ</p>
+                <p class="text-muted">Sau khi đặt hàng, vào chi tiết đơn và bấm “Tôi đã thanh toán” để xác nhận.</p>
+            </div>
         </div>
+        <div class="form-group">
+            <label asp-for="InstallmentMonths">Trả góp 0% (giả lập)</label>
+            <select asp-for="InstallmentMonths" class="form-control" id="InstallmentMonths" data-tong-cong="@Model.GioHang.TongCong">
+                <option value="">Trả 1 lần</option>
+                <option value="6">6 tháng</option>
+                <option value="12">12 tháng</option>
+            </select>
+            <p class="text-muted" id="tien-gop-thang"></p>
+        </div>
+        <div class="form-group">
+            <label asp-for="DiemDung">Dùng điểm tích lũy</label>
+            <input asp-for="DiemDung" type="number" min="0" class="form-control" />
+            <p class="text-muted">Bạn có @ViewBag.DiemHienTai điểm (1 điểm = 1.000đ)</p>
+        </div>
+        <partial name="_HoaDonVat" model="Model" />
         <button type="submit" class="btn btn-primary btn-block">Đặt hàng — @Model.GioHang.TongCong.ToString("N0")đ</button>
         <p class="text-muted">Bằng cách đặt hàng, bạn đồng ý với Điều khoản &amp; Chính sách bảo mật của TechZone.</p>
     </form>
@@ -46,8 +78,69 @@
         {
             <div class="summary-row"><span>Giảm voucher (@Model.GioHang.MaVoucher)</span><span>- @Model.GioHang.GiamGia.ToString("N0")đ</span></div>
         }
+        @if (Model.GioHang.GiamGiaDiem > 0)
+        {
+            <div class="summary-row"><span>Giảm do đổi điểm</span><span>- @Model.GioHang.GiamGiaDiem.ToString("N0")đ</span></div>
+        }
+        @if (Model.GioHang.GiamGiaHang > 0)
+        {
+            <div class="summary-row"><span>Giảm hạng Vàng</span><span>- @Model.GioHang.GiamGiaHang.ToString("N0")đ</span></div>
+        }
+        @if (Model.GioHang.GiamGiaCombo > 0)
+        {
+            <div class="summary-row"><span>Giảm combo</span><span>- @Model.GioHang.GiamGiaCombo.ToString("N0")đ</span></div>
+        }
         <div class="summary-row"><span>Phí ship</span><span>@(Model.GioHang.PhiShip == 0 ? "Miễn phí" : Model.GioHang.PhiShip.ToString("N0") + "đ")</span></div>
         <div class="summary-row total"><span>Tổng cộng</span><span>@Model.GioHang.TongCong.ToString("N0")đ</span></div>
+        <p class="text-muted">Giá đã bao gồm VAT (thuế GTGT được tách ra trên hóa đơn, tổng thanh toán không đổi).</p>
         <p class="text-muted">Giao nhanh trong 2h (nội thành HN/HCM) • Đổi trả 30 ngày</p>
     </aside>
 </div>
+
+@section Scripts {
+    <script>
+        // Nhom C: hien QR vi + truong VAT + uoc tinh tra gop theo lua chon.
+        (function () {
+            'use strict';
+
+            var vi = ['MoMo', 'ZaloPay', 'VNPay'];
+            var radios = document.querySelectorAll('input[name="PhuongThucTT"]');
+            var qrBox = document.getElementById('qr-box');
+
+            function capNhatQr() {
+                var chon = document.querySelector('input[name="PhuongThucTT"]:checked');
+                if (qrBox) qrBox.hidden = !(chon && vi.indexOf(chon.value) !== -1);
+            }
+            radios.forEach(function (r) { r.addEventListener('change', capNhatQr); });
+            capNhatQr();
+
+            var vatCheck = document.getElementById('XuatHoaDon');
+            var vatFields = document.getElementById('vat-fields');
+            function capNhatVat() {
+                var bat = !!(vatCheck && vatCheck.checked);
+                if (vatFields) vatFields.hidden = !bat;
+                // Sprint 2 — B-10: bat buoc nhap du 3 truong khi tick xuat hoa
+                // don (server van kiem lai; day chi la bao som o client).
+                ['TenCongTy', 'MaSoThue', 'DiaChiCongTy'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el) el.required = bat;
+                });
+            }
+            if (vatCheck) vatCheck.addEventListener('change', capNhatVat);
+            capNhatVat();
+
+            var traGop = document.getElementById('InstallmentMonths');
+            var tienGop = document.getElementById('tien-gop-thang');
+            function capNhatGop() {
+                if (!traGop || !tienGop) return;
+                var thang = parseInt(traGop.value, 10);
+                var tong = parseFloat(traGop.getAttribute('data-tong-cong'));
+                if (!thang || isNaN(tong) || tong <= 0) { tienGop.textContent = ''; return; }
+                var moiThang = Math.round(tong / thang);
+                tienGop.textContent = 'Ước tính: ' + moiThang.toLocaleString('vi-VN') + 'đ/tháng × ' + thang + ' tháng (0% lãi suất).';
+            }
+            if (traGop) traGop.addEventListener('change', capNhatGop);
+            capNhatGop();
+        })();
+    </script>
+}

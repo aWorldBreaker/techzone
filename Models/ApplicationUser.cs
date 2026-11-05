@@ -12,5 +12,8 @@ public class ApplicationUser : IdentityUser
     public ICollection<Address> Addresses { get; set; } = new List<Address>();
     public ICollection<Order> Orders { get; set; } = new List<Order>();
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
+    public ICollection<Wishlist> Wishlists { get; set; } = new List<Wishlist>();
+    public ICollection<PointTransaction> PointTransactions { get; set; } = new List<PointTransaction>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public Cart? Cart { get; set; }
 }

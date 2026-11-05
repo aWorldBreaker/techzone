@@ -1,0 +1,61 @@
+@model List<TechZone.Models.Banner>
+@{
+    ViewData["Title"] = "Admin — Quản lý banner";
+}
+<h1>Quản lý banner</h1>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">Chưa có banner nào.</p>
+}
+else
+{
+    <table class="table">
+        <thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Link</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var b in Model)
+            {
+                <tr>
+                    <td><img class="banner-thumb" src="@b.AnhUrl" alt="@b.TieuDe" /></td>
+                    <td><strong>@b.TieuDe</strong></td>
+                    <td>@(string.IsNullOrEmpty(b.LinkUrl) ? "—" : b.LinkUrl)</td>
+                    <td>@b.ThuTu</td>
+                    <td>@(b.IsActive ? "Đang bật" : "Đang tắt")</td>
+                    <td>
+                        <form asp-action="DoiTrangThaiBanner" method="post" class="inline-form">
+                            <input type="hidden" name="id" value="@b.Id" />
+                            <button type="submit" class="btn btn-secondary btn-sm">@(b.IsActive ? "Tắt" : "Bật")</button>
+                        </form>
+                        <form asp-action="XoaBanner" method="post" class="inline-form">
+                            <input type="hidden" name="id" value="@b.Id" />
+                            <button type="submit" class="link-button" onclick="return confirm('Xóa banner @b.TieuDe?');">Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<h2 class="mt">Thêm banner mới</h2>
+<form asp-action="ThemBanner" method="post">
+    <div class="form-group">
+        <label for="TieuDe">Tiêu đề</label>
+        <input id="TieuDe" name="tieuDe" class="form-control" required maxlength="200" />
+    </div>
+    <div class="form-group">
+        <label for="AnhUrl">Ảnh (đường dẫn /images/... hoặc link http)</label>
+        <input id="AnhUrl" name="anhUrl" class="form-control" required maxlength="500" placeholder="/images/banner-tet.jpg" />
+    </div>
+    <div class="form-group">
+        <label for="LinkUrl">Link đích (không bắt buộc)</label>
+        <input id="LinkUrl" name="linkUrl" class="form-control" maxlength="500" />
+    </div>
+    <div class="form-group">
+        <label for="ThuTu">Thứ tự</label>
+        <input id="ThuTu" name="thuTu" class="form-control input-narrow" type="number" min="0" value="0" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Thêm banner</button>
+</form>
+
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

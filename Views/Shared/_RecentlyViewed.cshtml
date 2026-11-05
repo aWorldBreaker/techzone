@@ -1,0 +1,16 @@
+@model List<TechZone.Models.Product>
+
+@if (Model.Any())
+{
+    <section class="section recently-viewed">
+        <div class="section-head">
+            <h2>Đã xem gần đây</h2>
+        </div>
+        <div class="product-grid">
+            @foreach (var p in Model)
+            {
+                <partial name="_ProductCard" model="p" />
+            }
+        </div>
+    </section>
+}

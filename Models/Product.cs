@@ -44,6 +44,28 @@ public class Product
     public ICollection<Review> Reviews { get; set; } = new List<Review>();
     public ICollection<FlashSale> FlashSales { get; set; } = new List<FlashSale>();
 
+    /// <summary>
+    /// Thong so rut gon toi da 3 muc de hien tren the san pham: Chip / RAM / ROM.
+    /// Neu ca 3 deu trong thi lay phan dau ThongSoKhac + Pin (vd tai nghe Sony
+    /// WH-CH520: "Bluetooth 5.2 · Pin 50 giờ"). Hien du, khong cat "...".
+    /// </summary>
+    [NotMapped]
+    public string[] SpecsNgan
+    {
+        get
+        {
+            if (Specs is null) return Array.Empty<string>();
+            var chinh = new[] { Specs.Chip, Specs.Ram, Specs.Rom }
+                .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToArray();
+            if (chinh.Length > 0) return chinh;
+            var phu = new List<string>();
+            var dauKhac = Specs.ThongSoKhac?.Split(',').FirstOrDefault()?.Trim();
+            if (!string.IsNullOrWhiteSpace(dauKhac)) phu.Add(dauKhac!);
+            if (!string.IsNullOrWhiteSpace(Specs.Pin)) phu.Add(Specs.Pin!);
+            return phu.ToArray();
+        }
+    }
+
     /// <summary>Gia thuc te khach phai tra cho 1 cai.</summary>
     [NotMapped]
     public decimal GiaBan => GiaKhuyenMai ?? Gia;

@@ -1,0 +1,70 @@
+@using TechZone.Models
+@{
+    var slots = ViewBag.Slots as List<FlashSaleSlot> ?? new List<FlashSaleSlot>();
+    var slotHienTai = ViewBag.SlotHienTai as FlashSaleSlot;
+    var slotTiepTheo = ViewBag.SlotTiepTheo as FlashSaleSlot;
+}
+
+<section class="section slot-section reveal" aria-label="Flash Sale theo khung giờ">
+    <div class="section-head">
+        <h2>Flash Sale theo khung giờ</h2>
+    </div>
+
+    @if (slotHienTai is not null)
+    {
+        <h3>Đang chạy: khung @slotHienTai.Ten</h3>
+        @if (!slotHienTai.Items.Any())
+        {
+            <p class="text-muted">Khung này chưa có sản phẩm sale.</p>
+        }
+        else
+        {
+            <div class="product-grid slot-grid">
+                @foreach (var item in slotHienTai.Items)
+                {
+                    <article class="product-card slot-card">
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="product-image">
+                            <img src="@item.Product.AnhDaiDien" alt="@item.Product.Ten" loading="lazy" />
+                            <span class="badge-giam">Flash Sale</span>
+                        </a>
+                        <div class="product-info">
+                            <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@item.Product.Ten</a></h3>
+                            <p class="product-price">
+                                <strong>@item.GiaSale.ToString("N0")đ</strong>
+                                <s>@item.Product.GiaBan.ToString("N0")đ</s>
+                            </p>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">Hiện không có khung Flash Sale đang chạy.</p>
+    }
+
+    @if (slotTiepTheo is not null)
+    {
+        <div class="slot-next">
+            <p>Khung tiếp theo: <strong>@slotTiepTheo.Ten</strong></p>
+            <div class="flash-countdown" id="slot-countdown" data-gio-tiep-theo="@slotTiepTheo.GioBatDau">
+                <span><b id="slot-cd-gio">--</b><small>giờ</small></span>
+                <span><b id="slot-cd-phut">--</b><small>phút</small></span>
+                <span><b id="slot-cd-giay">--</b><small>giây</small></span>
+            </div>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <form asp-controller="Notifications" asp-action="NhacSlot" method="post" class="inline-form">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="slotId" value="@slotTiepTheo.Id" />
+                    <button type="submit" class="btn btn-secondary btn-sm">Nhắc tôi</button>
+                </form>
+            }
+            else
+            {
+                <a class="btn btn-secondary btn-sm" asp-controller="Account" asp-action="Login">Đăng nhập để đặt nhắc</a>
+            }
+        </div>
+    }
+</section>

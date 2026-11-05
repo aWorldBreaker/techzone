@@ -1,0 +1,52 @@
+@model TechZone.Models.Combo
+@{
+    ViewData["Title"] = "Admin — Sửa combo";
+}
+<h1>Sửa combo — @Model.Ten</h1>
+
+@if (TempData["Error"] is string loi)
+{
+    <p class="alert alert-danger">@loi</p>
+}
+
+<p>Đã bán: <strong>@Model.DaBan bộ</strong> (không hạ giới hạn xuống dưới số này).</p>
+<ul>
+    @foreach (var item in Model.Items)
+    {
+        <li>@item.Product.Ten × @item.SoLuong</li>
+    }
+</ul>
+<p class="text-muted">Sửa món trong combo ở trang danh sách (thêm/xóa món).</p>
+
+<form asp-action="SuaCombo" method="post">
+    <input type="hidden" name="id" value="@Model.Id" />
+    <div class="form-group">
+        <label for="Ten">Tên combo</label>
+        <input id="Ten" name="ten" class="form-control" required maxlength="200" value="@Model.Ten" />
+    </div>
+    <div class="form-group">
+        <label for="MoTa">Mô tả</label>
+        <input id="MoTa" name="moTa" class="form-control" maxlength="2000" value="@Model.MoTa" />
+    </div>
+    <div class="form-group">
+        <label for="PhanTramGiam">% giảm trên tổng giá cả bộ (0 &lt; % &lt; 100)</label>
+        <input id="PhanTramGiam" name="phanTramGiam" class="form-control" type="number" min="0.01" max="99.99" step="0.01" value="@Model.PhanTramGiam" required />
+    </div>
+    <div class="form-group">
+        <label for="BatDau">Bắt đầu</label>
+        <input id="BatDau" name="batDau" class="form-control" type="date" value="@Model.BatDau.ToString("yyyy-MM-dd")" required />
+    </div>
+    <div class="form-group">
+        <label for="KetThuc">Kết thúc</label>
+        <input id="KetThuc" name="ketThuc" class="form-control" type="date" value="@Model.KetThuc.ToString("yyyy-MM-dd")" required />
+    </div>
+    <div class="form-group">
+        <label for="GioiHanSL">Giới hạn số bộ (để trống = không giới hạn)</label>
+        <input id="GioiHanSL" name="gioiHanSL" class="form-control" type="number" min="1" value="@Model.GioiHanSL" />
+    </div>
+    <div class="form-group">
+        <label><input type="checkbox" name="isActive" value="true" @(Model.IsActive ? "checked" : "") /> Đang bật</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+    <a asp-action="Combos" class="btn btn-secondary">Về danh sách combo</a>
+</form>

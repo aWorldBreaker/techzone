@@ -1,0 +1,47 @@
+/* TechZone — Nhom C: Don hang & hau mai (timeline, QR vi, hoa don, doi tra/bảo hanh).
+   Chi dung var(--color-*) token, khong hex hard-code, khong z-index am,
+   dark-mode an toan (token doi theo theme). */
+
+/* Timeline theo doi don */
+.timeline { list-style: none; margin: var(--space-md) 0 var(--space-lg); padding: 0 0 0 var(--space-sm); border-left: 2px solid var(--color-border); }
+.timeline-step { position: relative; padding: 0 0 var(--space-md) var(--space-lg); color: var(--color-muted-foreground); }
+.timeline-step:last-child { padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -25px; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-card); border: 2px solid var(--color-border); }
+.timeline-step.done { color: var(--color-foreground); }
+.timeline-step.done .timeline-dot { background: var(--color-primary); border-color: var(--color-primary); }
+.timeline-step.current { color: var(--color-foreground); font-weight: 700; }
+.timeline-step.current .timeline-dot { background: var(--color-accent); border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-primary-ring); }
+.timeline-ten { display: block; }
+.timeline-moc { display: block; font-size: .85rem; font-weight: 400; color: var(--color-muted-foreground); font-variant-numeric: tabular-nums; }
+
+/* Hop ma QR vi gia lap o checkout */
+.qr-box { margin-top: var(--space-md); padding: var(--space-lg); border: 2px dashed var(--color-primary); border-radius: var(--radius); background: var(--color-card); text-align: center; }
+.qr-code { display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; margin: 0 auto var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-muted); font-size: 1.5rem; font-weight: 700; color: var(--color-muted-foreground); letter-spacing: var(--space-sm); }
+.qr-amount { font-size: 1.25rem; font-weight: 700; color: var(--color-accent); font-variant-numeric: tabular-nums; }
+
+/* Hoa don VAT gia lap */
+.invoice { max-width: 760px; margin: 0 auto; border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-xl); background: var(--color-card); }
+.invoice h1 { text-align: center; }
+.invoice-buyer { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-lg); background: var(--color-muted); }
+.invoice-buyer p { margin: 0 0 var(--space-xs); }
+.invoice-buyer p:last-child { margin-bottom: 0; }
+
+/* Form doi tra / bao hanh / doi dia chi / tra cuu */
+.return-form, .address-form { max-width: 640px; }
+.warranty-lookup { max-width: 420px; }
+.filter-links a { margin-right: var(--space-sm); }
+
+/* Form duyet cua admin trong bang: select + nut nam gon trong o */
+.admin-duyet { display: flex; gap: var(--space-sm); align-items: center; margin-top: var(--space-xs); }
+.admin-duyet select { width: auto; }
+
+@media (max-width: 768px) {
+  .invoice { padding: var(--space-md); }
+  .admin-duyet { flex-wrap: wrap; }
+}
+
+@media print {
+  .site-header, .site-footer, .btn { display: none; }
+  #webgl-bg, .bg-dots { display: none; }
+  .invoice { border: none; padding: 0; max-width: none; }
+}

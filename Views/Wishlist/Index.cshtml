@@ -1,0 +1,44 @@
+@model List<TechZone.Models.Wishlist>
+@{
+    ViewData["Title"] = "Sản phẩm yêu thích";
+}
+
+<h1>Sản phẩm yêu thích</h1>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">Bạn chưa có sản phẩm yêu thích nào.</p>
+    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Khám phá sản phẩm</a>
+}
+else
+{
+    <p class="text-muted">@Model.Count sản phẩm</p>
+    <div class="wishlist-list">
+        @foreach (var item in Model)
+        {
+            <article class="wishlist-item">
+                <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="wishlist-thumb">
+                    <img src="@item.Product.AnhDaiDien" alt="@item.Product.Ten" loading="lazy" />
+                </a>
+                <div class="wishlist-info">
+                    <h3>
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@item.Product.Ten</a>
+                    </h3>
+                    <p class="product-price"><strong>@item.Product.GiaBan.ToString("N0")đ</strong></p>
+                    <p class="text-muted">Đã lưu @item.NgayTao.ToString("dd/MM/yyyy")</p>
+                </div>
+                <div class="wishlist-actions">
+                    <form asp-controller="Cart" asp-action="Add" method="post">
+                        <input type="hidden" name="productId" value="@item.ProductId" />
+                        <input type="hidden" name="soLuong" value="1" />
+                        <button type="submit" class="btn btn-primary btn-sm">Thêm vào giỏ</button>
+                    </form>
+                    <form asp-controller="Wishlist" asp-action="Remove" method="post">
+                        <input type="hidden" name="productId" value="@item.ProductId" />
+                        <button type="submit" class="btn btn-secondary btn-sm">Bỏ yêu thích</button>
+                    </form>
+                </div>
+            </article>
+        }
+    </div>
+}

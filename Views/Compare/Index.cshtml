@@ -1,0 +1,71 @@
+@model List<TechZone.Models.Product>
+@functions {
+    private static string Hien(string? s) => string.IsNullOrWhiteSpace(s) ? "—" : s!;
+}
+@{
+    ViewData["Title"] = "So sánh sản phẩm";
+}
+<h1>So sánh sản phẩm</h1>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">Chưa có sản phẩm nào trong so sánh. Hãy bấm “＋ So sánh” ở thẻ sản phẩm hoặc trang chi tiết để thêm (tối đa 3 sản phẩm).</p>
+    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Xem sản phẩm</a>
+}
+else
+{
+    <form asp-action="XoaHet" method="post" class="inline-form">
+        <button type="submit" class="btn btn-secondary btn-sm">Xóa hết so sánh</button>
+    </form>
+    <table class="table compare-table mt">
+        <thead>
+            <tr>
+                <th></th>
+                @foreach (var p in Model)
+                {
+                    <th>
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">
+                            <img src="@p.AnhDaiDien" alt="@p.Ten" class="compare-thumb" />
+                        </a>
+                        <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a>
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            <tr><th>Giá bán</th>@foreach (var p in Model) { <td><strong>@p.GiaBan.ToString("N0")đ</strong></td> }</tr>
+            <tr><th>Giá gốc</th>@foreach (var p in Model) { <td>@p.Gia.ToString("N0")đ</td> }</tr>
+            <tr><th>Chip</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Chip)</td> }</tr>
+            <tr><th>RAM</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Ram)</td> }</tr>
+            <tr><th>Bộ nhớ</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Rom)</td> }</tr>
+            <tr><th>Pin</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Pin)</td> }</tr>
+            <tr><th>Màn hình</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.ManHinh)</td> }</tr>
+            <tr><th>Camera</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Camera)</td> }</tr>
+            <tr><th>Card đồ họa</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.CardDoHoa)</td> }</tr>
+            <tr><th>Đánh giá</th>@foreach (var p in Model) { <td>@p.DanhGiaTB.ToString("0.0") sao</td> }</tr>
+            <tr><th>Đã bán</th>@foreach (var p in Model) { <td>@p.LuotBan</td> }</tr>
+            <tr><th>Tồn kho</th>@foreach (var p in Model) { <td>@(p.TonKho > 0 ? p.TonKho.ToString() : "Hết hàng")</td> }</tr>
+            <tr><th>Bảo hành</th>@foreach (var p in Model) { <td>24 tháng</td> }</tr>
+            <tr>
+                <th></th>
+                @foreach (var p in Model)
+                {
+                    <td>
+                        <div class="compare-actions">
+                            <form asp-controller="Cart" asp-action="Add" method="post">
+                                <input type="hidden" name="productId" value="@p.Id" />
+                                <input type="hidden" name="soLuong" value="1" />
+                                <button type="submit" class="btn btn-primary btn-sm btn-block" @(p.TonKho == 0 ? "disabled" : "")>Thêm vào giỏ</button>
+                            </form>
+                            <form asp-action="Remove" method="post">
+                                <input type="hidden" name="productId" value="@p.Id" />
+                                <button type="submit" class="btn btn-secondary btn-sm btn-block">Bỏ so sánh</button>
+                            </form>
+                        </div>
+                    </td>
+                }
+            </tr>
+        </tbody>
+    </table>
+    <p class="mt"><a asp-controller="Products" asp-action="Index">← Tiếp tục mua sắm</a></p>
+}

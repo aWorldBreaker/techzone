@@ -1,0 +1,85 @@
+@model List<TechZone.Models.Review>
+@{
+    ViewData["Title"] = "Admin — Duyệt đánh giá & hỏi đáp";
+    var daDuyet = ViewBag.DaDuyetGanDay as List<TechZone.Models.Review> ?? new List<TechZone.Models.Review>();
+    var cauHoi = ViewBag.CauHoiChuaTraLoi as List<TechZone.Models.ProductQuestion> ?? new List<TechZone.Models.ProductQuestion>();
+}
+<h1>Duyệt đánh giá &amp; hỏi đáp</h1>
+
+<section>
+    <h2>Đánh giá chờ duyệt (@Model.Count)</h2>
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Không có đánh giá nào chờ duyệt.</p>
+    }
+    else
+    {
+        @foreach (var r in Model)
+        {
+            <div class="review-item">
+                <p><strong>@r.Sao ★</strong> — @r.Product.Ten</p>
+                <p>@r.NoiDung</p>
+                <p class="text-muted">@(r.User?.HoTen ?? r.User?.Email ?? "Khách") — @r.NgayDanhGia.ToString("dd/MM/yyyy HH:mm")</p>
+                <form asp-action="DuyetDanhGia" method="post" class="inline-form">
+                    <input type="hidden" name="id" value="@r.Id" />
+                    <button type="submit" class="btn btn-primary btn-sm">Duyệt</button>
+                </form>
+                <form asp-action="AnDanhGia" method="post" class="inline-form">
+                    <input type="hidden" name="id" value="@r.Id" />
+                    <button type="submit" class="btn btn-secondary btn-sm">Ẩn</button>
+                </form>
+            </div>
+        }
+    }
+</section>
+
+<section class="mt">
+    <h2>Đánh giá đã duyệt gần nhất</h2>
+    @if (!daDuyet.Any())
+    {
+        <p class="text-muted">Chưa có đánh giá nào được duyệt.</p>
+    }
+    else
+    {
+        @foreach (var r in daDuyet)
+        {
+            <div class="review-item">
+                <p><strong>@r.Sao ★</strong> — @r.Product.Ten</p>
+                <p>@r.NoiDung</p>
+                <p class="text-muted">@(r.User?.HoTen ?? r.User?.Email ?? "Khách") — @r.NgayDanhGia.ToString("dd/MM/yyyy HH:mm")</p>
+                <form asp-action="AnDanhGia" method="post" class="inline-form">
+                    <input type="hidden" name="id" value="@r.Id" />
+                    <button type="submit" class="btn btn-secondary btn-sm">Ẩn</button>
+                </form>
+            </div>
+        }
+    }
+</section>
+
+<section class="mt">
+    <h2>Câu hỏi chưa trả lời (@cauHoi.Count)</h2>
+    @if (!cauHoi.Any())
+    {
+        <p class="text-muted">Không có câu hỏi nào chưa trả lời.</p>
+    }
+    else
+    {
+        @foreach (var q in cauHoi)
+        {
+            <div class="review-item">
+                <p><strong>@q.Product.Ten</strong> — @(q.User?.HoTen ?? q.User?.Email ?? "Khách") hỏi lúc @q.NgayHoi.ToString("dd/MM/yyyy HH:mm")</p>
+                <p>@q.CauHoi</p>
+                <form asp-action="TraLoiCauHoi" method="post">
+                    <input type="hidden" name="questionId" value="@q.Id" />
+                    <div class="form-group">
+                        <label for="traLoi-@q.Id">Trả lời</label>
+                        <textarea id="traLoi-@q.Id" name="traLoi" class="form-control" rows="3" maxlength="2000" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">Trả lời</button>
+                </form>
+            </div>
+        }
+    }
+</section>
+
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

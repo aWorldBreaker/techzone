@@ -1,0 +1,52 @@
+/* TechZone — Nhom A: Mua sam (wishlist, combo, Q&A, da xem, tra gop).
+   Chi dung var(--color-*) token tu design-tokens.css — KHONG hex
+   hard-code, khong z-index am. Dark-mode an toan vi moi mau qua token. */
+
+/* Nut tim (the san pham + trang chi tiet) */
+.wishlist-btn { color: var(--color-accent); }
+.wishlist-btn:hover { background: var(--color-muted); }
+.wishlist-btn-active { color: var(--color-on-primary); background: var(--color-accent); border-color: var(--color-accent); }
+.wishlist-btn-active:hover { background: var(--color-accent-hover); }
+
+/* Hai nut phu tren the san pham: So sanh + tim, nam canh nhau */
+.card-actions { display: flex; gap: var(--space-sm); margin-top: var(--space-sm); }
+.card-actions form { flex: 1; min-width: 0; }
+.card-actions .compare-form,
+.card-actions .wishlist-form { margin-top: 0; }
+
+/* Trang danh sach yeu thich */
+.wishlist-list { display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-md); }
+.wishlist-item { display: grid; grid-template-columns: 96px 1fr auto; gap: var(--space-md); align-items: center; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); padding: var(--space-md); }
+.wishlist-thumb { display: block; background: var(--color-muted); border-radius: var(--radius); }
+.wishlist-thumb img { width: 96px; height: 96px; object-fit: contain; padding: var(--space-xs); }
+.wishlist-info h3 { font-size: 1rem; margin: 0 0 var(--space-xs); }
+.wishlist-info h3 a { color: var(--color-foreground); }
+.wishlist-info p { margin: 0 0 var(--space-xs); }
+.wishlist-actions { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+/* Anh kem theo danh gia */
+.review-image { max-width: 240px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-top: var(--space-sm); }
+
+/* Khoi hoi - dap */
+.qa-item { border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; }
+.qa-question { margin: 0 0 var(--space-xs); }
+.qa-answer { background: var(--color-muted); border-radius: var(--radius); padding: var(--space-sm) var(--space-md); margin: var(--space-sm) 0 0; }
+
+/* Khoi mua kem (combo) */
+.combo-block { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); padding: var(--space-lg); }
+.combo-items { display: flex; align-items: center; gap: var(--space-md); margin-top: var(--space-md); flex-wrap: wrap; }
+.combo-item { flex: 1; min-width: 140px; text-align: center; }
+.combo-item img { width: 120px; height: 120px; object-fit: contain; background: var(--color-muted); border-radius: var(--radius); margin: 0 auto var(--space-sm); padding: var(--space-sm); }
+.combo-item p { margin: 0 0 var(--space-xs); }
+.combo-plus { font-size: 1.5rem; font-weight: 700; color: var(--color-muted-foreground); }
+.combo-total { font-size: 1.15rem; margin-top: var(--space-md); }
+.combo-total strong { color: var(--color-accent); font-variant-numeric: tabular-nums; }
+
+/* Badge tra gop duoi gia */
+.installment-badge { color: var(--color-teal); font-weight: 600; font-variant-numeric: tabular-nums; margin: var(--space-sm) 0 0; }
+
+@media (max-width: 768px) {
+  .wishlist-item { grid-template-columns: 72px 1fr; }
+  .wishlist-thumb img { width: 72px; height: 72px; }
+  .wishlist-actions { grid-column: 2; flex-direction: row; flex-wrap: wrap; }
+}

@@ -9,7 +9,42 @@
     <div class="stat-card"><div class="value">@Model.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
     <div class="stat-card"><div class="value">@Model.TongDon</div><div class="label">Tổng số đơn</div></div>
     <div class="stat-card"><div class="value">@Model.TongSanPham</div><div class="label">Sản phẩm</div></div>
+    <div class="stat-card"><div class="value">@Model.DoanhThuTuan.ToString("N0")đ</div><div class="label">Doanh thu 7 ngày gần nhất</div></div>
+    <div class="stat-card"><div class="value">@Model.KhachMoiThang</div><div class="label">Khách mới trong tháng</div></div>
 </div>
+
+<section>
+    <h2>Doanh thu 30 ngày gần nhất</h2>
+    <div class="chart" role="img" aria-label="Biểu đồ cột doanh thu 30 ngày gần nhất">
+        @foreach (var d in Model.DoanhThu30Ngay)
+        {
+            <div class="chart-col">
+                <div class="chart-bar" data-value="@d.DoanhThu.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="@d.Ngay: @d.DoanhThu.ToString("N0")đ"></div>
+                <span class="chart-label">@d.Ngay</span>
+            </div>
+        }
+    </div>
+</section>
+
+<section class="mt">
+    <h2>Đơn theo trạng thái</h2>
+    @if (!Model.DonTheoTrangThai.Any())
+    {
+        <p class="text-muted">Chưa có đơn hàng nào.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead><tr><th>Trạng thái</th><th>Số đơn</th></tr></thead>
+            <tbody>
+                @foreach (var kv in Model.DonTheoTrangThai.OrderByDescending(kv => kv.Value))
+                {
+                    <tr><td>@kv.Key</td><td>@kv.Value</td></tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
 
 <section>
     <h2>Doanh thu 7 ngày gần nhất</h2>
@@ -84,5 +119,18 @@
     <p class="mt">
         <a class="btn btn-secondary" asp-action="Products">Quản lý sản phẩm</a>
         <a class="btn btn-secondary" asp-action="Vouchers">Quản lý voucher</a>
+        <a class="btn btn-secondary" asp-action="Combos">Quản lý combo</a>
+    </p>
+    <p class="mt admin-links">
+        <a asp-action="Kho">Quản lý kho</a>
+        <a asp-action="KhachHang">Khách hàng</a>
+        <a asp-action="Reviews">Duyệt đánh giá &amp; hỏi đáp</a>
+        <a asp-action="Banners">Quản lý banner</a>
+        <a asp-action="FlashSaleSlots">Khung Flash Sale</a>
+        <a asp-action="ThongBao">Gửi thông báo</a>
     </p>
 </section>
+
+@section Scripts {
+    <script src="~/js/dashboard-chart.js"></script>
+}

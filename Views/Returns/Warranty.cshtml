@@ -1,0 +1,51 @@
+@model TechZone.Models.WarrantyClaim
+@{
+    ViewData["Title"] = "Yêu cầu bảo hành";
+    var order = (TechZone.Models.Order)ViewBag.Order;
+    var hanBaoHanh = order.NgayDat.AddMonths(24);
+    var conLai = (hanBaoHanh.Date - DateTime.Now.Date).Days;
+}
+
+<h1>Yêu cầu bảo hành</h1>
+<p>Đơn #@order.Id • Ngày đặt: @order.NgayDat.ToString("dd/MM/yyyy HH:mm") • Hạn bảo hành: @hanBaoHanh.ToString("dd/MM/yyyy") (@(conLai >= 0 ? $"còn {conLai} ngày" : "đã hết hạn"))</p>
+
+@if (Model.ProductId == 0)
+{
+    <p>Chọn sản phẩm trong đơn cần bảo hành:</p>
+    <table class="table">
+        <thead>
+            <tr><th>Sản phẩm</th><th>Số lượng</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var d in order.ChiTiet)
+            {
+                <tr>
+                    <td>@d.Product.Ten</td>
+                    <td>@d.SoLuong</td>
+                    <td>
+                        <a asp-action="Warranty" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Bảo hành</a>
+                        |
+                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Đổi trả</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p><a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">← Về đơn hàng</a></p>
+}
+else
+{
+    var product = (TechZone.Models.Product)ViewBag.Product;
+    <p>Sản phẩm: <strong>@product.Ten</strong></p>
+    <form asp-action="Warranty" method="post" class="return-form">
+        <input type="hidden" asp-for="OrderId" />
+        <input type="hidden" asp-for="ProductId" />
+        <div class="form-group">
+            <label asp-for="MoTaLoi">Mô tả lỗi</label>
+            <textarea asp-for="MoTaLoi" class="form-control" rows="4" required></textarea>
+            <span asp-validation-for="MoTaLoi" class="text-danger"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Gửi yêu cầu bảo hành</button>
+        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-secondary">Quay lại đơn hàng</a>
+    </form>
+}

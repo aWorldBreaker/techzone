@@ -3,10 +3,32 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        /* Đặt theme TRƯỚC KHI trang vẽ để không nháy sáng: đọc localStorage
+           'techzone-theme'; chưa có thì theo prefers-color-scheme (máy đang
+           dark mode → lần đầu mở thấy bản tối). Không throw dù localStorage
+           hay matchMedia bị chặn. */
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('techzone-theme') || ''; } catch (e) { /* bỏ qua */ }
+            if (t !== 'dark' && t !== 'light') {
+                t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+        document.documentElement.classList.add('js');
+    </script>
     <title>@ViewData["Title"] - TechZone</title>
     <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/features-a.css" />
+    <link rel="stylesheet" href="~/css/features-b.css" />
+    <link rel="stylesheet" href="~/css/features-d.css" />
+    <link rel="stylesheet" href="~/css/features-c.css" />
+    <link rel="stylesheet" href="~/css/features-3d.css" />
 </head>
 <body>
+    <canvas id="webgl-bg" aria-hidden="true"></canvas>
+    <div class="bg-dots" aria-hidden="true"></div>
     <header class="site-header">
         <div class="container header-inner">
             <a class="logo" asp-controller="Home" asp-action="Index">Tech<span>Zone</span></a>
@@ -16,10 +38,16 @@
             </form>
             <nav class="header-actions" aria-label="Tài khoản và giỏ hàng">
                 <a asp-controller="Products" asp-action="Index">Sản phẩm</a>
+                <a asp-controller="Compare" asp-action="Index">So sánh</a>
                 <a asp-controller="Cart" asp-action="Index">Giỏ hàng</a>
+                <a asp-controller="Wishlist" asp-action="Index">Yêu thích</a>
+                <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
+                    @await Component.InvokeAsync("ThongBaoBell")
+                    @await Component.InvokeAsync("DiemThanhVien")
                     <a asp-controller="Orders" asp-action="MyOrders">Đơn của tôi</a>
+                    <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
                     @if (User.IsInRole("Admin"))
                     {
                         <a asp-controller="Admin" asp-action="Dashboard">Admin</a>
@@ -70,10 +98,21 @@
                 <div><strong>Giao nhanh 2h</strong><span>Miễn phí giao nội thành HN/HCM</span></div>
                 <div><strong>Đổi trả 30 ngày</strong><span>Đổi trả dễ dàng, không phí</span></div>
             </div>
+            <p>
+                <a asp-controller="Returns" asp-action="TraCuu">Tra cứu bảo hành</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <span aria-hidden="true"> • </span>
+                    <a asp-controller="Returns" asp-action="AdminIndex">Duyệt đổi trả / bảo hành</a>
+                }
+            </p>
             <p>© 2026 TechZone — 123 Đường Công Nghệ, Quận 1, TP.HCM — Hotline: 1900 1234 — Email: hotro@techzone.vn</p>
         </div>
     </footer>
 
+    <script src="~/js/theme.js"></script>
+    <script src="~/js/webgl-bg.js"></script>
+    <script src="~/js/features-b.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

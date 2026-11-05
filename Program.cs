@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using TechZone.Data;
 using TechZone.Models;
@@ -42,7 +43,18 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
+builder.Services.Configure<TechZone.Services.VatOptions>(builder.Configuration.GetSection("Vat"));
+builder.Services.Configure<TechZone.Services.LoyaltyOptions>(builder.Configuration.GetSection("Loyalty"));
+builder.Services.AddScoped<TechZone.Services.VatService>();
 builder.Services.AddScoped<TechZone.Services.CartService>();
+builder.Services.AddScoped<TechZone.Services.PriceCalculationService>();
+builder.Services.AddScoped<TechZone.Services.LoyaltyService>();
+builder.Services.AddScoped<TechZone.Services.VoucherService>();
+builder.Services.AddScoped<TechZone.Services.NotificationService>();
+builder.Services.AddScoped<TechZone.Services.CheckoutService>();
+builder.Services.AddScoped<TechZone.Services.OrderService>();
+builder.Services.AddScoped<TechZone.Services.RefundService>();
+builder.Services.AddScoped<TechZone.Services.ReturnService>();
 
 var app = builder.Build();
 
@@ -60,7 +72,12 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+// Phuc vu file .glb/.gltf cho viewer 3D: StaticFiles mac dinh khong biet
+// dinh dang nay nen tra 404. Them mapping MIME chuan.
+var contentTypeProvider = new FileExtensionContentTypeProvider();
+contentTypeProvider.Mappings[".glb"] = "model/gltf-binary";
+contentTypeProvider.Mappings[".gltf"] = "model/gltf+json";
+app.UseStaticFiles(new StaticFileOptions { ContentTypeProvider = contentTypeProvider });
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

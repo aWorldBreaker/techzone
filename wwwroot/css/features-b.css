@@ -1,0 +1,47 @@
+/* TechZone — Nhom B: Khuyen mai & thanh vien.
+   Chi dung var(--color-*) token, khong hex hard-code, khong z-index am,
+   dark-mode an toan (token doi theo theme). */
+
+/* Huy hieu hang thanh vien */
+.tier-badge { display: inline-block; padding: 4px 12px; border-radius: var(--radius); font-weight: 700; font-size: .9rem; }
+.tier-dong { background: var(--color-muted); color: var(--color-muted-foreground); }
+.tier-bac { background: var(--color-info-bg); color: var(--color-info-fg); }
+.tier-vang { background: var(--color-warning-bg); color: var(--color-warning-fg); }
+.tier-bachkim { background: var(--color-primary-ring); color: var(--color-primary-text); }
+
+/* Hien thi diem tich luy */
+.points-display { font-weight: 700; font-size: 1.25rem; color: var(--color-primary-text); font-variant-numeric: tabular-nums; margin-left: var(--space-sm); }
+
+/* Tien do len hang (the <progress> mac dinh cua trinh duyet) */
+.tier-progress-bar { width: 100%; max-width: 420px; height: 12px; }
+
+/* Chuong thong bao o header */
+.bell-link { position: relative; display: inline-flex; align-items: center; font-size: 1.25rem; line-height: 1; }
+.bell-link:hover { text-decoration: none; }
+.bell-badge { position: absolute; top: -8px; right: -10px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--color-destructive); color: var(--color-on-primary); font-size: .7rem; font-weight: 700; line-height: 18px; text-align: center; }
+
+/* The slot Flash Sale */
+.slot-section { margin-top: var(--space-lg); }
+.slot-grid { margin-top: var(--space-md); }
+.slot-card .product-price strong { color: var(--color-accent); }
+.slot-next { margin-top: var(--space-lg); border-top: 1px solid var(--color-border); padding-top: var(--space-md); }
+
+/* Dai banner trang chu */
+.banner-strip { display: flex; gap: var(--space-md); overflow-x: auto; margin-top: var(--space-lg); padding-bottom: var(--space-sm); }
+.banner-item { flex: 0 0 320px; border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; background: var(--color-card); }
+.banner-item img { width: 100%; height: 160px; object-fit: cover; }
+.banner-item span { display: block; padding: var(--space-sm) var(--space-md); font-weight: 600; color: var(--color-foreground); }
+
+/* Danh sach thong bao */
+.notif-list { list-style: none; margin: 0; padding: 0; }
+.notif-item { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-sm); background: var(--color-card); }
+.notif-item p { margin: var(--space-xs) 0; color: var(--color-muted-foreground); }
+.notif-unread { border-color: var(--color-primary); background: var(--color-muted); }
+
+/* Khoi thong tin tai khoan */
+.profile-info p { margin: 0 0 var(--space-sm); }
+.profile-loyalty { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-lg); background: var(--color-card); }
+
+@media (max-width: 768px) {
+  .banner-item { flex-basis: 260px; }
+}

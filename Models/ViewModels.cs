@@ -42,7 +42,24 @@ public class CartLineViewModel
     public Product Product { get; set; } = null!;
     public ProductVariant? Variant { get; set; }
     public int SoLuong { get; set; }
-    public decimal DonGia => (Product.GiaBan + (Variant?.GiaThem ?? 0));
+
+    /// <summary>
+    /// Đơn giá thực trả (Sprint 2 — B-5): do CartService tính qua
+    /// PriceCalculationService (Flash Sale / slot / giá gốc), KHÔNG tự
+    /// tính từ GiaBan nữa — nếu không giỏ hiển thị một đằng, checkout
+    /// thu một nẻo (AUDIT P1-2). CartService luôn gán field này.
+    /// </summary>
+    public decimal DonGia { get; set; }
+
+    /// <summary>Giá gốc 1 đơn vị (chưa sale) để gạch ngang khi có sale.</summary>
+    public decimal GiaGoc { get; set; }
+
+    /// <summary>Tên khuyến mãi đang áp ("Flash Sale", ...), null = không sale.</summary>
+    public string? TenKhuyenMai { get; set; }
+
+    /// <summary>True = dòng này đang được giá sale.</summary>
+    public bool LaGiaSale => DonGia < GiaGoc;
+
     public decimal ThanhTien => DonGia * SoLuong;
 }
 
@@ -51,9 +68,26 @@ public class CartViewModel
     public List<CartLineViewModel> Lines { get; set; } = new();
     public decimal TamTinh => Lines.Sum(l => l.ThanhTien);
     public decimal GiamGia { get; set; }
+
+    /// <summary>So tien giam do doi diem (nhom B, chi o checkout).</summary>
+    public decimal GiamGiaDiem { get; set; }
+
+    /// <summary>So tien giam them cho hang Vang 2% (nhom B, chi o checkout).</summary>
+    public decimal GiamGiaHang { get; set; }
+
+    /// <summary>So tien giam do combo (Sprint 3 — B-7, chi o checkout).</summary>
+    public decimal GiamGiaCombo { get; set; }
+
     public string? MaVoucher { get; set; }
-    public decimal PhiShip => TamTinh - GiamGia >= 2_000_000 || TamTinh == 0 ? 0 : 30_000;
-    public decimal TongCong => TamTinh - GiamGia + PhiShip;
+
+    /// <summary>Voucher FREESHIP hoac hang Vang: mien phi van chuyen (nhom B).</summary>
+    public bool FreeShip { get; set; }
+
+    /// <summary>Tam tinh sau moi khoan giam, khong am.</summary>
+    public decimal SauGiam => Math.Max(0, TamTinh - GiamGia - GiamGiaDiem - GiamGiaHang - GiamGiaCombo);
+
+    public decimal PhiShip => FreeShip || SauGiam >= 2_000_000 || TamTinh == 0 ? 0 : 30_000;
+    public decimal TongCong => SauGiam + PhiShip;
 }
 
 public class CheckoutViewModel
@@ -67,11 +101,36 @@ public class CheckoutViewModel
     [Required, MaxLength(500)]
     public string DiaChi { get; set; } = string.Empty;
 
-    /// <summary>COD hoac ChuyenKhoan (ca hai deu gia lap, khong thu tien that).</summary>
+    /// <summary>COD / ChuyenKhoan / MoMo / ZaloPay / VNPay (vi sau la gia lap).</summary>
     public string PhuongThucTT { get; set; } = "COD";
+
+    /// <summary>Tra gop 0% gia lap: 6 hoac 12 thang. Null = tra 1 lan (nhom A).</summary>
+    public int? InstallmentMonths { get; set; }
+
+    /// <summary>So diem tich luy muon dung de giam gia (nhom B).</summary>
+    public int DiemDung { get; set; }
+
+    /// <summary>Xuat hoa don VAT (nhom C).</summary>
+    public bool XuatHoaDon { get; set; }
+
+    [MaxLength(200)]
+    public string? TenCongTy { get; set; }
+
+    [MaxLength(20)]
+    public string? MaSoThue { get; set; }
+
+    [MaxLength(500)]
+    public string? DiaChiCongTy { get; set; }
 
     public string? MaVoucher { get; set; }
     public CartViewModel GioHang { get; set; } = new();
+
+    /// <summary>
+    /// Key chong dat don trung (Sprint 1): GET Checkout sinh 1 GUID, form gui
+    /// kem hidden field; POST trung key thi tra ve don cu thay vi tao moi.
+    /// </summary>
+    [MaxLength(64)]
+    public string? IdempotencyKey { get; set; }
 }
 
 public class DashboardViewModel
@@ -84,4 +143,12 @@ public class DashboardViewModel
     public List<Product> SapHetHang { get; set; } = new();
     public List<Order> DonGanDay { get; set; } = new();
     public List<(string Ngay, decimal DoanhThu)> DoanhThu7Ngay { get; set; } = new();
+
+    // --- Mo rong 2026-11-05 (nhom D) ---
+    /// <summary>Doanh thu 30 ngay gan nhat (ve bieu do cot CSS).</summary>
+    public List<(string Ngay, decimal DoanhThu)> DoanhThu30Ngay { get; set; } = new();
+    public decimal DoanhThuTuan { get; set; }
+    /// <summary>So don theo tung trang thai.</summary>
+    public Dictionary<string, int> DonTheoTrangThai { get; set; } = new();
+    public int KhachMoiThang { get; set; }
 }

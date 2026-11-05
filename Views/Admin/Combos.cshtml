@@ -1,0 +1,121 @@
+@model List<TechZone.Models.Combo>
+@{
+    ViewData["Title"] = "Admin — Quản lý combo";
+    var products = (List<TechZone.Models.Product>)ViewBag.Products;
+}
+<h1>Quản lý combo</h1>
+
+@if (TempData["Error"] is string loi)
+{
+    <p class="alert alert-danger">@loi</p>
+}
+@if (TempData["Success"] is string ok)
+{
+    <p class="alert alert-success">@ok</p>
+}
+
+<table class="table">
+    <thead><tr><th>Tên combo</th><th>% giảm</th><th>Hiệu lực</th><th>Đã bán / Giới hạn</th><th>Trạng thái</th><th>Món trong combo</th><th></th></tr></thead>
+    <tbody>
+        @foreach (var c in Model)
+        {
+            <tr>
+                <td><strong>@c.Ten</strong>@if (!string.IsNullOrEmpty(c.MoTa)) { <br /><span class="text-muted">@c.MoTa</span> }</td>
+                <td>@c.PhanTramGiam.ToString("0.##")%</td>
+                <td>@c.BatDau.ToString("dd/MM/yyyy") – @c.KetThuc.ToString("dd/MM/yyyy")</td>
+                <td>@c.DaBan / @(c.GioiHanSL?.ToString() ?? "∞")</td>
+                <td>@(c.IsActive ? "Đang bật" : "Đã tắt")</td>
+                <td>
+                    <ul>
+                        @foreach (var item in c.Items)
+                        {
+                            <li>
+                                @item.Product.Ten × @item.SoLuong
+                                <form asp-action="XoaMonCombo" method="post" class="inline-form">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="link-button" onclick="return confirm('Xóa món này khỏi combo?');">xóa</button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                    <form asp-action="ThemMonCombo" method="post" class="inline-form">
+                        <input type="hidden" name="comboId" value="@c.Id" />
+                        <select name="productId" class="form-control" required>
+                            <option value="">— Thêm món —</option>
+                            @foreach (var p in products)
+                            {
+                                <option value="@p.Id">@p.Ten (@p.GiaBan.ToString("N0")đ)</option>
+                            }
+                        </select>
+                        <input type="number" name="soLuong" class="form-control" min="1" value="1" style="width: 70px" />
+                        <button type="submit" class="btn btn-secondary">Thêm món</button>
+                    </form>
+                </td>
+                <td>
+                    <a asp-action="SuaCombo" asp-route-id="@c.Id" class="btn btn-secondary">Sửa</a>
+                    <form asp-action="BatTatCombo" method="post" class="inline-form">
+                        <input type="hidden" name="id" value="@c.Id" />
+                        <button type="submit" class="btn btn-secondary">@(c.IsActive ? "Tắt" : "Bật")</button>
+                    </form>
+                    <form asp-action="XoaCombo" method="post" class="inline-form">
+                        <input type="hidden" name="id" value="@c.Id" />
+                        <button type="submit" class="link-button" onclick="return confirm('Xóa combo @c.Ten? Đơn cũ vẫn giữ số tiền đã giảm.');">Xóa</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2 class="mt">Thêm combo mới</h2>
+<form asp-action="ThemCombo" method="post">
+    <div class="form-group">
+        <label for="Ten">Tên combo</label>
+        <input id="Ten" name="ten" class="form-control" required maxlength="200" placeholder="vd: Combo Xiaomi 15 + Buds 5" />
+    </div>
+    <div class="form-group">
+        <label for="MoTa">Mô tả</label>
+        <input id="MoTa" name="moTa" class="form-control" maxlength="2000" />
+    </div>
+    <div class="form-group">
+        <label for="PhanTramGiam">% giảm trên tổng giá cả bộ (0 &lt; % &lt; 100)</label>
+        <input id="PhanTramGiam" name="phanTramGiam" class="form-control" type="number" min="0.01" max="99.99" step="0.01" value="10" required />
+    </div>
+    <div class="form-group">
+        <label for="BatDau">Bắt đầu</label>
+        <input id="BatDau" name="batDau" class="form-control" type="date" required />
+    </div>
+    <div class="form-group">
+        <label for="KetThuc">Kết thúc</label>
+        <input id="KetThuc" name="ketThuc" class="form-control" type="date" required />
+    </div>
+    <div class="form-group">
+        <label for="GioiHanSL">Giới hạn số bộ (để trống = không giới hạn)</label>
+        <input id="GioiHanSL" name="gioiHanSL" class="form-control" type="number" min="1" />
+    </div>
+    <div class="form-group">
+        <label for="ProductId1">Món 1</label>
+        <select id="ProductId1" name="productId1" class="form-control" required>
+            <option value="">— Chọn sản phẩm —</option>
+            @foreach (var p in products)
+            {
+                <option value="@p.Id">@p.Ten (@p.GiaBan.ToString("N0")đ)</option>
+            }
+        </select>
+        <label for="SoLuong1">Số lượng món 1 trong 1 bộ</label>
+        <input id="SoLuong1" name="soLuong1" class="form-control" type="number" min="1" value="1" required />
+    </div>
+    <div class="form-group">
+        <label for="ProductId2">Món 2 (không bắt buộc)</label>
+        <select id="ProductId2" name="productId2" class="form-control">
+            <option value="">— Không có —</option>
+            @foreach (var p in products)
+            {
+                <option value="@p.Id">@p.Ten (@p.GiaBan.ToString("N0")đ)</option>
+            }
+        </select>
+        <label for="SoLuong2">Số lượng món 2 trong 1 bộ</label>
+        <input id="SoLuong2" name="soLuong2" class="form-control" type="number" min="1" value="1" />
+    </div>
+    <button type="submit" class="btn btn-primary">Thêm combo</button>
+</form>

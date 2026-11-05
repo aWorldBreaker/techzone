@@ -7,7 +7,7 @@
 }
 <h1>@ViewData["Title"]</h1>
 
-<form asp-action="ProductForm" method="post">
+<form asp-action="ProductForm" method="post" enctype="multipart/form-data">
     <input type="hidden" asp-for="Id" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -42,6 +42,11 @@
     </div>
     <div class="form-group">
         <label><input asp-for="LaNoiBat" /> Sản phẩm nổi bật (hiện ở trang chủ)</label>
+    </div>
+    <div class="form-group">
+        <label for="anhMoi">Ảnh sản phẩm mới (jpg, png, webp, svg — tối đa 5MB)</label>
+        <input type="file" id="anhMoi" name="anhMoi" class="form-control" accept=".jpg,.jpeg,.png,.webp,.svg" />
+        <p class="text-muted">Ảnh mới sẽ thay ảnh chính hiện tại. Để trống nếu giữ ảnh cũ.</p>
     </div>
 
     <h2>Thông số kỹ thuật</h2>
@@ -81,5 +86,4 @@
 
     <button type="submit" class="btn btn-primary">Lưu sản phẩm</button>
     <a asp-action="Products" class="btn btn-secondary">Hủy</a>
-    <p class="text-muted mt">Ảnh sản phẩm: thêm ảnh thật của hãng vào thư mục wwwroot/images rồi gán qua bảng ProductImages (chưa có form upload trong bản này — xem README).</p>
 </form>

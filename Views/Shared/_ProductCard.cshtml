@@ -15,12 +15,9 @@
     </a>
     <div class="product-info">
         <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">@Model.Ten</a></h3>
-        @if (Model.Specs is not null)
+        @if (Model.SpecsNgan.Length > 0)
         {
-            <p class="product-specs">
-                @string.Join(" • ", new[] { Model.Specs.Chip, Model.Specs.Ram, Model.Specs.Rom, Model.Specs.Pin }
-                    .Where(s => !string.IsNullOrWhiteSpace(s)))
-            </p>
+            <p class="product-specs">@string.Join(" • ", Model.SpecsNgan)</p>
         }
         <p class="product-price">
             <strong>@Model.GiaBan.ToString("N0")đ</strong>
@@ -29,11 +26,21 @@
                 <s>@Model.Gia.ToString("N0")đ</s>
             }
         </p>
-        <p class="product-meta">@Model.DanhGiaTB.ToString("0.0") sao • Đã bán @Model.LuotBan • Bảo hành 24 tháng</p>
+        <p class="product-meta">@Model.DanhGiaTB.ToString("0.0") sao • Đã bán @Model.LuotBan</p>
         <form asp-controller="Cart" asp-action="Add" method="post">
             <input type="hidden" name="productId" value="@Model.Id" />
             <input type="hidden" name="soLuong" value="1" />
             <button type="submit" class="btn btn-primary btn-block">Thêm vào giỏ</button>
         </form>
+        <div class="card-actions">
+            <form asp-controller="Compare" asp-action="Add" method="post" class="compare-form">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <button type="submit" class="btn btn-secondary btn-sm btn-block">＋ So sánh</button>
+            </form>
+            <form asp-controller="Wishlist" asp-action="Add" method="post" class="wishlist-form">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <button type="submit" class="btn btn-secondary btn-sm btn-block wishlist-btn" aria-label="Thêm @Model.Ten vào yêu thích">♡</button>
+            </form>
+        </div>
     </div>
 </article>

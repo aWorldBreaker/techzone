@@ -9,13 +9,16 @@
 html { font-size: 16px; }
 body {
   margin: 0; background: var(--color-background); color: var(--color-foreground);
-  font-family: 'Nunito Sans', system-ui, sans-serif; line-height: 1.5;
+  font-family: var(--font-sans); line-height: 1.5;
 }
-h1, h2, h3, h4 { font-family: 'Rubik', 'Nunito Sans', sans-serif; line-height: 1.25; margin: 0 0 var(--space-md); }
-a { color: var(--color-primary); text-decoration: none; }
+h1, h2, h3, h4 { font-family: var(--font-sans); line-height: 1.25; margin: 0 0 var(--space-md); }
+a { color: var(--color-primary-text); text-decoration: none; }
 a:hover { text-decoration: underline; }
 img { max-width: 100%; height: auto; display: block; }
 button, input, select, textarea { font: inherit; }
+/* Form control luôn lấy nền/chữ theo token (kể cả dark mode) — không dựa
+   vào nền mặc định của trình duyệt. */
+input, select, textarea { background: var(--color-card); color: var(--color-foreground); }
 button { cursor: pointer; }
 :focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
 /* Browser surfaces — impeccable craft floor: selection, caret, scrollbar, tabular numerals */
@@ -32,8 +35,8 @@ input, textarea, select { caret-color: var(--color-primary); }
 /* Header */
 .site-header { border-bottom: 1px solid var(--color-border); background: var(--color-card); }
 .header-inner { display: flex; align-items: center; gap: var(--space-lg); padding-top: var(--space-md); padding-bottom: var(--space-md); flex-wrap: wrap; }
-.logo { font-family: 'Rubik', sans-serif; font-size: 1.75rem; font-weight: 700; color: var(--color-foreground); }
-.logo span { color: var(--color-primary); }
+.logo { font-family: var(--font-sans); font-size: 1.75rem; font-weight: 700; color: var(--color-foreground); }
+.logo span { color: var(--color-primary-text); }
 .logo:hover { text-decoration: none; }
 .search { display: flex; flex: 1; min-width: 240px; }
 .search input { flex: 1; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: var(--radius) 0 0 var(--radius); font-size: 1rem; }
@@ -42,8 +45,11 @@ input, textarea, select { caret-color: var(--color-primary); }
 .header-actions { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
 .header-actions a { color: var(--color-foreground); font-weight: 600; }
 .hello { color: var(--color-muted-foreground); font-size: .9rem; }
+/* Nút chuyển sáng/tối — trong header, dễ thấy, icon đổi theo theme (JS theme.js). */
+.theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); color: var(--color-foreground); font-size: 1.15rem; line-height: 1; transition: all 200ms ease; }
+.theme-toggle:hover { border-color: var(--color-primary); color: var(--color-primary-text); }
 .inline-form { display: inline; }
-.link-button { background: none; border: none; color: var(--color-primary); font-weight: 600; padding: 0; }
+.link-button { background: none; border: none; color: var(--color-primary-text); font-weight: 600; padding: 0; }
 .link-button:hover { text-decoration: underline; }
 .category-nav { background: var(--color-muted); }
 .category-nav .container { display: flex; gap: var(--space-lg); overflow-x: auto; padding-top: 10px; padding-bottom: 10px; }
@@ -54,18 +60,50 @@ input, textarea, select { caret-color: var(--color-primary); }
 .btn:hover { text-decoration: none; }
 .btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
 .btn-primary:hover { background: var(--color-primary-hover); }
-.btn-secondary { background: transparent; color: var(--color-primary); border-color: var(--color-primary); }
+.btn-secondary { background: transparent; color: var(--color-primary-text); border-color: var(--color-primary); }
 .btn-secondary:hover { background: var(--color-muted); }
 .btn-sm { padding: 8px 14px; font-size: .9rem; }
 .btn-block { width: 100%; }
 .btn-danger { background: var(--color-destructive); color: var(--color-on-primary); }
 
-/* Hero */
-.hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: var(--space-2xl); align-items: center; padding: var(--space-2xl) 0; border-bottom: 1px solid var(--color-border); }
-.hero h1 { font-size: 2.25rem; }
+/* Hero — editorial, giá dẫn đầu, một sản phẩm thật */
+.hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--space-2xl); align-items: center; padding: var(--space-2xl) 0 var(--space-xl); background-image: linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px); background-size: 32px 32px; animation: hero-fade .7s ease both; }
+@keyframes hero-fade { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+.hero h1 { font-size: 2.75rem; font-weight: 600; margin-bottom: var(--space-sm); }
+.hero-price { display: flex; align-items: baseline; gap: var(--space-md); flex-wrap: wrap; margin: 0 0 var(--space-md); }
+.hero-price strong { font-size: 2rem; color: var(--color-accent); font-variant-numeric: tabular-nums; }
+.hero-price s { color: var(--color-muted-foreground); font-size: 1.15rem; }
+.hero-save { background: var(--color-accent); color: var(--color-on-primary); font-weight: 700; font-size: .85rem; padding: 2px 8px; border-radius: var(--radius); }
 .hero .lead { color: var(--color-muted-foreground); font-size: 1.1rem; }
 .hero-actions { display: flex; gap: var(--space-md); margin-top: var(--space-lg); flex-wrap: wrap; }
-.hero-image img { border-radius: var(--radius); }
+.hero-facts { color: var(--color-muted-foreground); font-size: .95rem; margin-top: var(--space-lg); }
+.hero-image { overflow: hidden; background: var(--color-muted); border-radius: var(--radius); }
+.hero-image img { width: 100%; height: auto; max-height: 440px; object-fit: contain; margin: 0 auto; animation: hero-float 6s ease-in-out 1s infinite; }
+@keyframes hero-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+/* Proof strip — số liệu thật đếm từ DB, không số xã hội bịa */
+.proof-strip { display: flex; gap: var(--space-xl); flex-wrap: wrap; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; margin-top: var(--space-md); }
+.proof-item b { display: block; font-family: var(--font-sans); font-size: 1.5rem; color: var(--color-primary-text); font-variant-numeric: tabular-nums; }
+.proof-item span { color: var(--color-muted-foreground); font-size: .9rem; }
+
+/* Ranked best-sellers — danh sách xếp hạng, không phải lưới thẻ thứ hai */
+.rank-list { list-style: none; margin: var(--space-lg) 0 0; padding: 0; }
+.rank-row { display: grid; grid-template-columns: 48px 64px 1fr auto; gap: var(--space-md); align-items: center; border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; }
+.rank-row:first-child { border-top: 1px solid var(--color-border); }
+.rank-num { font-family: var(--font-sans); font-size: 1.75rem; font-weight: 700; color: var(--color-primary-text); text-align: center; font-variant-numeric: tabular-nums; }
+.rank-thumb { display: block; background: var(--color-muted); border-radius: var(--radius); }
+.rank-thumb img { width: 64px; height: 64px; object-fit: contain; padding: var(--space-xs); }
+.rank-info h3 { font-size: 1rem; margin: 0 0 var(--space-xs); }
+.rank-info h3 a { color: var(--color-foreground); }
+.rank-price { margin: 0; }
+.rank-price strong { font-size: 1.15rem; color: var(--color-accent); font-variant-numeric: tabular-nums; }
+
+/* Voucher band — khối kết trang xanh điện duy nhất */
+.voucher-band { display: flex; justify-content: space-between; align-items: center; gap: var(--space-lg); flex-wrap: wrap; background: var(--color-primary); color: var(--color-on-primary); border-radius: var(--radius); padding: var(--space-xl); margin-top: var(--space-2xl); }
+.voucher-band h2 { margin: 0 0 var(--space-xs); color: var(--color-on-primary); }
+.voucher-band p { margin: 0; }
+.btn-light { background: var(--color-card); color: var(--color-primary-text); }
+.btn-light:hover { background: var(--color-muted); }
 .flash-countdown { display: flex; gap: var(--space-sm); margin: var(--space-md) 0; }
 .flash-countdown span { background: var(--color-muted); border-radius: var(--radius); padding: var(--space-sm) var(--space-md); font-weight: 700; font-size: 1.25rem; }
 .flash-countdown small { display: block; font-size: .75rem; font-weight: 400; color: var(--color-muted-foreground); text-align: center; }
@@ -75,30 +113,35 @@ input, textarea, select { caret-color: var(--color-primary); }
 .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-md); }
 .product-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); }
 .product-card { border: 1px solid var(--color-border); border-radius: var(--radius); overflow: hidden; background: var(--color-card); box-shadow: var(--shadow-sm); transition: box-shadow 200ms ease, transform 200ms ease; display: flex; flex-direction: column; }
-.product-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+.product-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-6px); }
 .product-image { position: relative; display: block; background: var(--color-muted); aspect-ratio: 1; }
 .product-image img { width: 100%; height: 100%; object-fit: contain; padding: var(--space-md); }
-.badge-giam { position: absolute; top: var(--space-sm); left: var(--space-sm); background: var(--color-destructive); color: var(--color-on-primary); font-weight: 700; font-size: .85rem; padding: 2px 8px; border-radius: var(--radius); }
+.badge-giam { position: absolute; top: var(--space-sm); left: var(--space-sm); background: var(--color-accent); color: var(--color-on-primary); font-weight: 700; font-size: .85rem; padding: 2px 8px; border-radius: var(--radius); }
 .product-info { padding: var(--space-md); display: flex; flex-direction: column; gap: var(--space-sm); flex: 1; }
 .product-info h3 { font-size: 1rem; margin: 0; }
+/* The the cao bang nhau: ten + thong so giu 2 dong co dinh, nut ghim day. */
+.product-card .product-info h3 { min-height: 2.5em; }
+.product-card .product-specs { min-height: 3em; }
 .product-info h3 a { color: var(--color-foreground); }
 .product-specs { color: var(--color-muted-foreground); font-size: .9rem; margin: 0; }
-.product-price { margin: 0; }
-.product-price strong { font-size: 1.15rem; color: var(--color-primary); }
-.product-price s { color: var(--color-muted-foreground); margin-left: var(--space-sm); }
+.product-price { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-sm); row-gap: 2px; }
+.product-price strong { font-size: 1.15rem; color: var(--color-accent); }
+.product-price s { color: var(--color-muted-foreground); }
 .product-meta { color: var(--color-muted-foreground); font-size: .85rem; margin: 0; }
-.product-info form { margin-top: auto; }
+.product-info > form:first-of-type { margin-top: auto; }
+.compare-form { margin-top: var(--space-sm); }
 
 /* Category chips */
 .chip-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin: var(--space-lg) 0; }
 .chip { display: inline-block; padding: 8px 16px; border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-foreground); font-weight: 600; }
-.chip:hover { border-color: var(--color-primary); text-decoration: none; }
+.chip:hover { border-color: var(--color-teal); color: var(--color-teal); text-decoration: none; }
+.chip-count { color: var(--color-muted-foreground); font-weight: 400; font-size: .85rem; }
 
 /* Forms */
 .form-group { margin-bottom: var(--space-md); }
 .form-group label { display: block; font-weight: 600; margin-bottom: var(--space-xs); }
 .form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 1rem; background: var(--color-card); }
-.form-control:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px rgba(30,58,95,.15); }
+.form-control:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px var(--color-primary-ring); }
 .filter-bar { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: end; background: var(--color-muted); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-lg); }
 .filter-bar .form-group { margin-bottom: 0; min-width: 150px; }
 .filter-bar select, .filter-bar input { width: 100%; }
@@ -139,7 +182,7 @@ input, textarea, select { caret-color: var(--color-primary); }
 .spec-table { width: 100%; border-collapse: collapse; margin-top: var(--space-md); }
 .spec-table th, .spec-table td { padding: 10px 12px; border-bottom: 1px solid var(--color-border); text-align: left; }
 .spec-table th { width: 35%; background: var(--color-muted); }
-.price-big { font-size: 1.75rem; color: var(--color-primary); font-weight: 700; }
+.price-big { font-size: 1.75rem; color: var(--color-accent); font-weight: 700; }
 .price-old { color: var(--color-muted-foreground); margin-left: var(--space-sm); }
 .variant-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
 .variant { border: 2px solid var(--color-border); border-radius: var(--radius); padding: 8px 14px; font-weight: 600; background: var(--color-card); }
@@ -148,7 +191,7 @@ input, textarea, select { caret-color: var(--color-primary); }
 /* Admin */
 .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); margin-bottom: var(--space-xl); }
 .stat-card { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-lg); background: var(--color-card); }
-.stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--color-primary); }
+.stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--color-primary-text); }
 .stat-card .label { color: var(--color-muted-foreground); }
 .badge { display: inline-block; padding: 2px 10px; border-radius: var(--radius); font-size: .85rem; font-weight: 600; background: var(--color-muted); }
 .badge-cho { background: var(--color-warning-bg); color: var(--color-warning-fg); }
@@ -162,11 +205,53 @@ input, textarea, select { caret-color: var(--color-primary); }
 .trust span { color: var(--color-muted-foreground); font-size: .9rem; }
 .site-footer p { color: var(--color-muted-foreground); text-align: center; margin: 0; }
 
+/* So sánh sản phẩm */
+.compare-table th:first-child { width: 160px; }
+.compare-table td { text-align: center; }
+.compare-thumb { width: 96px; height: 96px; object-fit: contain; background: var(--color-muted); border-radius: var(--radius); margin: 0 auto var(--space-sm); }
+.compare-actions { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+/* Phân trang Admin */
+.pagination { display: flex; gap: var(--space-md); align-items: center; margin-top: var(--space-lg); }
+.pagination .page-current { font-weight: 700; color: var(--color-primary-text); }
+
 /* Auth */
 .auth-box { max-width: 480px; margin: 0 auto; border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-xl); }
 .text-muted { color: var(--color-muted-foreground); }
 .text-danger { color: var(--color-destructive); }
 .mt { margin-top: var(--space-lg); }
+
+/* ===== Concept landing mới (2026-11-05) — animation + nền họa tiết ===== */
+/* Lớp nền WebGL + veil/lưới chấm (canvas + div chèn ở _Layout, ngay sau <body>).
+   BẤT BIẾN STACKING (bài học 2 lỗi live 2026-11-05): lớp nền luôn z-index 0,
+   nội dung (.site-header/.main-content/.site-footer) luôn z-index 1 phía trên,
+   KHÔNG dùng z-index âm, KHÔNG đặt lớp nền làm con của khung nội dung — nội
+   dung không bao giờ chui sau lớp nền ở cả 2 theme. */
+#webgl-bg, .bg-dots { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+#webgl-bg { display: block; }
+.bg-dots { background-color: var(--color-veil); background-image: radial-gradient(var(--color-border) 1.1px, transparent 1.3px); background-size: 26px 26px; }
+.site-header, .main-content, .site-footer { position: relative; z-index: 1; }
+
+/* Khối hiện khi cuộn tới (JS IntersectionObserver ở trang chủ; chỉ ẩn khi có JS) */
+.js .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+.js .reveal.is-visible { opacity: 1; transform: none; }
+
+/* Flash Sale: 3 cột, sọc chéo + vệt sáng chạy, đếm ngược phát sáng */
+.flash-grid { grid-template-columns: repeat(3, 1fr); }
+.section.flash-sale { position: relative; overflow: hidden; padding: var(--space-lg); border-radius: var(--radius); background-image: repeating-linear-gradient(-45deg, var(--color-primary-ghost) 0 10px, transparent 10px 22px); }
+.flash-sale::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: linear-gradient(100deg, transparent, var(--color-shine), transparent); animation: shine 3.5s ease-in-out infinite; pointer-events: none; }
+@keyframes shine { from { transform: translateX(-110%); } to { transform: translateX(240%); } }
+.flash-countdown { animation: cd-glow 2.2s ease-in-out infinite; }
+.flash-countdown span b { color: var(--color-primary-text); }
+@keyframes cd-glow { 0%, 100% { box-shadow: 0 0 0 0 transparent; } 50% { box-shadow: 0 0 24px 4px var(--color-primary-ring); } }
+.stock-left { color: var(--color-teal); font-weight: 700; }
+
+/* Điểm nhấn teal: gạch dưới tiêu đề mục */
+.section-head h2 { position: relative; padding-bottom: 10px; }
+.section-head h2::after { content: ""; position: absolute; left: 0; bottom: 0; width: 40px; height: 3px; background: var(--color-teal); border-radius: 2px; }
+
+/* Voucher: họa tiết chấm trắng trên nền xanh điện */
+.voucher-band { background-image: radial-gradient(var(--color-dot-light) 1px, transparent 1.4px); background-size: 16px 16px; }
 
 @media (max-width: 1024px) {
   .product-grid { grid-template-columns: repeat(3, 1fr); }
@@ -174,10 +259,20 @@ input, textarea, select { caret-color: var(--color-primary); }
 }
 @media (max-width: 768px) {
   .hero, .detail-layout, .cart-layout { grid-template-columns: 1fr; }
+  .hero h1 { font-size: 2rem; }
+  .hero-price strong { font-size: 1.6rem; }
+  .hero-image img { max-height: 320px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
   .trust { grid-template-columns: repeat(2, 1fr); }
   .header-inner { flex-direction: column; align-items: stretch; }
+  .category-nav .container { flex-wrap: wrap; overflow-x: visible; }
+  .category-nav a { white-space: normal; }
+  .rank-row { grid-template-columns: 32px 56px 1fr; }
+  .rank-thumb img { width: 56px; height: 56px; }
+  .rank-price { grid-column: 3; }
+  .proof-strip { gap: var(--space-lg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; transform: none !important; }
+  * { transition: none !important; transform: none !important; animation: none !important; }
+  .js .reveal { opacity: 1 !important; }
 }

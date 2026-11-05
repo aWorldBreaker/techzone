@@ -1,12 +1,69 @@
 @model TechZone.Models.Order
 @{
     ViewData["Title"] = $"Đơn hàng #{Model.Id}";
+    var laChuDon = ViewBag.LaChuDon is true;
+    var doiDuocDiaChi = laChuDon
+        && (Model.TrangThai == OrderStatus.ChoXacNhan || Model.TrangThai == OrderStatus.DaXacNhan);
+    // DiaChiGiao luu theo dinh dang "{HoTen}, {SDT}, {DiaChi}" (xem OrdersController.Checkout).
+    var diaChiParts = Model.DiaChiGiao.Split(new[] { ", " }, 3, StringSplitOptions.None);
+    var hoTenCu = diaChiParts.Length > 0 ? diaChiParts[0] : "";
+    var sdtCu = diaChiParts.Length > 1 ? diaChiParts[1] : "";
+    var diaChiCu = diaChiParts.Length > 2 ? diaChiParts[2] : "";
+    var lichSu = Model.LichSuTrangThai.OrderBy(h => h.NgayCapNhat).ToList();
+    var laVi = new[] { "MoMo", "ZaloPay", "VNPay" }.Contains(Model.PhuongThucTT);
 }
 
 <h1>Đơn hàng #@Model.Id</h1>
 <p>Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm") • Trạng thái: <strong>@Model.TrangThai</strong></p>
 <p>Giao đến: @Model.DiaChiGiao</p>
 <p>Phương thức: @Model.PhuongThucTT @(Model.PhuongThucTT == "COD" ? "(thanh toán khi nhận hàng — giả lập)" : "(giả lập)")</p>
+
+@if (Model.InstallmentMonths.HasValue)
+{
+    <p>Trả góp 0%: @Model.TienGopMoiThang.ToString("N0")đ/tháng × @Model.InstallmentMonths tháng</p>
+}
+
+@if (laVi)
+{
+    <p>Trạng thái thanh toán: <strong>@(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</strong></p>
+    @if (!Model.DaThanhToan && laChuDon)
+    {
+        <form asp-action="XacNhanThanhToan" method="post" class="inline-form">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <button type="submit" class="btn btn-primary btn-sm">Tôi đã thanh toán</button>
+        </form>
+    }
+}
+
+@if (!string.IsNullOrEmpty(Model.VatTenCongTy))
+{
+    <p><a asp-action="HoaDon" asp-route-id="@Model.Id">Xem hóa đơn VAT</a> (@Model.VatTenCongTy)</p>
+}
+
+<h2>Theo dõi đơn hàng</h2>
+@if (Model.TrangThai == OrderStatus.DaHuy)
+{
+    var mocHuy = lichSu.FirstOrDefault(h => h.TrangThai == OrderStatus.DaHuy);
+    <p class="alert alert-error">Đơn hàng đã hủy@(mocHuy is not null ? $" lúc {mocHuy.NgayCapNhat:dd/MM/yyyy HH:mm}" : "").</p>
+}
+else
+{
+    <ol class="timeline">
+        @foreach (var buoc in OrderStatus.Timeline)
+        {
+            var moc = lichSu.FirstOrDefault(h => h.TrangThai == buoc);
+            var hienTai = Model.TrangThai == buoc;
+            <li class="timeline-step @(moc is not null ? "done" : "") @(hienTai ? "current" : "")">
+                <span class="timeline-dot" aria-hidden="true"></span>
+                <span class="timeline-ten">@buoc</span>
+                @if (moc is not null)
+                {
+                    <span class="timeline-moc">@moc.NgayCapNhat.ToString("dd/MM/yyyy HH:mm")</span>
+                }
+            </li>
+        }
+    </ol>
+}
 
 <table class="table">
     <thead>
@@ -18,7 +75,12 @@
             <tr>
                 <td><a asp-controller="Products" asp-action="Details" asp-route-id="@d.ProductId">@d.Product.Ten</a></td>
                 <td>@d.Variant?.TenBienThe</td>
-                <td>@d.DonGia.ToString("N0")đ</td>
+                <td>@d.DonGia.ToString("N0")đ
+                    @if (!string.IsNullOrEmpty(d.TenKhuyenMai))
+                    {
+                        <span>(@d.TenKhuyenMai, giá gốc <s>@d.GiaGoc.ToString("N0")đ</s>)</span>
+                    }
+                </td>
                 <td>@d.SoLuong</td>
                 <td>@d.ThanhTien.ToString("N0")đ</td>
             </tr>
@@ -26,14 +88,27 @@
     </tbody>
 </table>
 
-<div class="summary summary-narrow">
-    <div class="summary-row"><span>Tạm tính</span><span>@Model.TongTien.ToString("N0")đ</span></div>
-    @if (Model.GiamGia > 0)
-    {
-        <div class="summary-row"><span>Giảm voucher (@Model.MaVoucher)</span><span>- @Model.GiamGia.ToString("N0")đ</span></div>
-    }
-    <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
-    <div class="summary-row total"><span>Tổng thanh toán</span><span>@Model.ThanhToan.ToString("N0")đ</span></div>
-</div>
+<partial name="_BangTienDon" model="Model" />
+
+@if (doiDuocDiaChi)
+{
+    <h2>Đổi địa chỉ giao hàng</h2>
+    <form asp-action="DoiDiaChi" method="post" class="address-form">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <div class="form-group">
+            <label for="hoTenNhan">Họ tên người nhận</label>
+            <input type="text" name="hoTenNhan" id="hoTenNhan" class="form-control" value="@hoTenCu" required />
+        </div>
+        <div class="form-group">
+            <label for="soDienThoai">Số điện thoại</label>
+            <input type="text" name="soDienThoai" id="soDienThoai" class="form-control" value="@sdtCu" required />
+        </div>
+        <div class="form-group">
+            <label for="diaChi">Địa chỉ giao hàng</label>
+            <textarea name="diaChi" id="diaChi" class="form-control" rows="2" required>@diaChiCu</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Cập nhật địa chỉ</button>
+    </form>
+}
 
 <p class="mt"><a asp-action="MyOrders">← Về danh sách đơn của tôi</a></p>

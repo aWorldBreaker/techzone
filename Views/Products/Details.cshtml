@@ -2,8 +2,13 @@
 @{
     ViewData["Title"] = Model.Ten;
     var tuongTu = (List<TechZone.Models.Product>)ViewBag.TuongTu;
+    var combo = (TechZone.Models.Product?)ViewBag.Combo;
+    var recentlyViewed = (List<TechZone.Models.Product>)ViewBag.RecentlyViewed;
+    var cauHoi = (List<TechZone.Models.ProductQuestion>)ViewBag.CauHoi;
+    var daYeuThich = ViewBag.DaYeuThich is bool b && b;
     var flash = Model.FlashSales.FirstOrDefault(f => f.DangChay(DateTime.Now));
     var giaHienThi = flash?.GiaSale ?? Model.GiaBan;
+    var model3d = ViewBag.Model3d as TechZone.Models.Product3dModel;
 }
 
 <nav aria-label="Breadcrumb">
@@ -14,7 +19,37 @@
 
 <div class="detail-layout mt">
     <div class="detail-image">
-        <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
+        @* Sprint 5 — viewer 3D dung chung (map Product3dModels): chi SP co model
+           moi render khoi nay. Model la minh hoa generic, khong phai thiet ke
+           chinh xac cua hang. GLB chi tai khi bam Xem 3D (xem product-3d.js). *@
+        @if (model3d is not null)
+        {
+            <div class="detail-3d" id="product-3d" data-model-url="@model3d.ModelUrl">
+                <img id="product-image" src="@Model.AnhDaiDien" alt="@Model.Ten" />
+                <model-viewer id="product-viewer" class="product-viewer" hidden
+                    poster="@Model.AnhDaiDien"
+                    alt="Mô hình 3D minh họa — @Model.Ten"
+                    camera-controls touch-action="pan-y"
+                    camera-orbit="@model3d.CameraOrbit" field-of-view="45deg"
+                    min-camera-orbit="auto auto 50%" max-camera-orbit="auto auto 200%"
+                    orientation="@model3d.Orientation"
+                    environment-image="neutral" auto-rotate>
+                </model-viewer>
+                <p class="alert alert-error" id="viewer-error" hidden>Không tải được mô hình 3D — đang hiển thị ảnh sản phẩm.</p>
+                <div class="viewer-toolbar" role="group" aria-label="Điều khiển xem 3D">
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-show">Xem 3D</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-hide" hidden>Xem ảnh</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-reset" hidden>Đặt lại góc nhìn</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-rotate" hidden aria-pressed="true">Tự xoay: Bật</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-fullscreen" hidden>Toàn màn hình</button>
+                </div>
+                <p class="viewer-note text-muted">Mô hình 3D minh họa (generic), chưa phải thiết kế chính xác của hãng. Kéo để xoay, cuộn/chụm để zoom.</p>
+            </div>
+        }
+        else
+        {
+            <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
+        }
         @if (Model.Images.Count > 1)
         {
             <div class="chip-row">
@@ -41,6 +76,7 @@
             }
         </p>
         <p class="text-muted">Trả góp 0% • Bảo hành 24 tháng • Giao nhanh 2h • Đổi trả 30 ngày</p>
+        <partial name="_InstallmentBadge" model="giaHienThi" />
 
         @if (Model.Variants.Any())
         {
@@ -70,8 +106,62 @@
                 <button type="submit" class="btn btn-primary" @(Model.TonKho == 0 ? "disabled" : "")>Thêm vào giỏ</button>
             </form>
         }
+        <form asp-controller="Compare" asp-action="Add" method="post" class="mt">
+            <input type="hidden" name="productId" value="@Model.Id" />
+            <button type="submit" class="btn btn-secondary">＋ So sánh</button>
+        </form>
+        @if (daYeuThich)
+        {
+            <form asp-controller="Wishlist" asp-action="Remove" method="post" class="mt wishlist-form">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <button type="submit" class="btn btn-secondary wishlist-btn wishlist-btn-active">♥ Đã yêu thích</button>
+            </form>
+        }
+        else
+        {
+            <form asp-controller="Wishlist" asp-action="Add" method="post" class="mt wishlist-form">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <button type="submit" class="btn btn-secondary wishlist-btn">♡ Yêu thích</button>
+            </form>
+        }
     </div>
 </div>
+
+@if (combo is not null)
+{
+    <section class="section combo-block">
+        <h2>Mua kèm giá tốt</h2>
+        <div class="combo-items">
+            <div class="combo-item">
+                <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
+                <p>@Model.Ten</p>
+                <p><strong>@Model.GiaBan.ToString("N0")đ</strong></p>
+            </div>
+            <span class="combo-plus" aria-hidden="true">＋</span>
+            <div class="combo-item">
+                <img src="@combo.AnhDaiDien" alt="@combo.Ten" />
+                <p><a asp-controller="Products" asp-action="Details" asp-route-id="@combo.Id">@combo.Ten</a></p>
+                <p><strong>@combo.GiaBan.ToString("N0")đ</strong></p>
+            </div>
+        </div>
+        <p class="combo-total">Tổng combo: <strong>@((Model.GiaBan + combo.GiaBan).ToString("N0"))đ</strong>
+        @if (ViewBag.ComboId is not null && ViewBag.ComboGiamGia is decimal giamCombo && giamCombo > 0)
+        {
+            <span>— Giảm combo <strong>@giamCombo.ToString("N0")đ</strong>, chỉ còn <strong>@(((Model.GiaBan + combo.GiaBan) - giamCombo).ToString("N0"))đ</strong></span>
+        }
+        </p>
+        <form asp-controller="Cart" asp-action="AddCombo" method="post">
+            <input type="hidden" name="productId" value="@Model.Id" />
+            <input type="hidden" name="comboProductId" value="@combo.Id" />
+            @if (ViewBag.ComboId is not null)
+            {
+                <input type="hidden" name="comboId" value="@ViewBag.ComboId" />
+            }
+            <input type="hidden" name="soLuong" value="1" />
+            <button type="submit" class="btn btn-primary">Mua combo — @((Model.GiaBan + combo.GiaBan - (ViewBag.ComboGiamGia as decimal? ?? 0)).ToString("N0"))đ</button>
+        </form>
+    </section>
+}
 
 <section class="section">
     <h2>Thông số kỹ thuật</h2>
@@ -113,9 +203,10 @@
             <strong>@r.Sao sao</strong> — @r.User?.HoTen
             <span class="text-muted">@r.NgayDanhGia.ToString("dd/MM/yyyy")</span>
             @if (!string.IsNullOrWhiteSpace(r.NoiDung)) { <p>@r.NoiDung</p> }
+            @if (!string.IsNullOrWhiteSpace(r.ImageUrl)) { <img src="@r.ImageUrl" alt="Ảnh đánh giá của @r.User?.HoTen" class="review-image" /> }
         </div>
     }
-    <form asp-action="DanhGia" method="post" class="mt">
+    <form asp-action="DanhGia" method="post" enctype="multipart/form-data" class="mt">
         <input type="hidden" name="productId" value="@Model.Id" />
         <div class="form-group">
             <label for="sao">Số sao (1–5)</label>
@@ -125,8 +216,51 @@
             <label for="noiDung">Nhận xét</label>
             <textarea id="noiDung" name="noiDung" class="form-control" rows="3"></textarea>
         </div>
+        <div class="form-group">
+            <label for="anhKem">Ảnh kèm theo (jpg, png, webp — tối đa 5MB)</label>
+            <input id="anhKem" name="anhKem" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
+        </div>
         <button type="submit" class="btn btn-secondary">Gửi đánh giá</button>
     </form>
+</section>
+
+<section class="section qa-block">
+    <h2>Hỏi &amp; đáp (@cauHoi.Count)</h2>
+    @if (!cauHoi.Any())
+    {
+        <p class="text-muted">Chưa có câu hỏi nào. Hãy đặt câu hỏi đầu tiên về sản phẩm này.</p>
+    }
+    @foreach (var q in cauHoi)
+    {
+        <div class="qa-item">
+            <p class="qa-question"><strong>Hỏi:</strong> @q.CauHoi</p>
+            <p class="text-muted">@q.User?.HoTen — @q.NgayHoi.ToString("dd/MM/yyyy HH:mm")</p>
+            @if (q.DaTraLoi)
+            {
+                <p class="qa-answer"><strong>TechZone trả lời:</strong> @q.TraLoi</p>
+                <p class="text-muted">@q.NguoiTraLoi?.HoTen — @q.NgayTraLoi?.ToString("dd/MM/yyyy HH:mm")</p>
+            }
+            else
+            {
+                <p class="text-muted">TechZone sẽ trả lời sớm.</p>
+            }
+        </div>
+    }
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <form asp-action="HoiDap" method="post" class="mt">
+            <input type="hidden" name="productId" value="@Model.Id" />
+            <div class="form-group">
+                <label for="cauHoi">Đặt câu hỏi về sản phẩm</label>
+                <textarea id="cauHoi" name="cauHoi" class="form-control" rows="3" maxlength="1000" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-secondary">Gửi câu hỏi</button>
+        </form>
+    }
+    else
+    {
+        <p class="mt"><a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Products", new { id = Model.Id })">Đăng nhập</a> để đặt câu hỏi về sản phẩm này.</p>
+    }
 </section>
 
 @if (tuongTu.Any())
@@ -143,4 +277,13 @@
             }
         </div>
     </section>
+}
+
+<partial name="_RecentlyViewed" model="recentlyViewed" />
+
+@* Sprint 5: viewer 3D dung chung — chi nap thu vien model-viewer + product-3d.js
+   tren trang chi tiet (product-3d.js tu thoat neu trang khong co viewer). *@
+@section Scripts {
+    <script type="module" src="~/js/model-viewer.min.js"></script>
+    <script src="~/js/product-3d.js"></script>
 }

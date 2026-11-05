@@ -1,0 +1,37 @@
+@model object
+@{
+    ViewData["Title"] = "Chi tiết yêu cầu";
+}
+
+<h1>Chi tiết yêu cầu</h1>
+
+@if (Model is TechZone.Models.ReturnRequest r)
+{
+    <p>Loại: <strong>Đổi trả</strong> • Mã yêu cầu: #@r.Id • Trạng thái: <strong>@r.TrangThai</strong></p>
+    <p>Đơn: <a asp-controller="Orders" asp-action="Details" asp-route-id="@r.OrderId">#@r.OrderId</a> • Sản phẩm: <strong>@r.Product.Ten</strong></p>
+    <p>Ngày tạo: @r.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+    <p>Lý do: @r.LyDo</p>
+    @if (!string.IsNullOrEmpty(r.AnhUrl))
+    {
+        <p>Ảnh kèm theo:</p>
+        <img src="@r.AnhUrl" alt="Ảnh kèm theo yêu cầu đổi trả" class="thumb-sm" />
+    }
+}
+else if (Model is TechZone.Models.WarrantyClaim w)
+{
+    <p>Loại: <strong>Bảo hành</strong> • Mã yêu cầu: #@w.Id • Trạng thái: <strong>@w.TrangThai</strong></p>
+    <p>Đơn: <a asp-controller="Orders" asp-action="Details" asp-route-id="@w.OrderId">#@w.OrderId</a> • Sản phẩm: <strong>@w.Product.Ten</strong></p>
+    <p>Ngày tạo: @w.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+    <p>Mô tả lỗi: @w.MoTaLoi</p>
+}
+
+<p class="mt">
+    @if (User.IsInRole("Admin"))
+    {
+        <a asp-action="AdminIndex">← Về danh sách duyệt</a>
+    }
+    else
+    {
+        <a asp-action="Index">← Về yêu cầu của tôi</a>
+    }
+</p>

@@ -15,14 +15,27 @@ public class CartService
     private const string SessionKey = "TechZone.Cart";
     private readonly IHttpContextAccessor _http;
     private readonly AppDbContext _db;
+    private readonly VoucherService _voucher;
+    private readonly PriceCalculationService _gia;
 
-    public CartService(IHttpContextAccessor http, AppDbContext db)
+    public CartService(IHttpContextAccessor http, AppDbContext db, VoucherService voucher,
+        PriceCalculationService gia)
     {
         _http = http;
         _db = db;
+        _voucher = voucher;
+        _gia = gia;
     }
 
     private ISession Session => _http.HttpContext!.Session;
+
+    /// <summary>UserId hien tai (null neu khach vang lai) — de kiem tra voucher theo hang thanh vien.</summary>
+    private string? LayUserId()
+    {
+        var ten = _http.HttpContext?.User.Identity?.Name;
+        if (string.IsNullOrEmpty(ten)) return null;
+        return _db.Users.FirstOrDefault(u => u.UserName == ten)?.Id;
+    }
 
     public List<CartLine> GetLines()
     {
@@ -68,18 +81,18 @@ public class CartService
     public int Count() => GetLines().Sum(l => l.SoLuong);
 
     /// <summary>
-    /// Tinh giam gia theo ma voucher: tra ve so tien giam va gan vao ViewModel.
-    /// Voucher het han, het luot hoac don chua du dieu kien thi giam 0.
+    /// Tinh giam gia theo ma voucher qua VoucherService (nhom B): kiem tra
+    /// han, luot dung, don toi thieu, hang/danh muc/hang thanh vien, freeship.
+    /// Khong hop le thi giam 0, khong bao loi (loi chi tiet hien o ApDungVoucher).
     /// </summary>
     public async Task TinhGiamGiaAsync(CartViewModel vm, string? ma)
     {
         if (string.IsNullOrWhiteSpace(ma)) return;
-        var voucher = await _db.Vouchers.FirstOrDefaultAsync(v => v.Ma == ma);
-        if (voucher is null || !voucher.ConHieuLuc(DateTime.Now) || vm.TamTinh < voucher.DieuKien) return;
-        vm.MaVoucher = voucher.Ma;
-        vm.GiamGia = voucher.LoaiGiam == "PhanTram"
-            ? Math.Round(vm.TamTinh * voucher.GiaTri / 100)
-            : Math.Min(voucher.GiaTri, vm.TamTinh);
+        var ketQua = await _voucher.KiemTraAsync(ma, LayUserId(), vm.TamTinh, vm.Lines);
+        if (!ketQua.HopLe) return;
+        vm.MaVoucher = ma.Trim().ToUpper();
+        vm.GiamGia = ketQua.GiamGia;
+        vm.FreeShip = ketQua.FreeShip;
     }
 
     public async Task<CartViewModel> GetViewModelAsync()
@@ -94,11 +107,20 @@ public class CartService
             if (product is null) continue;
             var variant = line.VariantId is null ? null
                 : await _db.ProductVariants.FindAsync(line.VariantId);
+            // Gia hien thi = gia thuc tra (Sprint 2 — B-5): qua
+            // PriceCalculationService, giong het gia checkout se thu.
+            // Chi DOC gia — them vao gio / xem gio KHONG tru quota
+            // (DaBan/LuotBan chi ghi khi dat hang, xem CheckoutService).
+            var gia = await _gia.TinhGiaAsync(product.Id,
+                variant?.GiaThem ?? 0, line.SoLuong);
             vm.Lines.Add(new CartLineViewModel
             {
                 Product = product,
                 Variant = variant,
-                SoLuong = line.SoLuong
+                SoLuong = line.SoLuong,
+                DonGia = gia.DonGia,
+                GiaGoc = gia.GiaGoc,
+                TenKhuyenMai = gia.TenKhuyenMai
             });
         }
         return vm;

@@ -8,26 +8,46 @@
     var ketThuc = (DateTime?)ViewBag.FlashSaleKetThuc;
 }
 
+@* Hero: một sản phẩm thật, giá thật, thông số thật — không slogan chung chung. *@
 <section class="hero">
     <div>
-        <h1>Điện thoại Xiaomi mới — Giảm đến 20% • Trả góp 0%</h1>
-        <p class="lead">Xiaomi 15 5G — Snapdragon 8 Gen 3 • Màn hình AMOLED 120Hz • Camera Leica 50MP. Chính hãng, bảo hành 24 tháng, giao nhanh 2h nội thành.</p>
+        <h1>Xiaomi 15 5G</h1>
+        <p class="hero-price">
+            <strong>12.990.000đ</strong>
+            <s>15.990.000đ</s>
+            <span class="hero-save">Giảm 3.000.000đ</span>
+        </p>
+        <p class="lead">Snapdragon 8 Elite • Camera Leica 50MP • Màn hình AMOLED 120Hz • Pin 5400mAh. Đánh giá 4,8/5 sao.</p>
         <div class="hero-actions">
             <a class="btn btn-primary" asp-controller="Products" asp-action="Details" asp-route-id="1">Mua ngay — 12.990.000đ</a>
             <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
         </div>
-        <p class="text-muted">Ưu đãi đến hết hôm nay • Trả góp 0% lãi suất • Miễn phí giao hàng đơn từ 2.000.000đ</p>
+        <p class="hero-facts">Bảo hành 24 tháng <span aria-hidden="true">•</span> Giao nhanh 2h nội thành <span aria-hidden="true">•</span> Trả góp 0%</p>
     </div>
     <div class="hero-image">
-        <img src="/images/xiaomi15.png" alt="Điện thoại Xiaomi 15 5G" />
+        <img src="/images/xiaomi15.png" alt="Điện thoại Xiaomi 15 5G" fetchpriority="high" />
     </div>
+</section>
+
+@* Banner khuyen mai do Admin quan ly (nhom D) — partial tu an khi khong co. *@
+@if (ViewBag.Banners is List<Banner> banners && banners.Any())
+{
+    <partial name="_Banners" model="banners" />
+}
+
+@* Dải số liệu thật — đếm từ DB ở controller, không bịa con số xã hội chứng minh. *@
+<section class="proof-strip reveal" aria-label="Số liệu cửa hàng">
+    <div class="proof-item"><b data-count="@ViewBag.TongSanPham">@ViewBag.TongSanPham</b><span>sản phẩm chính hãng</span></div>
+    <div class="proof-item"><b data-count="@ViewBag.TongHang">@ViewBag.TongHang</b><span>hãng công nghệ</span></div>
+    <div class="proof-item"><b data-count="@ViewBag.TongDanhMuc">@ViewBag.TongDanhMuc</b><span>danh mục</span></div>
+    <div class="proof-item"><b data-count="24" data-suffix=" tháng">24 tháng</b><span>bảo hành mọi sản phẩm</span></div>
 </section>
 
 @if (flashSale.Any() && ketThuc.HasValue)
 {
-    <section class="section" aria-label="Flash Sale">
+    <section class="section flash-sale reveal" aria-label="Flash Sale">
         <div class="section-head">
-            <h2>Flash Sale — Kết thúc trong ngày</h2>
+            <h2>Flash Sale</h2>
             <span class="text-muted">Kết thúc lúc @ketThuc.Value.ToString("HH:mm") hôm nay</span>
         </div>
         <div class="flash-countdown" id="flash-countdown" data-ket-thuc="@ketThuc.Value.ToString("o")">
@@ -35,7 +55,7 @@
             <span><b id="cd-phut">--</b><small>phút</small></span>
             <span><b id="cd-giay">--</b><small>giây</small></span>
         </div>
-        <div class="product-grid">
+        <div class="product-grid flash-grid">
             @foreach (var f in flashSale)
             {
                 <article class="product-card">
@@ -45,11 +65,16 @@
                     </a>
                     <div class="product-info">
                         <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@f.ProductId">@f.Product.Ten</a></h3>
+                        @if (f.Product.SpecsNgan.Length > 0)
+                        {
+                            <p class="product-specs">@string.Join(" • ", f.Product.SpecsNgan)</p>
+                        }
+                        <p class="product-meta">★ @f.Product.DanhGiaTB.ToString("0.0") · Đã bán @f.Product.LuotBan</p>
                         <p class="product-price">
                             <strong>@f.GiaSale.ToString("N0")đ</strong>
                             <s>@f.Product.Gia.ToString("N0")đ</s>
                         </p>
-                        <p class="product-meta">Đã bán @f.DaBan / @f.GioiHanSL • Còn @(f.GioiHanSL - f.DaBan)</p>
+                        <p class="product-meta">Đã bán @f.DaBan / @f.GioiHanSL • <span class="stock-left">Còn @(f.GioiHanSL - f.DaBan)</span></p>
                         <form asp-controller="Cart" asp-action="Add" method="post">
                             <input type="hidden" name="productId" value="@f.ProductId" />
                             <input type="hidden" name="soLuong" value="1" />
@@ -62,23 +87,25 @@
     </section>
 }
 
-<section class="section">
+@* Flash Sale theo khung gio (nhom B) — partial tu doc ViewBag.Slots. *@
+<partial name="_FlashSaleSlots" />
+
+<section class="section reveal">
     <div class="section-head">
         <h2>Danh mục</h2>
-        <a asp-controller="Products" asp-action="Index">Xem tất cả →</a>
     </div>
     <div class="chip-row">
         @foreach (var c in danhMuc)
         {
-            <a class="chip" asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id">@c.Ten</a>
+            <a class="chip" asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id">@c.Ten <span class="chip-count">@c.Products.Count sản phẩm</span></a>
         }
     </div>
 </section>
 
-<section class="section">
+<section class="section reveal">
     <div class="section-head">
         <h2>Sản phẩm nổi bật</h2>
-        <a asp-controller="Products" asp-action="Index">Xem tất cả →</a>
+        <a asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
     </div>
     <div class="product-grid">
         @foreach (var p in noiBat)
@@ -88,17 +115,47 @@
     </div>
 </section>
 
-<section class="section">
+@* Bán chạy: danh sách xếp hạng thay vì lưới thẻ thứ hai giống hệt lưới trên. *@
+<section class="section reveal">
     <div class="section-head">
         <h2>Bán chạy nhất</h2>
-        <a asp-controller="Products" asp-action="Index" asp-route-SapXep="ban-chay">Xem tất cả →</a>
+        <a asp-controller="Products" asp-action="Index" asp-route-SapXep="ban-chay">Xem theo lượt bán</a>
     </div>
-    <div class="product-grid">
-        @foreach (var p in banChay)
+    <ol class="rank-list">
+        @foreach (var p in banChay.Take(5).Select((sp, i) => new { sp, hang = i + 1 }))
         {
-            <partial name="_ProductCard" model="p" />
+            <li class="rank-row">
+                <span class="rank-num" aria-label="Hạng @p.hang">@p.hang</span>
+                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id" class="rank-thumb">
+                    <img src="@p.sp.AnhDaiDien" alt="@p.sp.Ten" loading="lazy" />
+                </a>
+                <div class="rank-info">
+                    <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id">@p.sp.Ten</a></h3>
+                    @if (p.sp.SpecsNgan.Length > 0)
+                    {
+                        <p class="product-specs">@string.Join(" • ", p.sp.SpecsNgan)</p>
+                    }
+                    <p class="product-meta">@p.sp.DanhGiaTB.ToString("0.0") sao • Đã bán @p.sp.LuotBan</p>
+                </div>
+                <p class="rank-price"><strong>@p.sp.GiaBan.ToString("N0")đ</strong></p>
+            </li>
         }
+    </ol>
+</section>
+
+@* Đã xem gần đây (nhóm A) — partial tự ẩn khi không có gì. *@
+@if (ViewBag.RecentlyViewed is List<Product> daXem && daXem.Any())
+{
+    <partial name="_RecentlyViewed" model="daXem" />
+}
+
+@* Voucher thật từ seed — khối kết trang duy nhất, không lặp lại dải trust ở footer. *@
+<section class="voucher-band reveal">
+    <div>
+        <h2>Mã TECHZONE500</h2>
+        <p>Giảm 500.000đ cho đơn từ 5.000.000đ. Hết hạn 31/12/2026.</p>
     </div>
+    <a class="btn btn-light" asp-controller="Products" asp-action="Index">Mua sắm ngay</a>
 </section>
 
 @section Scripts {
@@ -112,11 +169,66 @@
                 var ms = ketThuc - new Date();
                 if (ms <= 0) { el.textContent = 'Đã kết thúc'; return; }
                 var s = Math.floor(ms / 1000);
-                document.getElementById('cd-gio').textContent = String(Math.floor(s / 3600)).padStart(2, '0');
-                document.getElementById('cd-phut').textContent = String(Math.floor(s % 3600 / 60)).padStart(2, '0');
-                document.getElementById('cd-giay').textContent = String(s % 60).padStart(2, '0');
+                var cdGio = document.getElementById('cd-gio'), cdPhut = document.getElementById('cd-phut'), cdGiay = document.getElementById('cd-giay');
+                if (!cdGio || !cdPhut || !cdGiay) return;
+                cdGio.textContent = String(Math.floor(s / 3600)).padStart(2, '0');
+                cdPhut.textContent = String(Math.floor(s % 3600 / 60)).padStart(2, '0');
+                cdGiay.textContent = String(s % 60).padStart(2, '0');
             }
             tick(); setInterval(tick, 1000);
+        })();
+
+        // Hieu ung hien khi cuon toi + dem so tang dan (bo qua neu giam chuyen dong).
+        (function () {
+            try {
+            var giamChuyenDong = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var khoi = document.querySelectorAll('.reveal');
+            if (!('IntersectionObserver' in window) || giamChuyenDong) {
+                khoi.forEach(function (el) { el.classList.add('is-visible'); });
+            } else {
+                var quanSat = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('is-visible');
+                            quanSat.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.12 });
+                khoi.forEach(function (el) { quanSat.observe(el); });
+            }
+
+            // Dem so: chay 1 lan khi dai so lieu hien ra.
+            var soLieu = document.querySelectorAll('.proof-item b[data-count]');
+            function demSo(el) {
+                var dich = parseInt(el.dataset.count, 10);
+                if (isNaN(dich)) return;
+                var hauTo = el.dataset.suffix || '';
+                if (giamChuyenDong) { el.textContent = dich + hauTo; return; }
+                var batDau = performance.now(), thoiGian = 900;
+                function buoc(now) {
+                    var tienDo = Math.min((now - batDau) / thoiGian, 1);
+                    var giaTri = Math.round(dich * (1 - Math.pow(1 - tienDo, 3)));
+                    el.textContent = giaTri + hauTo;
+                    if (tienDo < 1) requestAnimationFrame(buoc);
+                }
+                requestAnimationFrame(buoc);
+            }
+            if (!('IntersectionObserver' in window) || giamChuyenDong) {
+                soLieu.forEach(demSo);
+            } else {
+                var quanSatSo = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            demSo(entry.target);
+                            quanSatSo.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.4 });
+                soLieu.forEach(function (el) { quanSatSo.observe(el); });
+            }
+            } catch (e) {
+                document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('is-visible'); });
+            }
         })();
     </script>
 }

@@ -3,7 +3,7 @@
     ViewData["Title"] = "Admin — Quản lý sản phẩm";
 }
 <div class="section-head">
-    <h1>Quản lý sản phẩm (@Model.Count)</h1>
+    <h1>Quản lý sản phẩm (@ViewBag.TongMuc)</h1>
     <a class="btn btn-primary" asp-action="ProductForm">+ Thêm sản phẩm</a>
 </div>
 
@@ -35,4 +35,19 @@
         }
     </tbody>
 </table>
+
+@if ((int)ViewBag.TongTrang > 1)
+{
+    <nav class="pagination" aria-label="Phân trang">
+        @if ((int)ViewBag.TrangHienTai > 1)
+        {
+            <a asp-action="Products" asp-route-page="@((int)ViewBag.TrangHienTai - 1)">← Trang trước</a>
+        }
+        <span class="page-current">Trang @ViewBag.TrangHienTai / @ViewBag.TongTrang</span>
+        @if ((int)ViewBag.TrangHienTai < (int)ViewBag.TongTrang)
+        {
+            <a asp-action="Products" asp-route-page="@((int)ViewBag.TrangHienTai + 1)">Trang sau →</a>
+        }
+    </nav>
+}
 <p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

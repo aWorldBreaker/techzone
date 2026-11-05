@@ -24,7 +24,13 @@ else
                         {
                             <p class="text-muted cart-line-meta">@line.Variant.TenBienThe</p>
                         }
-                        <p class="cart-line-price"><strong>@line.DonGia.ToString("N0")đ</strong></p>
+                        <p class="cart-line-price"><strong>@line.DonGia.ToString("N0")đ</strong>
+                        @if (line.LaGiaSale)
+                        {
+                            <s class="text-muted">@line.GiaGoc.ToString("N0")đ</s>
+                            <span>@line.TenKhuyenMai</span>
+                        }
+                        </p>
                         <form asp-action="Update" method="post" class="qty">
                             <input type="hidden" name="productId" value="@line.Product.Id" />
                             <input type="hidden" name="variantId" value="@line.Variant?.Id" />
@@ -54,6 +60,7 @@ else
             }
             <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
             <div class="summary-row total"><span>Tổng cộng</span><span>@Model.TongCong.ToString("N0")đ</span></div>
+            <partial name="_InstallmentBadge" model="Model.TongCong" />
 
             <form asp-action="ApDungVoucher" method="post" class="mt">
                 <div class="form-group">

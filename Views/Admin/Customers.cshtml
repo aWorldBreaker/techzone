@@ -1,0 +1,31 @@
+@model List<(TechZone.Models.ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)>
+@{
+    ViewData["Title"] = "Admin — Khách hàng";
+}
+<h1>Khách hàng</h1>
+
+@if (!Model.Any())
+{
+    <p class="text-muted">Chưa có khách hàng nào.</p>
+}
+else
+{
+    <table class="table">
+        <thead><tr><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Tổng chi tiêu</th><th>Hạng</th><th>Điểm</th></tr></thead>
+        <tbody>
+            @foreach (var k in Model)
+            {
+                <tr>
+                    <td>@k.User.HoTen</td>
+                    <td>@k.User.Email</td>
+                    <td>@k.User.SoDienThoai</td>
+                    <td>@k.TongChiTieu.ToString("N0")đ</td>
+                    <td><span class="badge">@k.Hang</span></td>
+                    <td>@k.Diem điểm</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

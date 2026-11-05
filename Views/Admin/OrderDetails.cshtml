@@ -1,7 +1,11 @@
 @model TechZone.Models.Order
 @{
     ViewData["Title"] = $"Admin — Đơn #{Model.Id}";
-    string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
+    // Dropdown chi hien trang thai hien tai + cac dich hop le (Sprint 1):
+    // server van ep buoc lai bang chuyen hop le trong OrderService.
+    string[] cacTrangThai = new[] { Model.TrangThai }
+        .Concat(TechZone.Models.OrderStatus.ChuyenTrangThaiHopLe[Model.TrangThai])
+        .Distinct().ToArray();
 }
 <h1>Đơn hàng #@Model.Id</h1>
 <p>Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm") • Trạng thái: <strong>@Model.TrangThai</strong></p>
@@ -25,15 +29,7 @@
     </tbody>
 </table>
 
-<div class="summary summary-narrow">
-    <div class="summary-row"><span>Tạm tính</span><span>@Model.TongTien.ToString("N0")đ</span></div>
-    @if (Model.GiamGia > 0)
-    {
-        <div class="summary-row"><span>Giảm voucher (@Model.MaVoucher)</span><span>- @Model.GiamGia.ToString("N0")đ</span></div>
-    }
-    <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
-    <div class="summary-row total"><span>Tổng thanh toán</span><span>@Model.ThanhToan.ToString("N0")đ</span></div>
-</div>
+<partial name="_BangTienDon" model="Model" />
 
 <form asp-action="DoiTrangThai" method="post" class="mt">
     <input type="hidden" name="id" value="@Model.Id" />

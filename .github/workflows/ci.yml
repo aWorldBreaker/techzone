@@ -1,0 +1,61 @@
+# TechZone — CI (GitHub Actions, chay tren runner GitHub that).
+# Chi chay kiem tra: build + test. KHONG deploy, KHONG push.
+# Luu y: `dotnet test` bi chan trong sandbox (vstest TCP hong do proxy)
+# nhung tren runner GitHub no chay binh thuong — day la job chinh.
+# Runner du phong TechZone.Tests.Runner chi dung local, khong dung o day.
+# Workflow nay CHUA chay tren GitHub — can user duyet + push moi chay that.
+# Repo aWorldBreaker/techzone la PUBLIC; khong gan workflow lam required check
+# (branch protection tren mirror dang dormant).
+
+name: CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.cshtml'
+      - '**/*.json'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**/*.cs'
+      - '**/*.csproj'
+      - '**/*.cshtml'
+      - '**/*.json'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_SKIP_FIRST_USE: '1'
+      # Demo accounts mac dinh TAT (SeedData chi seed khi DemoAccounts__Enabled=true).
+      DemoAccounts__Enabled: 'false'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build (Release, 0 warning nhu loi)
+        run: dotnet build --configuration Release --no-restore -warnaserror
+
+      - name: Build Tests (can thiet — repo khong co .sln, build o root chi build app; bo --no-restore de tu restore rieng cho Tests)
+        run: dotnet build TechZone.Tests/TechZone.Tests.csproj --configuration Release -warnaserror
+
+      - name: Test (dotnet test chuan)
+        run: dotnet test TechZone.Tests/TechZone.Tests.csproj --configuration Release --no-build

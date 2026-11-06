@@ -95,6 +95,18 @@ public class CartService
         vm.FreeShip = ketQua.FreeShip;
     }
 
+    /// <summary>
+    /// Áp TOÀN BỘ ưu đãi lên giỏ bằng CÙNG 1 hàm tính tổng với checkout
+    /// (PriceCalculationService.TinhTongDonAsync — P1, 2026-11-06): voucher +
+    /// combo + giảm hạng 2% + freeship hạng Vàng. Trước đây giỏ chỉ gọi
+    /// TinhGiamGiaAsync (voucher) nên khách Vàng thấy tổng giỏ cao hơn
+    /// checkout đúng 2% tạm tính (vd 12.490.000đ vs 12.230.200đ).
+    /// Trả về KetQuaTongDon để controller lấy tên hạng / lỗi voucher-combo.
+    /// </summary>
+    public async Task<KetQuaTongDon> ApDungUuDaiDayDuAsync(CartViewModel vm,
+        string? maVoucher, int? comboId, DateTime? thoiDiem = null) =>
+        await _gia.ApDungVaoGioHangAsync(vm, LayUserId(), maVoucher, 0, comboId, thoiDiem);
+
     public async Task<CartViewModel> GetViewModelAsync()
     {
         var lines = GetLines();

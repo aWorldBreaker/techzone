@@ -23,5 +23,9 @@
         <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
     </form>
     <p class="mt">Chưa có tài khoản? <a asp-action="Register">Đăng ký</a></p>
-    <p class="text-muted">Tài khoản demo — Admin: admin@techzone.vn / Admin@123. Khách: khach@techzone.vn / Khach@123.</p>
+    @inject Microsoft.Extensions.Configuration.IConfiguration CauHinh
+    @if (CauHinh.GetValue<bool>("DemoAccounts:Enabled", false))
+    {
+        <p class="text-muted">Chế độ demo đang bật: tài khoản demo dùng cho môi trường demo — liên hệ quản trị viên để biết thông tin đăng nhập.</p>
+    }
 </div>

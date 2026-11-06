@@ -6,8 +6,18 @@
     var recentlyViewed = (List<TechZone.Models.Product>)ViewBag.RecentlyViewed;
     var cauHoi = (List<TechZone.Models.ProductQuestion>)ViewBag.CauHoi;
     var daYeuThich = ViewBag.DaYeuThich is bool b && b;
-    var flash = Model.FlashSales.FirstOrDefault(f => f.DangChay(DateTime.Now));
-    var giaHienThi = flash?.GiaSale ?? Model.GiaBan;
+    // SALE-01: gia hien thi do controller tinh qua PriceCalculationService
+    // (cung ham nhu Cart/Checkout) — view khong tu tinh flash?.GiaSale
+    // ?? GiaBan nua. Fallback GiaBan chi de view khong vo neu action
+    // cu (vd test render truc tiep) khong set ViewBag.
+    var giaHienThi = ViewBag.GiaHienThi as decimal? ?? Model.GiaBan;
+    var giaGoc = ViewBag.GiaGoc as decimal? ?? Model.GiaBan;
+    var tenKhuyenMai = ViewBag.TenKhuyenMai as string;
+    var flash = ViewBag.FlashSaleApDung as TechZone.Models.FlashSale;
+    var comboGiaChinh = ViewBag.ComboGiaChinh as decimal? ?? Model.GiaBan;
+    var comboGiaKem = ViewBag.ComboGiaKem as decimal? ?? combo?.GiaBan ?? 0m;
+    var comboTongBo = ViewBag.ComboTongBo as decimal? ?? (Model.GiaBan + (combo?.GiaBan ?? 0m));
+    var comboGiamGia = ViewBag.ComboGiamGia as decimal? ?? 0m;
     var model3d = ViewBag.Model3d as TechZone.Models.Product3dModel;
 }
 
@@ -66,13 +76,21 @@
         <p>@Model.DanhGiaTB.ToString("0.0") sao (@Model.Reviews.Count đánh giá) • Đã bán @Model.LuotBan • @(Model.TonKho > 0 ? $"Còn {Model.TonKho} trong kho" : "Hết hàng")</p>
         <p>
             <span class="price-big">@giaHienThi.ToString("N0")đ</span>
-            @if (Model.GiaKhuyenMai.HasValue)
+            @if (giaHienThi < giaGoc)
+            {
+                <s class="price-old">@giaGoc.ToString("N0")đ</s>
+            }
+            else if (Model.GiaKhuyenMai.HasValue)
             {
                 <s class="price-old">@Model.Gia.ToString("N0")đ</s>
             }
             @if (flash is not null)
             {
                 <span class="badge">Flash Sale — kết thúc @flash.KetThuc.ToString("HH:mm") hôm nay</span>
+            }
+            else if (!string.IsNullOrEmpty(tenKhuyenMai))
+            {
+                <span class="badge">@tenKhuyenMai</span>
             }
         </p>
         <p class="text-muted">Trả góp 0% • Bảo hành 24 tháng • Giao nhanh 2h • Đổi trả 30 ngày</p>
@@ -135,19 +153,19 @@
             <div class="combo-item">
                 <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
                 <p>@Model.Ten</p>
-                <p><strong>@Model.GiaBan.ToString("N0")đ</strong></p>
+                <p><strong>@comboGiaChinh.ToString("N0")đ</strong></p>
             </div>
             <span class="combo-plus" aria-hidden="true">＋</span>
             <div class="combo-item">
                 <img src="@combo.AnhDaiDien" alt="@combo.Ten" />
                 <p><a asp-controller="Products" asp-action="Details" asp-route-id="@combo.Id">@combo.Ten</a></p>
-                <p><strong>@combo.GiaBan.ToString("N0")đ</strong></p>
+                <p><strong>@comboGiaKem.ToString("N0")đ</strong></p>
             </div>
         </div>
-        <p class="combo-total">Tổng combo: <strong>@((Model.GiaBan + combo.GiaBan).ToString("N0"))đ</strong>
+        <p class="combo-total">Tổng combo: <strong>@comboTongBo.ToString("N0")đ</strong>
         @if (ViewBag.ComboId is not null && ViewBag.ComboGiamGia is decimal giamCombo && giamCombo > 0)
         {
-            <span>— Giảm combo <strong>@giamCombo.ToString("N0")đ</strong>, chỉ còn <strong>@(((Model.GiaBan + combo.GiaBan) - giamCombo).ToString("N0"))đ</strong></span>
+            <span>— Giảm combo <strong>@giamCombo.ToString("N0")đ</strong>, chỉ còn <strong>@((comboTongBo - giamCombo).ToString("N0"))đ</strong></span>
         }
         </p>
         <form asp-controller="Cart" asp-action="AddCombo" method="post">
@@ -158,7 +176,7 @@
                 <input type="hidden" name="comboId" value="@ViewBag.ComboId" />
             }
             <input type="hidden" name="soLuong" value="1" />
-            <button type="submit" class="btn btn-primary">Mua combo — @((Model.GiaBan + combo.GiaBan - (ViewBag.ComboGiamGia as decimal? ?? 0)).ToString("N0"))đ</button>
+            <button type="submit" class="btn btn-primary">Mua combo — @((comboTongBo - comboGiamGia).ToString("N0"))đ</button>
         </form>
     </section>
 }

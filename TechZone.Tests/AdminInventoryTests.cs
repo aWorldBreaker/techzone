@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TechZone.Controllers;
 using TechZone.Data;
@@ -112,6 +113,58 @@ public class AdminInventoryTests
         Assert.NotNull(AdminValidation.KiemTraSlotItem(100_000, 100_000));
         Assert.NotNull(AdminValidation.KiemTraSlotItem(120_000, 100_000));
         Assert.Null(AdminValidation.KiemTraSlotItem(80_000, 100_000));
+    }
+
+    // ============ 2b. Product validation (pure, DATA-01) ============
+    // GiaKhuyenMai null (form de trong) = khong giam gia; 0 bi chan vi
+    // GiaBan = GiaKhuyenMai ?? Gia nen 0 se bien SP thanh 0d.
+    // (Sua 2026-11-06: 0 truoc day duoc cho qua theo spec cu.)
+
+    [Fact]
+    public void Product_GiaKhuyenMaiBang0_BiTuChoi()
+    {
+        var loi = AdminValidation.KiemTraProduct(100_000, 0, 10);
+        Assert.NotNull(loi);
+        Assert.Contains("để trống", loi);
+    }
+
+    [Fact]
+    public void Product_GiaAm_BiTuChoi()
+    {
+        var loi = AdminValidation.KiemTraProduct(-1, null, 10);
+        Assert.NotNull(loi);
+        Assert.Contains("âm", loi);
+    }
+
+    [Fact]
+    public void Product_GiaKhuyenMaiAm_BiTuChoi()
+    {
+        var loi = AdminValidation.KiemTraProduct(100_000, -1_000, 10);
+        Assert.NotNull(loi);
+        Assert.Contains("âm", loi);
+    }
+
+    [Fact]
+    public void Product_GiaKhuyenMaiBangHoacHonGiaGoc_BiTuChoi()
+    {
+        Assert.NotNull(AdminValidation.KiemTraProduct(100_000, 100_000, 10));
+        Assert.NotNull(AdminValidation.KiemTraProduct(100_000, 120_000, 10));
+    }
+
+    [Fact]
+    public void Product_TonKhoAm_BiTuChoi()
+    {
+        var loi = AdminValidation.KiemTraProduct(100_000, null, -1);
+        Assert.NotNull(loi);
+        Assert.Contains("âm", loi);
+    }
+
+    [Fact]
+    public void Product_HopLe_DuocChapNhan()
+    {
+        Assert.Null(AdminValidation.KiemTraProduct(100_000, null, 10));
+        Assert.Null(AdminValidation.KiemTraProduct(100_000, 80_000, 10));
+        Assert.Null(AdminValidation.KiemTraProduct(100_000, null, 0));
     }
 
     // ============ 3. AdminController: ThemVoucher / ThemSlotItem / ThemCombo ============
@@ -449,6 +502,20 @@ public class AdminInventoryTests
         }).AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
         services.AddScoped<LoyaltyService>();
         services.AddScoped<NotificationService>();
+        // SEC-01 (Sign-off): SeedData chi seed demo khi Enabled=true MOT CACH
+        // CHU DONG + du email/mat khau. Cau hinh in-memory o day la ban test
+        // cua bien moi truong DemoAccounts__* (mat khau chi dung cho test,
+        // khong phai mat khau demo that); khong co IConfiguration thi seed bo
+        // qua don mau (don mau can khach demo).
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["DemoAccounts:Enabled"] = "true",
+                ["DemoAccounts:AdminEmail"] = "admin@techzone.vn",
+                ["DemoAccounts:AdminPassword"] = "AdminTest123",
+                ["DemoAccounts:CustomerEmail"] = "khach@techzone.vn",
+                ["DemoAccounts:CustomerPassword"] = "KhachTest123",
+            }).Build());
         services.AddScoped<VoucherService>();
         services.AddScoped<PriceCalculationService>();
         services.AddScoped<VatService>();

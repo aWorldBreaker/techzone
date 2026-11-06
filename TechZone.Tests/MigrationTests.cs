@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TechZone.Data;
 using TechZone.Models;
@@ -286,6 +287,20 @@ public class MigrationTests
             options.Password.RequiredLength = 6;
             options.User.RequireUniqueEmail = true;
         }).AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
+        // SEC-01 (Sign-off): SeedData chi seed demo khi Enabled=true MOT CACH
+        // CHU DONG + du email/mat khau. Cau hinh in-memory o day la ban test
+        // cua bien moi truong DemoAccounts__* (mat khau chi dung cho test,
+        // khong phai mat khau demo that); khong co IConfiguration thi seed bo
+        // qua don mau (don mau can khach demo).
+        services.AddSingleton<IConfiguration>(new ConfigurationBuilder().AddInMemoryCollection(
+            new Dictionary<string, string?>
+            {
+                ["DemoAccounts:Enabled"] = "true",
+                ["DemoAccounts:AdminEmail"] = "admin@techzone.vn",
+                ["DemoAccounts:AdminPassword"] = "AdminTest123",
+                ["DemoAccounts:CustomerEmail"] = "khach@techzone.vn",
+                ["DemoAccounts:CustomerPassword"] = "KhachTest123",
+            }).Build());
         return services.BuildServiceProvider();
     }
 

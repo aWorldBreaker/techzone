@@ -9,10 +9,12 @@ namespace TechZone.Services;
 public record CheckoutLineInput(int ProductId, int? VariantId, int SoLuong, decimal DonGia);
 
 /// <summary>
-/// Du lieu dau vao cho checkout. Giam diem / giam hang da duoc tinh truoc
-/// o controller (VoucherService / LoyaltyService); GiamGia voucher CHI LA
-/// GOI Y — service tinh lai tu DB bang VoucherService truoc khi tao don
-/// (Sprint 2 — P1-1) nen gia tri gui len sai/lech se bi sua ve dung.
+/// Du lieu dau vao cho checkout. GiamGia / GiamGiaHang / GiamGiaDiem /
+/// GiamGiaCombo / FreeShip CHI LA GOI Y — service tinh lai TAT CA tu DB
+/// trong transaction truoc khi tao don (voucher: VoucherService; combo:
+/// PriceCalculationService; giam hang + freeship hang + diem:
+/// LoyaltyService theo hang / so du hien tai; gia dong: TinhGiaAsync)
+/// nen gia tri gui len sai/lech (ke ca co tinh gia) deu bi sua ve dung.
 /// Service nay kiem tra lai gia tu DB, tru ton/voucher bang cap nhat co
 /// dieu kien va ghi don trong 1 transaction duy nhat.
 /// </summary>
@@ -25,13 +27,32 @@ public class CheckoutInput
     public string PhuongThucTT { get; set; } = "COD";
     public int? InstallmentMonths { get; set; }
     public int DiemDung { get; set; }
+
+    /// <summary>
+    /// CHỈ LÀ GỢI Ý — service TÍNH LẠI từ DB (Bước 4a, 2026-11-06):
+    /// DungDiemAsync(userId, DiemDung, phần còn lại sau voucher + combo +
+    /// hạng), chặn ở số dư thật. Giá trị gửi lên bị bỏ qua hoàn toàn.
+    /// </summary>
     public decimal GiamGiaDiem { get; set; }
     public bool XuatHoaDon { get; set; }
     public string? TenCongTy { get; set; }
     public string? MaSoThue { get; set; }
     public string? DiaChiCongTy { get; set; }
     public string? MaVoucher { get; set; }
+
+    /// <summary>
+    /// CHỈ LÀ GỢI Ý — service TÍNH LẠI từ DB bằng VoucherService
+    /// (Sprint 2 — P1-1). Giá trị gửi lên bị bỏ qua hoàn toàn.
+    /// </summary>
     public decimal GiamGia { get; set; }
+
+    /// <summary>
+    /// CHỈ LÀ GỢI Ý — service TÍNH LẠI từ DB bằng
+    /// LoyaltyService.GiamGiaHangAsync(userId, tạm tính) theo hạng hiện
+    /// tại trong DB (Bước 4a, 2026-11-06). Giá trị gửi lên bị bỏ qua
+    /// hoàn toàn — trước đây tin thẳng giá trị này nên đơn có thể bị
+    /// giảm hạng giả (gửi GiamGiaHang lớn là được giảm).
+    /// </summary>
     public decimal GiamGiaHang { get; set; }
 
     /// <summary>
@@ -41,8 +62,20 @@ public class CheckoutInput
     /// gui len sai/lech se bi sua ve dung (giong GiamGia voucher).
     /// </summary>
     public int? ComboId { get; set; }
+
+    /// <summary>
+    /// CHỈ LÀ GỢI Ý — service TÍNH LẠI từ DB bằng
+    /// PriceCalculationService.TinhGiaComboAsync (Sprint 3 — B-7).
+    /// Giá trị gửi lên bị bỏ qua hoàn toàn.
+    /// </summary>
     public decimal GiamGiaCombo { get; set; }
 
+    /// <summary>
+    /// CHỈ LÀ GỢI Ý — service TÍNH LẠI từ DB: freeship hạng Vàng
+    /// (LoyaltyService.LaHangVangAsync) HOẶC voucher freeship
+    /// (Bước 4a, 2026-11-06). Giá trị gửi lên bị bỏ qua hoàn toàn —
+    /// trước đây tin thẳng nên gửi FreeShip = true là được miễn ship.
+    /// </summary>
     public bool FreeShip { get; set; }
     public List<CheckoutLineInput> Lines { get; set; } = new();
 
@@ -52,6 +85,19 @@ public class CheckoutInput
     /// co bao ve replay (controller tu sinh 1 key neu thieu).
     /// </summary>
     public string? IdempotencyKey { get; set; }
+
+    /// <summary>
+    /// Tổng thanh toán (SauGiam + PhiShip) người dùng đã XÁC NHẬN ở form
+    /// checkout — Bước 4b chống race (2026-11-06): controller truyền
+    /// KetQuaTongDon.TongCong đã so khớp với ảnh GET. Service kiểm tra
+    /// lại trong transaction TRƯỚC KHI tạo đơn; khác → hủy toàn bộ,
+    /// không tạo đơn (CheckoutResult.GiaDaThayDoi = true) để controller
+    /// hiện lại trang Checkout với tổng mới. Null = không có mức xác
+    /// nhận (POST trực tiếp không qua GET — tổng service tính lại trong
+    /// transaction chính là tổng xác nhận, xem chính sách ở
+    /// OrdersController.Checkout POST).
+    /// </summary>
+    public decimal? TongXacNhan { get; set; }
 
     /// <summary>
     /// Ngay dat hang dung de chon thue suat VAT theo ngay hieu luc (Sprint 2
@@ -69,6 +115,24 @@ public class CheckoutResult
 
     /// <summary>True = don nay da ton tai tu lan POST truoc voi cung key, tra ve don cu.</summary>
     public bool LaDonCu { get; set; }
+
+    /// <summary>
+    /// Bước 4b chống race (2026-11-06): true = tổng tính lại trong
+    /// transaction khác tổng người dùng đã xác nhận (TongXacNhan) — đơn
+    /// đã bị hủy, KHÔNG tạo đơn. Controller thấy cờ này thì hiện lại
+    /// trang Checkout với tổng mới để khách xác nhận lại (giống nhánh
+    /// CoThayDoi), thay vì đẩy về giỏ như lỗi thường. Chỉ có ý nghĩa
+    /// khi ThanhCong = false.
+    /// </summary>
+    public bool GiaDaThayDoi { get; set; }
+
+    /// <summary>
+    /// SEC-04: ma tra cuu GOC (plaintext) cua don vang lai vua tao — chi co
+    /// o don moi, de controller hien 1 lan duy nhat cho khach (TempData).
+    /// DB chi luu hash (Order.GuestToken); don cu (LaDonCu) / don tai khoan
+    /// thi null vi ma goc khong khoi phuc duoc tu hash.
+    /// </summary>
+    public string? GuestTokenMoi { get; set; }
 
     public static CheckoutResult ThatBai(string loi) => new() { ThanhCong = false, Loi = loi };
     public static CheckoutResult Ok(Order don, bool laDonCu = false) =>
@@ -183,7 +247,9 @@ public class CheckoutService
             // Sprint 2 — B-5: gia chuan la ket qua cua PriceCalculationService
             // (Flash Sale / slot / gia goc), giong het gia gio hang hien thi.
             // Gia sale chi dung khi con quota cho TOAN BO so luong dong nay;
-            // het quota thi bao loi rieng thay vi loi gia chung chung.
+            // het quota thi ban gia goc neu ben goi da chap nhan gia goc
+            // (xem nhanh HetQuota o duoi — P1-2 huong A), khong thi bao
+            // loi "vừa hết suất" rieng thay vi loi gia chung chung.
             // Ngay dat dung chung cho ca don: chon thue suat theo ngay hieu
             // luc + snapshot vao chi tiet (Sprint 2 — B-10).
             var ngayDat = input.NgayDat ?? DateTime.Now;
@@ -220,7 +286,21 @@ public class CheckoutService
                     giaThem = variant.GiaThem;
                 }
                 var gia = await _gia.TinhGiaAsync(line.ProductId, giaThem, line.SoLuong);
-                if (gia.HetQuota)
+                // P1-2, huong A (Final Check, 2026-11-06): het quota Flash
+                // Sale duoc xu nhu HET GIO — quota chi gioi han so suat
+                // GIA SALE, khong gioi han so luong ban gia goc.
+                // TinhGiaAsync tra HetQuota=true + DonGia=gia goc; chi
+                // chap nhan gia goc khi ben goi DA GUI gia dong = gia goc
+                // (luong controller: gio tinh lai o POST + trang xac nhan
+                // lai gia — line.DonGia luc nay la gia goc). Luc do
+                // FlashSaleId=null nen buoc 3 khong tru quota.
+                // Neu ben goi van gui gia sale cu (line.DonGia != gia goc
+                // — vd 2 checkout tranh suat cuoi o tang service, hoac
+                // POST voi gia cu) thi van tu choi "vừa hết suất" nhu cu:
+                // khong duoc am tham ban gia goc khi ben goi chua xac
+                // nhan gia moi — viec xac nhan gia moi la cua trang xac
+                // nhan lai o controller.
+                if (gia.HetQuota && line.DonGia != gia.DonGia)
                 {
                     await tx.RollbackAsync();
                     return CheckoutResult.ThatBai(
@@ -321,12 +401,26 @@ public class CheckoutService
                         line.SoLuong, flashSaleId.Value, line.SoLuong);
                     if (soDongSale == 0)
                     {
+                        // P1-2, huong A (tiep): suat cuoi vua bi don khac
+                        // lay GIUA buoc kiem gia (buoc 2 thay con quota)
+                        // va buoc tru nay — ben goi da xac nhan GIA SALE
+                        // chu khong phai gia goc, nen khong duoc am tham
+                        // doi sang gia goc trong transaction. Tra co
+                        // GiaDaThayDoi de controller hien lai trang
+                        // Checkout voi tong moi (gia goc) cho khach xac
+                        // nhan lai, thay vi day ve gio nhu loi thuong.
+                        // Loi van giu cum "hết suất" de noi ro nguyen
+                        // nhan doi gia.
                         await tx.RollbackAsync();
                         var ten = await _db.Products.AsNoTracking()
                             .Where(p => p.Id == line.ProductId)
                             .Select(p => p.Ten).FirstOrDefaultAsync();
-                        return CheckoutResult.ThatBai(
-                            $"Flash Sale cho {ten ?? "sản phẩm"} vừa hết suất, vui lòng kiểm tra lại giỏ hàng.");
+                        return new CheckoutResult
+                        {
+                            ThanhCong = false,
+                            Loi = $"Flash Sale cho {ten ?? "sản phẩm"} vừa hết suất, giá đã đổi sang giá gốc, vui lòng xác nhận lại.",
+                            GiaDaThayDoi = true,
+                        };
                     }
                 }
             }
@@ -340,7 +434,7 @@ public class CheckoutService
             // UPDATE co dieu kien (DaDung < SoLuong) nhu cu.
             // Khong co ma voucher: giam voucher = 0, bo qua GiamGia gui len.
             var giamGia = 0m;
-            var freeShip = input.FreeShip;
+            var freeShipVoucher = false;
             if (!string.IsNullOrEmpty(input.MaVoucher))
             {
                 var ketQuaVoucher = await _voucher.KiemTraAsync(
@@ -352,7 +446,7 @@ public class CheckoutService
                         ?? $"Mã {input.MaVoucher} không áp dụng được cho đơn này.");
                 }
                 giamGia = ketQuaVoucher.GiamGia;
-                freeShip = freeShip || ketQuaVoucher.FreeShip;
+                freeShipVoucher = ketQuaVoucher.FreeShip;
                 var soDong = await _db.Database.ExecuteSqlRawAsync(
                     "UPDATE \"Vouchers\" SET \"DaDung\" = \"DaDung\" + 1 "
                     + "WHERE \"Ma\" = {0} AND \"DaDung\" < \"SoLuong\"",
@@ -364,19 +458,86 @@ public class CheckoutService
                 }
             }
 
-            // 5. Diem Spend: kiem tra lai so du trong transaction truoc khi ghi.
+            // 5. Giam hang + diem + freeship hang: TINH LAI TU DB trong
+            // transaction (Buoc 4a, 2026-11-06) — khong tin input.GiamGiaHang /
+            // input.GiamGiaDiem / input.FreeShip controller gui len (truoc day
+            // tin thang nen gui gia lon / FreeShip=true la duoc giam / mien
+            // ship). Cung cong thuc nhu PriceCalculationService.TinhTongDonAsync
+            // (thong nhat, giu nguyen thu tu uu dai da chot):
+            // - giam hang = 2% TOAN BO tam tinh neu hang Vang / Bach kim hien tai;
+            // - diem: DungDiemAsync chan o so du that VA o phan con lai sau
+            //   voucher + combo + hang; xin vuot so du thi tu choi don.
+            //   Diem that tru = DiemDungThucTe suy tu tien giam that (giong
+            //   controller truoc day) — khong tru tron input.DiemDung khi
+            //   tien giam bi chan o phan con lai.
+            // - freeship: hang Vang tro len HOAC voucher freeship (tinh lai).
+            var giamGiaHang = input.UserId is null
+                ? 0
+                : await _loyalty.GiamGiaHangAsync(input.UserId, tamTinh);
+            var freeShip = freeShipVoucher
+                || (input.UserId is not null && await _loyalty.LaHangVangAsync(input.UserId));
+            decimal giamGiaDiem = 0;
+            var diemDungThucTe = 0;
             if (input.DiemDung > 0 && input.UserId is not null)
             {
-                var soDu = await _loyalty.TongDiemAsync(input.UserId);
-                if (input.DiemDung > soDu)
+                var conLai = Math.Max(0, tamTinh - giamGia - giamGiaCombo - giamGiaHang);
+                var (giam, loi) = await _loyalty.DungDiemAsync(input.UserId, input.DiemDung, conLai);
+                if (loi is not null)
                 {
                     await tx.RollbackAsync();
-                    return CheckoutResult.ThatBai($"Bạn chỉ có {soDu:N0} điểm.");
+                    return CheckoutResult.ThatBai(loi);
                 }
+                giamGiaDiem = giam;
+                diemDungThucTe = (int)(giam / 1_000m);
             }
 
-            var sauGiam = Math.Max(0, tamTinh - giamGia - input.GiamGiaDiem - input.GiamGiaHang - giamGiaCombo);
+            var sauGiam = Math.Max(0, tamTinh - giamGia - giamGiaDiem - giamGiaHang - giamGiaCombo);
             var phiShip = freeShip || sauGiam >= 2_000_000 || tamTinh == 0 ? 0 : 30_000;
+
+            // 5b. Bước 4b — CHỐT CHỐNG RACE (2026-11-06): cửa sổ còn lại
+            // của Bước 4a là giữa lúc controller so sánh với ảnh GET và
+            // lúc transaction này chạy — dữ liệu đổi trong khoảng đó
+            // (vd hạng đổi làm mất/giảm 2%, voucher/combo bị sửa giá trị,
+            // freeship đổi) thì các bước 2–5 trên đã tính theo giá MỚI
+            // mà không ai hỏi lại khách. Vì vậy SO TỔNG CUỐI trong
+            // transaction, TRƯỚC KHI tạo đơn, với tổng người dùng đã xác
+            // nhận (input.TongXacNhan = TongCong controller đã so khớp
+            // ảnh GET): khác nhau → rollback toàn bộ (các UPDATE có điều
+            // kiện ở bước 2b/3/4 cũng bị hoàn tác), KHÔNG tạo đơn, trả
+            // cờ GiaDaThayDoi để controller hiện lại trang Checkout với
+            // tổng mới. So TỔNG CUỐI (SauGiam + PhiShip) thay vì từng
+            // thành phần: tổng cuối mới là số khách trả, và mọi thay đổi
+            // thành phần đều dồn vào đây. Công thức tổng này giống hệt
+            // PriceCalculationService.TinhTongDonAsync (cùng service con,
+            // cùng thứ tự) nên khi dữ liệu không đổi thì khớp chính xác,
+            // không báo oan. Null (POST trực tiếp không snapshot) thì bỏ
+            // qua — tổng tính lại này chính là tổng xác nhận (xem chính
+            // sách ở OrdersController.Checkout POST). Kiểm tra đặt SAU
+            // bước 5 nhưng TRƯỚC khi tạo Order: mọi khoản giảm + phí
+            // ship đã chốt, chưa ghi gì bền vững ngoài các UPDATE trong
+            // transaction (rollback xóa hết). Các từ chối cứng trước đó
+            // (giá dòng đổi, hết hàng, voucher/combo chết, thiếu điểm —
+            // và hết quota khi bên gọi vẫn giữ giá sale cũ, xem bước 2)
+            // vẫn giữ nguyên: chúng cũng không tạo đơn, chỉ khác là đẩy
+            // về giỏ thay vì hiện lại trang xác nhận. Riêng suất sale
+            // mất ngay trong transaction (bước 3) thì trả cờ
+            // GiaDaThayDoi để khách xác nhận lại giá gốc (P1-2, hướng A).
+            var tongThanhToan = sauGiam + phiShip;
+            if (input.TongXacNhan.HasValue && tongThanhToan != input.TongXacNhan.Value)
+            {
+                await tx.RollbackAsync();
+                return new CheckoutResult
+                {
+                    ThanhCong = false,
+                    Loi = "Giá đã thay đổi, vui lòng xác nhận lại.",
+                    GiaDaThayDoi = true,
+                };
+            }
+
+            // SEC-04: don vang lai sinh ma tra cuu goc (plaintext, tam giu o
+            // bien cuc bo de tra ve cho controller hien 1 lan); DB chi luu
+            // hash + han 30 ngay. Don cua tai khoan thi null.
+            var guestTokenMoi = input.UserId is null ? OrderAccess.TaoGuestToken() : null;
 
             var order = new Order
             {
@@ -390,9 +551,9 @@ public class CheckoutService
                 PhiShip = phiShip,
                 TongTien = sauGiam,
                 InstallmentMonths = input.InstallmentMonths,
-                DiemDaDung = input.DiemDung,
-                GiamGiaDiem = input.GiamGiaDiem,
-                GiamGiaHang = input.GiamGiaHang,
+                DiemDaDung = diemDungThucTe,
+                GiamGiaDiem = giamGiaDiem,
+                GiamGiaHang = giamGiaHang,
                 // Snapshot combo (Sprint 3 — B-7): Id + so tien giam + so bo da
                 // tru suat; don cu khong doi khi combo doi gia/tat sau nay.
                 ComboId = input.ComboId,
@@ -402,6 +563,11 @@ public class CheckoutService
                 VatMaSoThue = input.XuatHoaDon ? input.MaSoThue : null,
                 VatDiaChiCongTy = input.XuatHoaDon ? input.DiaChiCongTy : null,
                 IdempotencyKey = input.IdempotencyKey,
+                // SEC-04: DB chi luu SHA-256 hash cua ma tra cuu (khong luu
+                // plaintext); ma goc tra ve qua CheckoutResult.GuestTokenMoi.
+                // Han dung 30 ngay ke tu ngay dat (OrderAccess.HanTokenNgay).
+                GuestToken = guestTokenMoi is null ? null : OrderAccess.BamGuestToken(guestTokenMoi),
+                GuestTokenHetHan = guestTokenMoi is null ? null : ngayDat.AddDays(OrderAccess.HanTokenNgay),
             };
             for (var i = 0; i < input.Lines.Count; i++)
             {
@@ -415,7 +581,11 @@ public class CheckoutService
                     // GiaGoc/TenKhuyenMai/FlashSaleId khoa lai khuyen mai da
                     // ap — don cu / hoa don khong doi khi gia SP doi sau nay,
                     // va huy don biet chinh xac dong nao can hoan DaBan.
-                    DonGia = line.DonGia,
+                    // DonGia snapshot = gia tinh lai tu DB (giaTheoDong),
+                    // khong lay line.DonGia gui len (du da duoc kiem bang
+                    // nhau o buoc 2, ghi gia tinh lai thi khong con duong
+                    // tin client nao).
+                    DonGia = giaTheoDong[i].DonGia,
                     GiaGoc = gia.GiaGoc,
                     TenKhuyenMai = gia.TenKhuyenMai,
                     FlashSaleId = gia.FlashSaleId,
@@ -461,14 +631,16 @@ public class CheckoutService
                 TrangThai = OrderStatus.ChoXacNhan,
                 NgayCapNhat = DateTime.Now
             });
-            if (input.DiemDung > 0 && input.UserId is not null)
+            if (diemDungThucTe > 0 && input.UserId is not null)
             {
                 // Tru diem race-safe (Sprint 2 — Mang 5): INSERT Spend co
                 // dieu kien so du trong 1 cau lenh; 0 dong = het diem that
                 // (vd 2 checkout cung luc tranh cung so diem) -> rollback
-                // toan bo don thay vi de so du am.
+                // toan bo don thay vi de so du am. Chi tru so diem that
+                // dung (diemDungThucTe, da chan o phan con lai) — khong
+                // tru tron input.DiemDung.
                 var (truOk, loiTru) = await _loyalty.TruDiemAsync(
-                    input.UserId, input.DiemDung, order.Id);
+                    input.UserId, diemDungThucTe, order.Id);
                 if (!truOk)
                 {
                     await tx.RollbackAsync();
@@ -485,7 +657,11 @@ public class CheckoutService
             }
 
             await tx.CommitAsync();
-            return CheckoutResult.Ok(order);
+            // SEC-04: tra ma goc ve cho controller hien 1 lan (TempData);
+            // ma goc khong luu o DB nen chi don moi co gia tri nay.
+            var ketQuaOk = CheckoutResult.Ok(order);
+            ketQuaOk.GuestTokenMoi = guestTokenMoi;
+            return ketQuaOk;
         }
         catch
         {

@@ -11,6 +11,11 @@
         <label for="maDon">Mã đơn hàng</label>
         <input type="number" name="maDon" id="maDon" class="form-control input-narrow" min="1" required />
     </div>
+    <div class="form-group">
+        <label for="token">Mã tra cứu (chỉ cần cho đơn khách vãng lai)</label>
+        <input type="text" name="token" id="token" class="form-control input-narrow" autocomplete="off" />
+        <small>Mã tra cứu được hiển thị ngay sau khi đặt hàng — đơn của tài khoản đã đăng nhập thì không cần nhập.</small>
+    </div>
     <button type="submit" class="btn btn-primary">Tra cứu</button>
 </form>
 

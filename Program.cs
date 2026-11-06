@@ -32,6 +32,10 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
         options.Password.RequireNonAlphanumeric = false;
         options.Password.RequiredLength = 6;
         options.User.RequireUniqueEmail = true;
+        // SEC-03: khoa tai khoan 5 phut sau 5 lan dang nhap sai lien tiep.
+        options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+        options.Lockout.MaxFailedAccessAttempts = 5;
+        options.Lockout.AllowedForNewUsers = true;
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
@@ -64,6 +68,12 @@ using (var scope = app.Services.CreateScope())
     var services = scope.ServiceProvider;
     await SeedData.InitializeAsync(services);
 }
+
+// SEC-01: canh bao neu tai khoan demo dang bat — mac dinh TAT (xem
+// SeedData: DemoAccounts:Enabled mac dinh false o moi moi truong, mat khau
+// chi cap qua bien moi truong). Bat chu dong moi seed demo.
+if (builder.Configuration.GetValue<bool>("DemoAccounts:Enabled", false))
+    app.Logger.LogWarning("DemoAccounts đang BẬT: tài khoản demo được seed từ cấu hình — TẮT trước khi public/production (DemoAccounts__Enabled=false) và xóa/vô hiệu tài khoản demo cũ trong DB.");
 
 if (!app.Environment.IsDevelopment())
 {

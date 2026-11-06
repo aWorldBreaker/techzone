@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -40,22 +41,41 @@ public class OrdersController : Controller
     }
 
     /// <summary>
-    /// Uu dai thanh vien o checkout (nhom B): hang Vang giam them 2% tam tinh
-    /// + mien phi ship; ViewBag cho view hien diem/hang hien tai.
+    /// Session key luu anh gia checkout luc GET (Buoc 4a, 2026-11-06):
+    /// snapshot cac thanh phan gia de POST so sanh "gia co doi khong".
+    /// Chi de so sanh, khong bao gio la nguon su that cho tong tien.
     /// </summary>
-    private async Task GanUuDaiThanhVienAsync(CartViewModel gioHang)
+    private const string SessionGiaKey = "TechZone.CheckoutGia";
+
+    private void LuuAnhGiaCheckout(KetQuaTongDon ketQua) =>
+        HttpContext.Session.SetString(SessionGiaKey,
+            JsonSerializer.Serialize(CheckoutGiaHelper.ChupTu(ketQua)));
+
+    private AnhGiaCheckout? DocAnhGiaCheckout()
+    {
+        var json = HttpContext.Session.GetString(SessionGiaKey);
+        if (string.IsNullOrEmpty(json)) return null;
+        try { return JsonSerializer.Deserialize<AnhGiaCheckout>(json); }
+        catch (JsonException) { return null; }
+    }
+
+    /// <summary>
+    /// Áp toàn bộ ưu đãi checkout (voucher + combo + giảm hạng 2% + điểm)
+    /// bằng CÙNG 1 hàm tính tổng với giỏ (P1, 2026-11-06). Thay cho bộ ba
+    /// rời rạc TinhGiamGiaAsync + GanUuDaiThanhVienAsync + GanGiamGiaComboAsync
+    /// trước đây — chính sự rời rạc đó làm giỏ thiếu giảm hạng. ViewBag cho
+    /// view: DiemHienTai / Hang.
+    /// </summary>
+    private async Task<KetQuaTongDon> ApDungUuDaiCheckoutAsync(CartViewModel gioHang, int diemDung = 0)
     {
         var userId = LayUserIdHienTai();
-        if (userId is null)
-        {
-            ViewBag.DiemHienTai = 0;
-            ViewBag.Hang = "Đồng";
-            return;
-        }
-        gioHang.GiamGiaHang = await _loyalty.GiamGiaHangAsync(userId, gioHang.TamTinh);
-        if (await _loyalty.LaHangVangAsync(userId)) gioHang.FreeShip = true;
-        ViewBag.DiemHienTai = await _loyalty.TongDiemAsync(userId);
-        ViewBag.Hang = await _loyalty.HangAsync(userId);
+        var ketQua = await _gia.ApDungVaoGioHangAsync(gioHang, userId,
+            HttpContext.Session.GetString("TechZone.Voucher"), diemDung,
+            int.TryParse(HttpContext.Session.GetString("TechZone.ComboId"), out var comboId)
+                ? comboId : null);
+        ViewBag.DiemHienTai = userId is null ? 0 : await _loyalty.TongDiemAsync(userId);
+        ViewBag.Hang = ketQua.Hang;
+        return ketQua;
     }
 
     public async Task<IActionResult> Checkout()
@@ -71,23 +91,12 @@ public class OrdersController : Controller
             TempData["Error"] = "Giỏ hàng đang trống.";
             return RedirectToAction("Index", "Cart");
         }
-        await _cart.TinhGiamGiaAsync(vm.GioHang, HttpContext.Session.GetString("TechZone.Voucher"));
-        await GanUuDaiThanhVienAsync(vm.GioHang);
-        await GanGiamGiaComboAsync(vm.GioHang);
+        var ketQuaGet = await ApDungUuDaiCheckoutAsync(vm.GioHang);
+        // Buoc 4a: chup anh gia luc hien form de POST so sanh — neu gia
+        // doi giua GET va POST thi tra ve trang nay voi tong moi + yeu
+        // cau xac nhan lai thay vi dat luon.
+        LuuAnhGiaCheckout(ketQuaGet);
         return View(vm);
-    }
-
-    /// <summary>
-    /// Xem truoc giam gia combo o checkout (Sprint 3 — B-7): chi de HIEN THI.
-    /// So tien that do CheckoutService tinh lai tu DB khi POST; neu combo
-    /// khong con hop le (het han/tat/thieu mon) thi de 0, POST se bao loi.
-    /// </summary>
-    private async Task GanGiamGiaComboAsync(CartViewModel gioHang)
-    {
-        var raw = HttpContext.Session.GetString("TechZone.ComboId");
-        if (!int.TryParse(raw, out var comboId)) return;
-        var ketQua = await _gia.TinhGiaComboAsync(comboId, gioHang.Lines);
-        if (ketQua.HopLe) gioHang.GiamGiaCombo = ketQua.GiamGia;
     }
 
     /// <summary>
@@ -117,38 +126,90 @@ public class OrdersController : Controller
         if (loiVat is not null)
         {
             TempData["Error"] = loiVat;
-            await _cart.TinhGiamGiaAsync(gioHang, HttpContext.Session.GetString("TechZone.Voucher"));
-            await GanUuDaiThanhVienAsync(gioHang);
+            await ApDungUuDaiCheckoutAsync(gioHang);
             model.GioHang = gioHang;
             return View(model);
         }
         if (!ModelState.IsValid)
         {
-            await _cart.TinhGiamGiaAsync(gioHang, HttpContext.Session.GetString("TechZone.Voucher"));
-            await GanUuDaiThanhVienAsync(gioHang);
+            await ApDungUuDaiCheckoutAsync(gioHang);
             model.GioHang = gioHang;
             return View(model);
         }
 
-        await _cart.TinhGiamGiaAsync(gioHang, HttpContext.Session.GetString("TechZone.Voucher"));
-        await GanUuDaiThanhVienAsync(gioHang);
-
         // Doi diem tich luy (nhom B): chi khi dang nhap va nhap diem > 0.
+        // Diem tinh CHUNG trong ham tong don (chan o so con lai sau voucher +
+        // combo + hang) thay vi goi rieng DungDiemAsync nhu truoc.
         var userId = LayUserIdHienTai();
+        var ketQuaGia = await ApDungUuDaiCheckoutAsync(gioHang, model.DiemDung);
         int diemDaDung = 0;
+        // P1-1 (Final Check, 2026-11-06): kiem tra LoiDiem TRUOC CoThayDoi
+        // va BAT KE dang nhap hay chua. Truoc day chi kiem tra khi
+        // userId != null nen khach vang lai nhap diem > 0 lot xuong duoi:
+        // TinhTongDonAsync bao LoiDiem ("Cần đăng nhập...") nhung
+        // DiemDungThucTe van 0, CoThayDoi so voi muc du kien (vd 50 diem)
+        // luon true -> TraVeXacNhanLaiGia luu lai dung anh cu -> submit
+        // lai van vay, ket vong lap "Giá đã thay đổi" vo han (khach chi
+        // thoat bang cach tu xoa o diem ve 0 ma khong co huong dan nao).
+        // Gio: nhap diem ma co LoiDiem thi tra ve form ngay voi loi ro
+        // rang, khong vao nhanh xac nhan lai gia. Khach dang nhap xin
+        // vuot so du cung bi chan o day nhu cu (LoiDiem).
+        if (model.DiemDung > 0 && ketQuaGia.LoiDiem is not null)
+        {
+            TempData["Error"] = ketQuaGia.LoiDiem;
+            model.GioHang = gioHang;
+            return View(model);
+        }
         if (userId is not null && model.DiemDung > 0)
         {
-            var (giamDiem, loiDiem) = await _loyalty.DungDiemAsync(userId, model.DiemDung, gioHang.SauGiam);
-            if (loiDiem is not null)
-            {
-                TempData["Error"] = loiDiem;
-                model.GioHang = gioHang;
-                return View(model);
-            }
-            gioHang.GiamGiaDiem = giamDiem;
-            diemDaDung = (int)(giamDiem / 1_000m);
+            diemDaDung = ketQuaGia.DiemDungThucTe;
         }
 
+        // Buoc 4a/4b — CHINH SACH XAC NHAN GIA (CHOT 2026-11-06):
+        // - Co anh gia (POST qua GET): tong o form la tong khach da thay
+        //   va dong y. POST tinh lai toan bo tu DB roi so tung thanh phan
+        //   voi anh (CheckoutGiaHelper.CoThayDoi — so theo thanh phan nen
+        //   khach dung diem lan dau khong bi bao "gia doi" oan). Neu khac:
+        //   render lai trang voi tong moi + yeu cau xac nhan lai thay vi
+        //   dat luon voi gia moi; chinh lan submit lai do la xac nhan.
+        //   Voucher/combo chet giua 2 lan thi bo khoi session de lan xac
+        //   nhan dat duoc voi tong moi (khong uu dai chet); service van
+        //   tu choi neu con co gang dung.
+        // - Khong co anh gia (POST truc tiep, khong qua GET): DUOC CHAP
+        //   NHAN — tong do service tinh lai trong transaction chinh la
+        //   tong xac nhan (nguoi dung xac nhan bang hanh dong submit),
+        //   khong co gia cu nao de doi chieu. Snapshot chi bao ve truong
+        //   hop gia doi giua GET va POST, khong phai dieu kien bat buoc
+        //   de dat hang.
+        // - Chong race (Buoc 4b): giua luc controller so sanh o tren va
+        //   luc service chay transaction, du lieu van co the doi (hang
+        //   doi lam mat/giam 2%, voucher/combo bi sua gia tri, freeship
+        //   doi...). Nen controller truyen tong da xac nhan
+        //   (ketQuaGia.TongCong) vao service qua TongXacNhan; service so
+        //   lai tong cuoi trong transaction truoc khi tao don — khac thi
+        //   huy, khong tao don, tra co GiaDaThayDoi de hien lai trang
+        //   Checkout (nhanh duoi).
+        // Het hang thi KHONG vao nhanh xac nhan lai: service tu choi
+        // thang (khong co gia moi nao de xac nhan). Voucher/combo chet
+        // truoc khi controller tinh lai thi NGUOC LAI — CO vao nhanh xac
+        // nhan (CoThayDoi true do GiamGiaVoucher/GiamGiaCombo doi), roi
+        // TraVeXacNhanLaiGia go uu dai chet khoi session de dat duoc voi
+        // tong moi khong uu dai chet. Rieng het suat combo NGAY TRONG
+        // transaction (buoc tru quota cua service that bai) thi service
+        // tu choi thang ve gio nhu het hang.
+        // Het quota Flash Sale thi NGUOC LAI: vao nhanh xac nhan lai nhu
+        // het gio (P1-2, huong A, Final Check) — quota chi gioi han so
+        // suat GIA SALE, khach van mua duoc gia goc, tong moi tren trang
+        // xac nhan chinh la gia goc.
+        var anhGiaCu = DocAnhGiaCheckout();
+        if (anhGiaCu is not null && CheckoutGiaHelper.CoThayDoi(anhGiaCu, ketQuaGia, model.DiemDung))
+            return await TraVeXacNhanLaiGia(model, gioHang);
+
+        // Tong da xac nhan truyen vao service de chot chong race trong
+        // transaction (Buoc 4b): co anh gia thi la TongCong vua so khop
+        // anh; khong anh gia (POST truc tiep) thi null — tong service
+        // tinh lai chinh la tong xac nhan (xem chinh sach o tren).
+        var tongXacNhan = anhGiaCu is null ? null : (decimal?)ketQuaGia.TongCong;
         var ketQua = await _checkout.DatHangAsync(new CheckoutInput
         {
             UserId = userId,
@@ -158,6 +219,9 @@ public class OrdersController : Controller
             PhuongThucTT = model.PhuongThucTT,
             InstallmentMonths = model.InstallmentMonths is 6 or 12 ? model.InstallmentMonths : null,
             DiemDung = diemDaDung,
+            // GiamGia* / FreeShip duoi day CHI LA GOI Y hien thi — service
+            // tinh lai tat ca tu DB (Buoc 4a), gui sai cung khong anh
+            // huong tong don.
             GiamGiaDiem = gioHang.GiamGiaDiem,
             XuatHoaDon = model.XuatHoaDon,
             TenCongTy = model.TenCongTy,
@@ -176,7 +240,16 @@ public class OrdersController : Controller
                 .Select(l => new CheckoutLineInput(l.Product.Id, l.Variant?.Id, l.SoLuong, l.DonGia))
                 .ToList(),
             IdempotencyKey = model.IdempotencyKey,
+            TongXacNhan = tongXacNhan,
         });
+
+        // Race (Buoc 4b): tong doi giua luc controller so sanh va luc
+        // service chay transaction — service da huy, KHONG tao don.
+        // Hien lai trang Checkout voi tong moi de khach xac nhan lai
+        // (giong nhanh CoThayDoi o tren); gio hang van nguyen vi
+        // transaction da rollback, khong tru ton/voucher/diem gi.
+        if (ketQua.GiaDaThayDoi)
+            return await TraVeXacNhanLaiGia(model, gioHang);
 
         if (!ketQua.ThanhCong || ketQua.DonHang is null)
         {
@@ -187,6 +260,9 @@ public class OrdersController : Controller
         if (ketQua.LaDonCu)
         {
             TempData["Success"] = $"Đơn #{ketQua.DonHang.Id} đã được tạo trước đó.";
+            // SEC-04: khong dua ma tra cuu vao URL nua (khong lo vao
+            // history/log/Referer). Don cu thi ma goc khong khoi phuc duoc
+            // tu hash — khach dung ma da nhan o lan dat dau.
             return RedirectToAction(nameof(Details), new { id = ketQua.DonHang.Id });
         }
 
@@ -194,7 +270,46 @@ public class OrdersController : Controller
         HttpContext.Session.Remove("TechZone.Voucher");
         HttpContext.Session.Remove("TechZone.ComboId");
         TempData["Success"] = $"Đặt hàng thành công. Mã đơn: #{ketQua.DonHang.Id}.";
+        // SEC-04: ma tra cuu goc (plaintext) chi truyen qua TempData
+        // (session server) de hien 1 lan duy nhat tren trang Details —
+        // khong nam trong URL. Don tai khoan thi null.
+        if (ketQua.GuestTokenMoi is not null)
+            TempData["GuestTokenMoi"] = ketQua.GuestTokenMoi;
         return RedirectToAction(nameof(Details), new { id = ketQua.DonHang.Id });
+    }
+
+    /// <summary>
+    /// Hiện lại trang Checkout với tổng MỚI + yêu cầu xác nhận lại
+    /// ("Giá đã thay đổi, vui lòng xác nhận lại"), thay vì đặt đơn với
+    /// giá mới. Dùng chung cho cả 2 nhánh phát hiện giá đổi:
+    /// (1) controller so với ảnh GET (CoThayDoi), (2) service phát hiện
+    /// tổng đổi trong transaction (GiaDaThayDoi — race giữa controller
+    /// và service, Bước 4b). Tính lại tổng mới từ DB, gỡ voucher/combo
+    /// đã chết khỏi session rồi tính lại lần nữa để tổng mới không chứa
+    /// ưu đãi chết, lưu ảnh giá mới để lần submit tiếp theo so với tổng
+    /// mới này — chính lần submit lại đó là xác nhận.
+    /// </summary>
+    private async Task<IActionResult> TraVeXacNhanLaiGia(CheckoutViewModel model, CartViewModel gioHang)
+    {
+        var ketQuaMoi = await ApDungUuDaiCheckoutAsync(gioHang, model.DiemDung);
+        var boUuDaiChet = false;
+        if (ketQuaMoi.LoiVoucher is not null)
+        {
+            HttpContext.Session.Remove("TechZone.Voucher");
+            boUuDaiChet = true;
+        }
+        if (ketQuaMoi.LoiCombo is not null)
+        {
+            HttpContext.Session.Remove("TechZone.ComboId");
+            boUuDaiChet = true;
+        }
+        if (boUuDaiChet)
+            ketQuaMoi = await ApDungUuDaiCheckoutAsync(gioHang, model.DiemDung);
+        LuuAnhGiaCheckout(ketQuaMoi);
+        TempData["Error"] = "Giá đã thay đổi, vui lòng xác nhận lại.";
+        ViewBag.GiaDaThayDoi = true;
+        model.GioHang = gioHang;
+        return View(model);
     }
 
     [Authorize]
@@ -209,6 +324,15 @@ public class OrdersController : Controller
         return View(orders);
     }
 
+    /// <summary>
+    /// SEC-04: xem don KHONG con nhan ma tra cuu qua URL query (?token=)
+    /// — token trong URL lo vao history/log/Referer. GET chi hien don cho
+    /// chu don / Admin; moi truong hop khac (don vang lai, don cua tai
+    /// khoan khac, don khong ton tai) deu tra CUNG mot form nhap ma
+    /// (NhapMaTraCuu) de khong lo don co ton tai hay thuoc loai nao.
+    /// Khach vang lai gui ma bang POST Details ben duoi. Ma goc vua tao o
+    /// checkout (TempData["GuestTokenMoi"]) hien 1 lan duy nhat tren form.
+    /// </summary>
     public async Task<IActionResult> Details(int id)
     {
         var order = await _db.Orders
@@ -216,20 +340,65 @@ public class OrdersController : Controller
             .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
             .Include(o => o.LichSuTrangThai)
             .FirstOrDefaultAsync(o => o.Id == id);
-        if (order is null) return NotFound();
+        var userId = LayUserIdHienTai();
+        // Chu don / Admin xem thang khong can ma (token=null chi dung cho
+        // don vang lai; CoTheXemDonQ voi token null van dung cho chu don).
+        if (order is not null
+            && OrderAccess.CoTheXemDonQ(order, userId, User.IsInRole("Admin"), guestToken: null))
+            return HienThiDonHang(order, userId);
+        ViewBag.GuestTokenMoi = TempData["GuestTokenMoi"] as string;
+        return View("NhapMaTraCuu", new NhapMaTraCuuViewModel { OrderId = id, HanhDong = "Details" });
+    }
 
-        // Timeline ve theo NgayCapNhat tang dan (nhom C).
+    /// <summary>
+    /// SEC-04: nhap ma tra cuu bang POST (token trong body, khong vao URL).
+    /// Don vang lai: verify kem rate limit (XacMinhToken — sai 5 lan khoa
+    /// 15 phut, het han tu choi); dung thi hien don. Don khong ton tai /
+    /// don tai khoan: CUNG loi chung, khong dem sai (ma vo nghia voi don
+    /// tai khoan) va khong lo don ton tai.
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Details(int id, string token)
+    {
+        var order = await _db.Orders
+            .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
+            .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
+            .Include(o => o.LichSuTrangThai)
+            .FirstOrDefaultAsync(o => o.Id == id);
+        var userId = LayUserIdHienTai();
+        if (order is not null
+            && OrderAccess.CoTheXemDonQ(order, userId, User.IsInRole("Admin"), guestToken: null))
+            return HienThiDonHang(order, userId);
+        const string loiChung = "Không tìm thấy đơn hoặc mã tra cứu không đúng. Vui lòng kiểm tra lại mã đơn và mã tra cứu.";
+        var vm = new NhapMaTraCuuViewModel { OrderId = id, HanhDong = "Details" };
+        if (order is null || order.UserId is not null)
+        {
+            ViewBag.Loi = loiChung;
+            return View("NhapMaTraCuu", vm);
+        }
+        if (!OrderAccess.XacMinhToken(order, token, DateTime.Now))
+        {
+            // Luu dem sai / khoa (ke ca khi het han thi XacMinhToken khong
+            // doi entity — SaveChanges van an toan).
+            await _db.SaveChangesAsync();
+            ViewBag.Loi = loiChung;
+            return View("NhapMaTraCuu", vm);
+        }
+        await _db.SaveChangesAsync();
+        return HienThiDonHang(order, userId);
+    }
+
+    /// <summary>
+    /// Chuan bi ViewBag + tra view Details cho don da duoc phep xem.
+    /// Timeline ve theo NgayCapNhat tang dan (nhom C).
+    /// </summary>
+    private IActionResult HienThiDonHang(Order order, string? userId)
+    {
         order.LichSuTrangThai = order.LichSuTrangThai.OrderBy(h => h.NgayCapNhat).ToList();
-
-        // Don cua khach vang lai: ai co ma don thi xem duoc (demo).
-        // Don cua tai khoan: chi chu don hoac Admin moi xem.
-        var userId = User.Identity?.IsAuthenticated == true
-            ? _db.Users.FirstOrDefault(u => u.UserName == User.Identity.Name)?.Id
-            : null;
-        if (order.UserId is not null && order.UserId != userId && !User.IsInRole("Admin"))
-            return Forbid();
         ViewBag.LaChuDon = order.UserId is not null && order.UserId == userId;
-        return View(order);
+        ViewBag.LaKhachVangLai = order.UserId is null;
+        return View("Details", order);
     }
 
     /// <summary>
@@ -285,19 +454,60 @@ public class OrdersController : Controller
         return RedirectToAction(nameof(Details), new { id });
     }
 
-    /// <summary>Hoa don VAT gia lap (nhom C): chu don hoac Admin; don khong xuat VAT thi ve Details.</summary>
+    /// <summary>
+    /// Hoa don VAT gia lap (nhom C): chu don hoac Admin; don khong xuat VAT thi ve Details.
+    /// SEC-04: giong Details — GET khong nhan token qua URL; khach vang lai
+    /// nhap ma bang POST HoaDon ben duoi (form NhapMaTraCuu, HanhDong="HoaDon").
+    /// </summary>
     public async Task<IActionResult> HoaDon(int id)
     {
         var order = await _db.Orders
             .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
             .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
             .FirstOrDefaultAsync(o => o.Id == id);
-        if (order is null) return NotFound();
-        var userId = User.Identity?.IsAuthenticated == true
-            ? _db.Users.FirstOrDefault(u => u.UserName == User.Identity.Name)?.Id
-            : null;
-        if (order.UserId is not null && order.UserId != userId && !User.IsInRole("Admin"))
-            return Forbid();
+        var userId = LayUserIdHienTai();
+        if (order is not null
+            && OrderAccess.CoTheXemDonQ(order, userId, User.IsInRole("Admin"), guestToken: null))
+            return HienThiHoaDon(order, userId);
+        return View("NhapMaTraCuu", new NhapMaTraCuuViewModel { OrderId = id, HanhDong = "HoaDon" });
+    }
+
+    /// <summary>SEC-04: nhap ma tra cuu bang POST de xem hoa don (xem POST Details).</summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HoaDon(int id, string token)
+    {
+        var order = await _db.Orders
+            .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
+            .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
+            .FirstOrDefaultAsync(o => o.Id == id);
+        var userId = LayUserIdHienTai();
+        if (order is not null
+            && OrderAccess.CoTheXemDonQ(order, userId, User.IsInRole("Admin"), guestToken: null))
+            return HienThiHoaDon(order, userId);
+        const string loiChung = "Không tìm thấy đơn hoặc mã tra cứu không đúng. Vui lòng kiểm tra lại mã đơn và mã tra cứu.";
+        if (order is null || order.UserId is not null)
+        {
+            ViewBag.Loi = loiChung;
+            return View("NhapMaTraCuu", new NhapMaTraCuuViewModel { OrderId = id, HanhDong = "HoaDon" });
+        }
+        if (!OrderAccess.XacMinhToken(order, token, DateTime.Now))
+        {
+            await _db.SaveChangesAsync();
+            ViewBag.Loi = loiChung;
+            return View("NhapMaTraCuu", new NhapMaTraCuuViewModel { OrderId = id, HanhDong = "HoaDon" });
+        }
+        await _db.SaveChangesAsync();
+        return HienThiHoaDon(order, userId);
+    }
+
+    /// <summary>
+    /// Tra view hoa don neu don co du thong tin VAT; thieu thi ve view Details
+    /// (khong redirect kem token nhu truoc — khach vang lai vua verify xong
+    /// khong can nhap lai ma). Chu don/Admin goi tu GET thi redirect ve Details.
+    /// </summary>
+    private IActionResult HienThiHoaDon(Order order, string? userId)
+    {
         if (string.IsNullOrEmpty(order.VatTenCongTy)
             || string.IsNullOrEmpty(order.VatMaSoThue)
             || string.IsNullOrEmpty(order.VatDiaChiCongTy))
@@ -305,9 +515,9 @@ public class OrdersController : Controller
             // Don cu / don dat truoc khi co validate (Sprint 2 — B-10): hoa
             // don DN thieu 1 trong 3 thong tin thi khong xuat, ve Details.
             TempData["Error"] = "Đơn này không có đủ thông tin xuất hóa đơn VAT (thiếu tên công ty / mã số thuế / địa chỉ công ty).";
-            return RedirectToAction(nameof(Details), new { id });
+            return HienThiDonHang(order, userId);
         }
-        return View(order);
+        return View("HoaDon", order);
     }
 
     /// <summary>Khach bam "Toi da thanh toan" sau khi quet QR vi gia lap (nhom C).</summary>

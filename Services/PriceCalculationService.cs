@@ -69,11 +69,85 @@ public record KetQuaCombo
 /// Tất cả các lần gọi đều nhận `thoiDiem`/`soLuong` tường minh để test
 /// biên giờ/quota không phải chờ đúng giờ thật.
 /// </summary>
+/// <summary>Kết quả tính TỔNG ĐƠN thống nhất (P1 — giỏ = checkout, 2026-11-06).</summary>
+public record KetQuaTongDon
+{
+    /// <summary>Tạm tính = Σ giá thực trả từng dòng (đã áp Flash Sale / slot).</summary>
+    public required decimal TamTinh { get; init; }
+
+    public decimal GiamGiaVoucher { get; init; }
+    public string? MaVoucher { get; init; }
+    public bool FreeShipVoucher { get; init; }
+
+    /// <summary>Lỗi voucher (null = hợp lệ hoặc không nhập mã). Voucher lỗi không làm hỏng tổng: giảm 0.</summary>
+    public string? LoiVoucher { get; init; }
+
+    public decimal GiamGiaCombo { get; init; }
+    public int? ComboId { get; init; }
+
+    /// <summary>Lỗi combo (null = hợp lệ hoặc không chọn combo).</summary>
+    public string? LoiCombo { get; init; }
+
+    /// <summary>Giảm hạng: 2% trên TOÀN BỘ tạm tính, chỉ hạng Vàng / Bạch kim (chính sách LoyaltyService).</summary>
+    public decimal GiamGiaHang { get; init; }
+
+    /// <summary>Hạng thành viên lúc tính ("Đồng" nếu chưa đăng nhập).</summary>
+    public required string Hang { get; init; }
+
+    public bool FreeShipHang { get; init; }
+    public decimal GiamGiaDiem { get; init; }
+
+    /// <summary>Số điểm thật sự trừ (GiamGiaDiem / 1.000); 0 nếu không dùng điểm hoặc bị lỗi.</summary>
+    public int DiemDungThucTe { get; init; }
+
+    /// <summary>Lỗi đổi điểm (null = đổi được hoặc không dùng điểm).</summary>
+    public string? LoiDiem { get; init; }
+
+    /// <summary>Tạm tính sau mọi khoản giảm, không âm.</summary>
+    public decimal SauGiam => Math.Max(0, TamTinh - GiamGiaVoucher - GiamGiaCombo - GiamGiaHang - GiamGiaDiem);
+
+    public bool FreeShip => FreeShipVoucher || FreeShipHang;
+
+    /// <summary>0 nếu miễn ship / SauGiam ≥ 2.000.000 / giỏ trống, còn lại 30.000 — giống CartViewModel.PhiShip.</summary>
+    public decimal PhiShip => FreeShip || SauGiam >= 2_000_000 || TamTinh == 0 ? 0 : 30_000;
+
+    public decimal TongCong => SauGiam + PhiShip;
+}
+
+/// <summary>
+/// THỨ TỰ ÁP DỤNG GIÁ THỰC TẾ (đã đối chiếu với CheckoutService.DatHangAsync, 2026-11-06):
+///  1. Giá từng dòng: FlashSale (trong giờ + còn quota) → slot theo giờ → giá gốc.
+///     TamTinh = Σ DonGia × SoLuong. Đây là cơ số duy nhất cho mọi bước sau.
+///  2. Voucher: % / tiền cố định chỉ trên PHẦN TIỀN ĐỦ ĐIỀU KIỆN (Brand/Category),
+///     không phải toàn bộ tạm tính (VoucherService, Sprint 2 — P1-1). FreeShip riêng.
+///  3. Combo: % trên tổng giá thực trả của 1 bộ đầy đủ (đã áp sale ở bước 1).
+///  4. Giảm hạng: 2% trên TOÀN BỘ TamTinh (Vàng / Bạch kim), làm tròn 1 lần
+///     (LoyaltyService.GiamGiaHangAsync). KHÔNG phải 2% trên số còn lại sau
+///     voucher/combo — đây là chính sách hiện tại, giữ nguyên.
+///  5. Điểm: 1 điểm = 1.000đ, chặn ở SỐ CÒN LẠI sau voucher + combo + hạng và
+///     ở số dư điểm. (Trước đây POST chặn trước combo vì preview combo chưa
+///     trừ ở POST — nay thống nhất chặn sau combo: khách giữ lại điểm thừa
+///     thay vì bị trừ điểm cho phần combo đã giảm.)
+///  6. SauGiam = max(0, TamTinh − voucher − combo − hạng − điểm); phí ship
+///     0 nếu miễn ship (hạng Vàng / voucher freeship) hoặc SauGiam ≥ 2tr.
+///  Lưu ý: thứ tự trên KHÁC thứ tự gợi ý "Flash Sale → combo → voucher →
+///  điểm → giảm hạng → phí ship" ở chỗ voucher/combo/hạng đều tính ĐỘC LẬP
+///  trên cơ số riêng của mình rồi CỘNG vào tổng giảm — vì vậy hoán đổi thứ tự
+///  2/3/4 không đổi tổng tiền. Không tự đổi thứ tự nghiệp vụ khi chưa có
+///  bằng chứng: giữ nguyên công thức cộng dồn này ở cả giỏ và checkout.
+/// </summary>
 public class PriceCalculationService
 {
     private readonly AppDbContext _db;
+    private readonly VoucherService _voucher;
+    private readonly LoyaltyService _loyalty;
 
-    public PriceCalculationService(AppDbContext db) => _db = db;
+    public PriceCalculationService(AppDbContext db, VoucherService voucher, LoyaltyService loyalty)
+    {
+        _db = db;
+        _voucher = voucher;
+        _loyalty = loyalty;
+    }
 
     /// <summary>
     /// Giá 1 đơn vị cho SP (đã cộng tiền thêm biến thể vào cả GiaGoc lẫn
@@ -215,5 +289,126 @@ public class PriceCalculationService
             TongTienBo = tongTienBo,
             GiamGia = giamGia,
         };
+    }
+
+    /// <summary>
+    /// Tính TỔNG ĐƠN duy nhất cho Giỏ + Checkout GET + Checkout POST
+    /// (P1 — giỏ = checkout, 2026-11-06). Chỉ ĐỌC + TÍNH, không trừ tồn /
+    /// quota / lượt voucher / điểm — việc trừ vẫn là của CheckoutService
+    /// trong transaction khi tạo đơn. `lines` phải đã có DonGia thực trả
+    /// (qua TinhGiaAsync / CartService) — hàm không tính lại giá dòng.
+    /// Voucher / combo không hợp lệ thì giảm 0 + ghi Loi, không ném lỗi,
+    /// để giỏ vẫn hiển thị được tổng; CheckoutService POST vẫn tự từ chối
+    /// đơn khi voucher/combo thật sự không hợp lệ (bảo vệ ở tầng ghi đơn).
+    /// </summary>
+    public async Task<KetQuaTongDon> TinhTongDonAsync(List<CartLineViewModel> lines,
+        string? userId, string? maVoucher = null, int diemDung = 0,
+        int? comboId = null, DateTime? thoiDiem = null)
+    {
+        var dongAnToan = lines ?? new List<CartLineViewModel>();
+        var tamTinh = dongAnToan.Sum(l => l.ThanhTien);
+
+        // 2. Voucher (chỉ trên phần đủ điều kiện — xem VoucherService).
+        decimal giamVoucher = 0;
+        var freeShipVoucher = false;
+        string? loiVoucher = null;
+        string? maChuan = null;
+        if (!string.IsNullOrWhiteSpace(maVoucher))
+        {
+            var kqVoucher = await _voucher.KiemTraAsync(maVoucher, userId, tamTinh, dongAnToan);
+            if (kqVoucher.HopLe)
+            {
+                giamVoucher = kqVoucher.GiamGia;
+                freeShipVoucher = kqVoucher.FreeShip;
+                maChuan = maVoucher.Trim().ToUpper();
+            }
+            else
+            {
+                loiVoucher = kqVoucher.Loi;
+            }
+        }
+
+        // 3. Combo (% trên giá thực trả của bộ đầy đủ).
+        decimal giamCombo = 0;
+        string? loiCombo = null;
+        if (comboId.HasValue)
+        {
+            var kqCombo = await TinhGiaComboAsync(comboId.Value, dongAnToan, thoiDiem);
+            if (kqCombo.HopLe) giamCombo = kqCombo.GiamGia;
+            else loiCombo = kqCombo.Loi;
+        }
+
+        // 4. Giảm hạng: 2% trên TOÀN BỘ tạm tính (Vàng / Bạch kim).
+        var hang = "Đồng";
+        decimal giamHang = 0;
+        var freeShipHang = false;
+        if (userId is not null)
+        {
+            hang = await _loyalty.HangAsync(userId);
+            giamHang = await _loyalty.GiamGiaHangAsync(userId, tamTinh);
+            freeShipHang = await _loyalty.LaHangVangAsync(userId);
+        }
+
+        // 5. Điểm: chặn ở số còn lại sau voucher + combo + hạng.
+        decimal giamDiem = 0;
+        var diemThucTe = 0;
+        string? loiDiem = null;
+        if (diemDung > 0)
+        {
+            if (userId is null)
+            {
+                loiDiem = "Cần đăng nhập để dùng điểm tích lũy.";
+            }
+            else
+            {
+                var conLai = Math.Max(0, tamTinh - giamVoucher - giamCombo - giamHang);
+                var (giam, loi) = await _loyalty.DungDiemAsync(userId, diemDung, conLai);
+                if (loi is not null) loiDiem = loi;
+                else
+                {
+                    giamDiem = giam;
+                    diemThucTe = (int)(giam / 1_000m);
+                }
+            }
+        }
+
+        return new KetQuaTongDon
+        {
+            TamTinh = tamTinh,
+            GiamGiaVoucher = giamVoucher,
+            MaVoucher = maChuan,
+            FreeShipVoucher = freeShipVoucher,
+            LoiVoucher = loiVoucher,
+            GiamGiaCombo = giamCombo,
+            ComboId = comboId,
+            LoiCombo = loiCombo,
+            GiamGiaHang = giamHang,
+            Hang = hang,
+            FreeShipHang = freeShipHang,
+            GiamGiaDiem = giamDiem,
+            DiemDungThucTe = diemThucTe,
+            LoiDiem = loiDiem,
+        };
+    }
+
+    /// <summary>
+    /// Tính tổng đơn (TinhTongDonAsync) rồi GÁN vào CartViewModel để giỏ và
+    /// checkout hiển thị cùng một bộ số: GiamGia / MaVoucher / GiamGiaCombo /
+    /// GiamGiaHang / GiamGiaDiem / FreeShip. CartViewModel.SauGiam / PhiShip /
+    /// TongCong tự suy ra từ các field này nên khớp với KetQuaTongDon.
+    /// Trả về KetQuaTongDon để controller lấy thêm Hang / lỗi voucher-combo-điểm.
+    /// </summary>
+    public async Task<KetQuaTongDon> ApDungVaoGioHangAsync(CartViewModel vm,
+        string? userId, string? maVoucher = null, int diemDung = 0,
+        int? comboId = null, DateTime? thoiDiem = null)
+    {
+        var ketQua = await TinhTongDonAsync(vm.Lines, userId, maVoucher, diemDung, comboId, thoiDiem);
+        vm.GiamGia = ketQua.GiamGiaVoucher;
+        vm.MaVoucher = ketQua.MaVoucher;
+        vm.GiamGiaCombo = ketQua.GiamGiaCombo;
+        vm.GiamGiaHang = ketQua.GiamGiaHang;
+        vm.GiamGiaDiem = ketQua.GiamGiaDiem;
+        vm.FreeShip = ketQua.FreeShip;
+        return ketQua;
     }
 }

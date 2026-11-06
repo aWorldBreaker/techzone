@@ -37,6 +37,8 @@
 
 @if (!string.IsNullOrEmpty(Model.VatTenCongTy))
 {
+    @* SEC-04: link hoa don khong kem token trong URL nua — khach vang lai
+       se nhap lai ma tra cuu bang form POST khi mo hoa don. *@
     <p><a asp-action="HoaDon" asp-route-id="@Model.Id">Xem hóa đơn VAT</a> (@Model.VatTenCongTy)</p>
 }
 

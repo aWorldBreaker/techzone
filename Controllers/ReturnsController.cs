@@ -21,6 +21,33 @@ public class ReturnsController : Controller
     /// <summary>Trang thai admin duoc duyet (khong cho quay lai "Chờ duyệt").</summary>
     private static readonly string[] TrangThaiDuyet = { "Đã duyệt", "Từ chối", "Hoàn thành" };
 
+    /// <summary>
+    /// Step 4 — chong trung yeu cau: chi cac trang thai DANG MO moi chan
+    /// tao moi ("Chờ duyệt" hoac "Đã duyệt"). "Từ chối" duoc nop lai;
+    /// "Hoàn thành" cung duoc nop lai (yeu cau cu da xong, loi moi co the
+    /// phat sinh sau). TrangThai la chuoi, gia tri dung nhu Models
+    /// (ReturnRequest / WarrantyClaim).
+    /// </summary>
+    private static readonly string[] TrangThaiDangMo = { "Chờ duyệt", "Đã duyệt" };
+
+    /// <summary>Trang thai cua yeu cau bao hanh dang mo (neu co) cho cung don + SP; null = khong co.</summary>
+    private Task<string?> LayTrangThaiBaoHanhDangMoAsync(int orderId, int productId, string? userId) =>
+        _db.WarrantyClaims
+            .Where(w => w.OrderId == orderId && w.ProductId == productId && w.UserId == userId
+                && TrangThaiDangMo.Contains(w.TrangThai))
+            .Select(w => w.TrangThai).FirstOrDefaultAsync();
+
+    /// <summary>
+    /// Trang thai cua yeu cau doi tra dang mo (neu co) cho cung DON (doi
+    /// tra chan theo don, khong theo SP — 1 don chi co 1 yeu cau doi tra
+    /// dang mo); null = khong co.
+    /// </summary>
+    private Task<string?> LayTrangThaiDoiTraDangMoAsync(int orderId, string? userId) =>
+        _db.ReturnRequests
+            .Where(r => r.OrderId == orderId && r.UserId == userId
+                && TrangThaiDangMo.Contains(r.TrangThai))
+            .Select(r => r.TrangThai).FirstOrDefaultAsync();
+
     public ReturnsController(AppDbContext db, IWebHostEnvironment env, ReturnService doiTra)
     {
         _db = db;
@@ -78,6 +105,17 @@ public class ReturnsController : Controller
                 : $"Chỉ đổi trả được đơn đang giao hoặc đã giao (đơn hiện “{order.TrangThai}”). Đơn chưa giao thì hủy đơn thay vì đổi trả.";
             return RedirectToAction("Details", "Orders", new { id = orderId });
         }
+        // P2 (Final Check, 2026-11-06): GET form đổi trả cũng kiểm tra
+        // trùng như POST — đã có yêu cầu đang mở cho đơn này thì báo
+        // ngay, không để khách chọn SP/điền lý do xong mới bị chặn ở POST.
+        // "Từ chối" / "Hoàn thành" vẫn được mở form nộp lại (chỉ chặn
+        // "Chờ duyệt" / "Đã duyệt", giống POST).
+        var trangThaiDoiTraDangMo = await LayTrangThaiDoiTraDangMoAsync(orderId, LayUserIdHienTai());
+        if (trangThaiDoiTraDangMo is not null)
+        {
+            TempData["Error"] = $"Đã có yêu cầu đổi trả đang “{trangThaiDoiTraDangMo}” cho đơn #{orderId}. Vui lòng chờ xử lý hoặc liên hệ TechZone.";
+            return RedirectToAction(nameof(Index));
+        }
         // Chua chon SP: view hien danh sach SP trong don de chon.
         if (productId == 0)
         {
@@ -111,6 +149,15 @@ public class ReturnsController : Controller
         {
             TempData["Error"] = "Vui lòng nhập lý do đổi trả.";
             return RedirectToAction(nameof(Create), new { orderId, productId });
+        }
+        // Step 4 — chong trung: da co yeu cau doi tra dang mo cho don nay
+        // ("Chờ duyệt" / "Đã duyệt") thi chan, ke ca SP khac trong cung
+        // don; sau "Từ chối" / "Hoàn thành" thi duoc nop lai.
+        var trangThaiDoiTraDangMo = await LayTrangThaiDoiTraDangMoAsync(orderId, userId);
+        if (trangThaiDoiTraDangMo is not null)
+        {
+            TempData["Error"] = $"Đã có yêu cầu đổi trả đang “{trangThaiDoiTraDangMo}” cho đơn #{orderId}. Vui lòng chờ xử lý hoặc liên hệ TechZone.";
+            return RedirectToAction(nameof(Index));
         }
 
         // Anh kem: chi nhan anh, toi da 5MB (mau AdminController.ProductForm).
@@ -180,6 +227,18 @@ public class ReturnsController : Controller
         }
         var detail = order.ChiTiet.FirstOrDefault(d => d.ProductId == productId);
         if (detail is null) return NotFound();
+        // P2 (Final Check, 2026-11-06): GET form bao hanh cung kiem tra
+        // trung nhu POST — da co yeu cau dang mo cho cung don + SP thi
+        // bao ngay, khong de khach dien mo ta xong moi bi chan o POST.
+        // "Từ chối" / "Hoàn thành" van duoc mo form nop lai (chi chan
+        // "Chờ duyệt" / "Đã duyệt", giong POST).
+        var trangThaiBaoHanhDangMo =
+            await LayTrangThaiBaoHanhDangMoAsync(orderId, productId, LayUserIdHienTai());
+        if (trangThaiBaoHanhDangMo is not null)
+        {
+            TempData["Error"] = $"Đã có yêu cầu bảo hành đang “{trangThaiBaoHanhDangMo}” cho sản phẩm này trong đơn #{orderId}. Vui lòng chờ xử lý hoặc liên hệ TechZone.";
+            return RedirectToAction(nameof(Index));
+        }
         ViewBag.Order = order;
         ViewBag.Product = detail.Product;
         return View(new WarrantyClaim { OrderId = orderId, ProductId = productId });
@@ -206,6 +265,15 @@ public class ReturnsController : Controller
             TempData["Error"] = "Vui lòng mô tả lỗi của sản phẩm.";
             return RedirectToAction(nameof(Warranty), new { orderId, productId });
         }
+        // Step 4 — chong trung: da co yeu cau bao hanh dang mo cho cung
+        // don + SP ("Chờ duyệt" / "Đã duyệt") thi chan; SP khac trong
+        // cung don van duoc; sau "Từ chối" / "Hoàn thành" thi duoc nop lai.
+        var trangThaiBaoHanhDangMo = await LayTrangThaiBaoHanhDangMoAsync(orderId, productId, userId);
+        if (trangThaiBaoHanhDangMo is not null)
+        {
+            TempData["Error"] = $"Đã có yêu cầu bảo hành đang “{trangThaiBaoHanhDangMo}” cho sản phẩm này trong đơn #{orderId}. Vui lòng chờ xử lý hoặc liên hệ TechZone.";
+            return RedirectToAction(nameof(Index));
+        }
         _db.WarrantyClaims.Add(new WarrantyClaim
         {
             OrderId = orderId,
@@ -221,6 +289,7 @@ public class ReturnsController : Controller
     }
 
     // --- Chi tiet 1 yeu cau: chu yeu cau hoac Admin moi xem ---
+    [Authorize]
     public async Task<IActionResult> Details(int id, string loai = "doitra")
     {
         var userId = LayUserIdHienTai();
@@ -231,7 +300,9 @@ public class ReturnsController : Controller
                 .Include(w => w.Product).Include(w => w.Order)
                 .FirstOrDefaultAsync(w => w.Id == id);
             if (claim is null) return NotFound();
-            if (claim.UserId != userId && !laAdmin) return Forbid();
+            // SEC-05: khong co quyen xem thi NotFound() nhu yeu cau khong ton
+            // tai — Forbid() (403) truoc day lo tin hieu "yeu cau co ton tai".
+            if (claim.UserId != userId && !laAdmin) return NotFound();
             ViewBag.Loai = "baohanh";
             return View((object)claim);
         }
@@ -239,7 +310,8 @@ public class ReturnsController : Controller
             .Include(r => r.Product).Include(r => r.Order)
             .FirstOrDefaultAsync(r => r.Id == id);
         if (yeuCau is null) return NotFound();
-        if (yeuCau.UserId != userId && !laAdmin) return Forbid();
+        // SEC-05: nhu tren — Forbid() -> NotFound().
+        if (yeuCau.UserId != userId && !laAdmin) return NotFound();
         ViewBag.Loai = "doitra";
         return View((object)yeuCau);
     }
@@ -309,25 +381,47 @@ public class ReturnsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> TraCuu(int maDon)
+    public async Task<IActionResult> TraCuu(int maDon, string? token)
     {
         var order = await _db.Orders
             .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
             .FirstOrDefaultAsync(o => o.Id == maDon);
+        // SEC-02 (oracle): ca 3 truong hop — khong co don, don cua tai khoan
+        // khac, don vang lai sai/thieu ma tra cuu — deu tra CUNG mot thong
+        // bao chung, khong tiet lo don co ton tai hay don thuoc loai nao.
+        // (Truoc day message phan biet "don cua tai khoan khac" vs "don
+        // khach vang lai can ma tra cuu".)
+        const string loiChung = "Không tìm thấy đơn hoặc mã tra cứu không đúng. Vui lòng kiểm tra lại mã đơn và mã tra cứu.";
         if (order is null)
         {
-            TempData["Error"] = $"Không tìm thấy đơn #{maDon}.";
+            TempData["Error"] = loiChung;
             return View("TraCuuBaoHanh", (Order?)null);
         }
-        // Quy tac nhu Orders.Details: don cua tai khoan thi chi chu don hoac Admin.
+        // Quy tac nhu Orders.Details: don cua tai khoan thi chi chu don hoac Admin;
+        // don vang lai thi can dung ma tra cuu (SEC-02, siết SEC-04: hash +
+        // han 30 ngay + rate limit 5 lan sai khoa 15 phut — XacMinhToken).
         if (order.UserId is not null)
         {
             var userId = LayUserIdHienTai();
             if (order.UserId != userId && !User.IsInRole("Admin"))
             {
-                TempData["Error"] = "Đơn này thuộc tài khoản khác. Vui lòng đăng nhập đúng tài khoản để tra cứu.";
+                TempData["Error"] = loiChung;
                 return View("TraCuuBaoHanh", (Order?)null);
             }
+        }
+        else if (!OrderAccess.XacMinhToken(order, token, DateTime.Now))
+        {
+            // Luu dem sai / khoa — ke ca khi het han (XacMinhToken khong doi
+            // entity thi SaveChanges van an toan). Loi van la cau chung de
+            // khong lo don ton tai / het han / dang bi khoa.
+            await _db.SaveChangesAsync();
+            TempData["Error"] = loiChung;
+            return View("TraCuuBaoHanh", (Order?)null);
+        }
+        else
+        {
+            // Nhap dung: luu reset dem + nang cap legacy plaintext len hash.
+            await _db.SaveChangesAsync();
         }
         return View("TraCuuBaoHanh", order);
     }

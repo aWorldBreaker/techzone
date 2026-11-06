@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using TechZone.Models;
 
 namespace TechZone.Data;
@@ -31,8 +35,60 @@ public static class SeedData
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
 
-        var admin = await CreateUserAsync(userManager, "admin@techzone.vn", "Admin@123", "Quản trị TechZone", "0901234567", "Admin");
-        var khach = await CreateUserAsync(userManager, "khach@techzone.vn", "Khach@123", "Nguyễn Văn An", "0909123456", "Khach");
+        // SEC-01 (vong Sign-off): tai khoan demo CHI seed khi du 3 dieu kien:
+        //   1. DemoAccounts:Enabled=true MOT CACH CHU DONG (mac dinh false o
+        //      moi moi truong — Program.cs dung cung default nay, khong lech);
+        //   2. Co du email + MAT KHAU cho tung tai khoan. Mat khau KHONG nam
+        //      trong bat ky file nao duoc Git theo doi: chi cap qua bien moi
+        //      truong DemoAccounts__AdminPassword / DemoAccounts__CustomerPassword
+        //      (ASP.NET Core tu map env var vao IConfiguration), User Secrets,
+        //      hoac appsettings.Development.json (da gitignore). Thieu mat
+        //      khau -> bo qua tai khoan do + warning (xem TaoTaiKhoanDemoAsync).
+        //   3. Production: mac dinh TAT (do default Enabled=false). Production
+        //      chi seed demo khi bat chu dong co chu y (Enabled=true + mat
+        //      khau qua env) — luc do log canh bao LOUD ben duoi.
+        // Tat seed KHONG vo hieu tai khoan demo da seed tu truoc: neu DB van
+        // con tai khoan demo trong khi seed dang tat (hoac dang chay Production)
+        // thi log canh bao LOUD + huong dan xu ly thu cong (khong tu doi/xoa
+        // credential cua user dang ton tai mot cach lang le).
+        var logger = services.GetService<ILoggerFactory>()?.CreateLogger("TechZone.Data.SeedData");
+        var env = services.GetService<IHostEnvironment>();
+        // Khong dang ky IHostEnvironment (vd test build ServiceCollection tay)
+        // thi coi nhu khong phai Production.
+        var laProduction = env?.IsProduction() ?? false;
+        var demoSection = services.GetService<IConfiguration>()?.GetSection("DemoAccounts");
+        var demoEnabled = demoSection?.GetValue<bool>("Enabled", false) ?? false;
+        var adminEmail = demoSection?["AdminEmail"] ?? "admin@techzone.vn";
+        var khachEmail = demoSection?["CustomerEmail"] ?? "khach@techzone.vn";
+        ApplicationUser? admin = null;
+        ApplicationUser? khach = null;
+        if (!demoEnabled)
+        {
+            logger?.LogWarning("DemoAccounts dang TAT (mac dinh): bo qua tao tai khoan demo. Muon bat o local: DemoAccounts__Enabled=true + DemoAccounts__AdminPassword / DemoAccounts__CustomerPassword qua bien moi truong.");
+        }
+        else
+        {
+            if (laProduction)
+                logger?.LogWarning("CANH BAO BAO MAT: DemoAccounts dang BAT trong Production — tai khoan demo se ton tai tren moi truong production. Tat ngay khi khong can demo nua (DemoAccounts__Enabled=false) va xoa/vohieu tai khoan demo cu.");
+            admin = await TaoTaiKhoanDemoAsync(userManager, logger,
+                adminEmail, demoSection?["AdminPassword"],
+                "Quản trị TechZone", "0901234567", "Admin");
+            khach = await TaoTaiKhoanDemoAsync(userManager, logger,
+                khachEmail, demoSection?["CustomerPassword"],
+                "Nguyễn Văn An", "0909123456", "Khach");
+        }
+
+        // Tai khoan demo CU van ton tai du seed da tat (hoac dang Production):
+        // canh bao LOUD, khong tu xoa. Xu ly thu cong: Admin -> Quan ly khach
+        // hang -> xoa/vohieu tai khoan, hoac doi mat khau manh + khoa tai khoan.
+        if (!demoEnabled || laProduction)
+        {
+            var tonTai = new List<string>();
+            if (await userManager.FindByEmailAsync(adminEmail) is not null) tonTai.Add(adminEmail);
+            if (await userManager.FindByEmailAsync(khachEmail) is not null) tonTai.Add(khachEmail);
+            if (tonTai.Count > 0)
+                logger?.LogWarning("CANH BAO BAO MAT: tai khoan demo van ton tai trong DB ({Emails}) trong khi DemoAccounts dang tat{Production} — tat seed KHONG vo hieu tai khoan cu. Xoa/vohieu thu cong: Admin -> Quan ly khach hang, hoac doi mat khau manh + khoa tai khoan.", string.Join(", ", tonTai), laProduction ? " / dang chay Production" : "");
+        }
 
         // --- Danh muc: 8 nhom do cong nghe ---
         // Seed tung nhom chi khi nhom do trong (P0-2): DB cu da co SP thi truoc
@@ -246,6 +302,16 @@ public static class SeedData
             context.Combos.AddRange(comboXiaomi, comboTuf);
         }
 
+        // SEC-01: DemoAccounts tat (hoac thieu 1 trong 2 tai khoan) thi khong
+        // seed duoc don mau / diem / thong bao phu thuoc tai khoan demo.
+        // Luu cac nhom da seed o tren (danh muc, SP, voucher, flash sale,
+        // combo...) roi ket thuc.
+        if (khach is null || admin is null)
+        {
+            await context.SaveChangesAsync();
+            return;
+        }
+
         // --- Danh gia mau ---
         if (!await context.Reviews.AnyAsync())
             context.Reviews.AddRange(
@@ -397,6 +463,23 @@ public static class SeedData
         );
 
         await context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Tao 1 tai khoan demo tu cau hinh (SEC-01). Email/password rong thi bo
+    /// qua tai khoan do + warning. User da ton tai thi giu nguyen (khong doi
+    /// mat khau) — giong hanh vi cu cua CreateUserAsync.
+    /// </summary>
+    private static async Task<ApplicationUser?> TaoTaiKhoanDemoAsync(
+        UserManager<ApplicationUser> userManager, ILogger? logger,
+        string? email, string? password, string hoTen, string sdt, string role)
+    {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+        {
+            logger?.LogWarning("DemoAccounts: thieu email/mat khau cho role {Role}, bo qua tai khoan demo nay.", role);
+            return null;
+        }
+        return await CreateUserAsync(userManager, email.Trim(), password, hoTen, sdt, role);
     }
 
     private static async Task<ApplicationUser> CreateUserAsync(

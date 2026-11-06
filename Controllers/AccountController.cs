@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Hosting;
 using TechZone.Models;
 using TechZone.Services;
 
@@ -42,12 +44,48 @@ public class AccountController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly LoyaltyService _loyalty;
+    private readonly IWebHostEnvironment _env;
 
-    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, LoyaltyService loyalty)
+    public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, LoyaltyService loyalty, IWebHostEnvironment env)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _loyalty = loyalty;
+        _env = env;
+    }
+
+    /// <summary>
+    /// Quy tac EmailConfirmed khi dang ky (SEC-01 Sign-off): chi tu xac nhan
+    /// o Development/demo vi chua co he thong gui email that; o Production
+    /// de false — phai lam xac thuc email that truoc khi public.
+    /// </summary>
+    public static bool NenTuXacNhanEmail(IHostEnvironment env) => !env.IsProduction();
+
+    /// <summary>
+    /// Step 4 — thong bao khoa theo thoi gian khoa THUC TE (LockoutEnd),
+    /// khong bao cung "5 phut" cho moi truong hop: tai khoan demo bi khoa
+    /// toi 2126 nhung message cu van noi "thu lai sau 5 phut" la sai.
+    /// Nguong ngan/dai: khoa con lai &lt;= 60 phut la khoa ngan (sai mat
+    /// khau mac dinh 5 phut, xem Program.cs) -&gt; hien so phut con lai
+    /// (lam tron len, toi thieu 1 phut); khoa dai hon 60 phut (khoa thu
+    /// cong / khoa demo) -&gt; huong dan lien he quan tri vien, khong neu
+    /// so phut. LockoutEnd null / da het han (khong nen xay ra khi
+    /// IsLockedOut) cung roi ve nhanh lien he quan tri vien.
+    /// </summary>
+    public const int NguongKhoaNganHanPhut = 60;
+
+    public static string ThongBaoKhoa(DateTimeOffset? lockoutEnd, DateTimeOffset hienTai)
+    {
+        if (lockoutEnd is { } hetHan)
+        {
+            var conLai = hetHan - hienTai;
+            if (conLai > TimeSpan.Zero && conLai <= TimeSpan.FromMinutes(NguongKhoaNganHanPhut))
+            {
+                var phut = Math.Max(1, (int)Math.Ceiling(conLai.TotalMinutes));
+                return $"Tài khoản tạm khóa do đăng nhập sai nhiều lần, thử lại sau {phut} phút.";
+            }
+        }
+        return "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ mở khóa.";
     }
 
     [HttpGet]
@@ -59,7 +97,13 @@ public class AccountController : Controller
     public async Task<IActionResult> Login(LoginViewModel model)
     {
         if (!ModelState.IsValid) return View(model);
-        var result = await _signInManager.PasswordSignInAsync(model.Email, model.MatKhau, model.GhiNho, lockoutOnFailure: false);
+        var result = await _signInManager.PasswordSignInAsync(model.Email, model.MatKhau, model.GhiNho, lockoutOnFailure: true);
+        if (result.IsLockedOut)
+        {
+            var userBiKhoa = await _userManager.FindByEmailAsync(model.Email);
+            ModelState.AddModelError(string.Empty, ThongBaoKhoa(userBiKhoa?.LockoutEnd, DateTimeOffset.UtcNow));
+            return View(model);
+        }
         if (!result.Succeeded)
         {
             ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng.");
@@ -83,8 +127,12 @@ public class AccountController : Controller
         if (!ModelState.IsValid) return View(model);
         var user = new ApplicationUser
         {
+            // EmailConfirmed chi tu dong true khi KHONG phai Production
+            // (Development/demo — chua co he thong gui email xac thuc that).
+            // O Production de false: phai lam xac thuc email that truoc khi
+            // public (xem NenTuXacNhanEmail).
             UserName = model.Email, Email = model.Email,
-            HoTen = model.HoTen, SoDienThoai = model.SoDienThoai, EmailConfirmed = true
+            HoTen = model.HoTen, SoDienThoai = model.SoDienThoai, EmailConfirmed = NenTuXacNhanEmail(_env)
         };
         var result = await _userManager.CreateAsync(user, model.MatKhau);
         if (!result.Succeeded)

@@ -23,7 +23,14 @@ public class CartController : Controller
     public async Task<IActionResult> Index()
     {
         var vm = await _cart.GetViewModelAsync();
-        await _cart.TinhGiamGiaAsync(vm, HttpContext.Session.GetString("TechZone.Voucher"));
+        // P1 (2026-11-06): giỏ áp đủ ưu đãi như checkout (voucher + combo +
+        // giảm hạng) qua cùng 1 hàm tính tổng — trước đây chỉ có voucher nên
+        // khách Vàng thấy tổng giỏ cao hơn checkout 2% tạm tính.
+        var ketQua = await _cart.ApDungUuDaiDayDuAsync(vm,
+            HttpContext.Session.GetString("TechZone.Voucher"),
+            int.TryParse(HttpContext.Session.GetString("TechZone.ComboId"), out var comboId)
+                ? comboId : null);
+        ViewBag.Hang = ketQua.Hang;
         return View(vm);
     }
 

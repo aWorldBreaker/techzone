@@ -20,10 +20,12 @@ public class Product
 
     /// <summary>Gia goc (gia gach ngang).</summary>
     [Column(TypeName = "decimal(18,0)")]
+    [Range(typeof(decimal), "0", "1000000000", ErrorMessage = "Giá bán phải từ 0 đến 1.000.000.000đ.")]
     public decimal Gia { get; set; }
 
     /// <summary>Gia khuyen mai. Null = khong giam gia.</summary>
     [Column(TypeName = "decimal(18,0)")]
+    [Range(typeof(decimal), "0", "1000000000", ErrorMessage = "Giá khuyến mãi phải từ 0 đến 1.000.000.000đ.")]
     public decimal? GiaKhuyenMai { get; set; }
 
     public int CategoryId { get; set; }
@@ -32,6 +34,7 @@ public class Product
     public int BrandId { get; set; }
     public Brand Brand { get; set; } = null!;
 
+    [Range(0, 100000, ErrorMessage = "Tồn kho phải từ 0 đến 100.000.")]
     public int TonKho { get; set; }
     public int LuotBan { get; set; }
     public double DanhGiaTB { get; set; }

@@ -58,6 +58,22 @@ else
             {
                 <div class="summary-row"><span>Giảm voucher (@Model.MaVoucher)</span><span>- @Model.GiamGia.ToString("N0")đ</span></div>
             }
+            @if (Model.GiamGiaCombo > 0)
+            {
+                <div class="summary-row"><span>Giảm combo</span><span>- @Model.GiamGiaCombo.ToString("N0")đ</span></div>
+            }
+            @if (Model.GiamGiaHang > 0)
+            {
+                <div class="summary-row"><span>Giảm hạng @ViewBag.Hang (2%)</span><span>- @Model.GiamGiaHang.ToString("N0")đ</span></div>
+            }
+            @if (Model.GiamGia > 0 || Model.GiamGiaCombo > 0 || Model.GiamGiaHang > 0)
+            {
+                <div class="summary-row"><span>Tạm tính sau giảm</span><span>@Model.SauGiam.ToString("N0")đ</span></div>
+            }
+            @if (Model.GiamGiaHang > 0)
+            {
+                <p class="text-muted">Đã áp dụng ưu đãi hạng @ViewBag.Hang: giảm 2% tạm tính @Model.TamTinh.ToString("N0")đ, còn @Model.SauGiam.ToString("N0")đ trước phí ship — giống hệt tổng ở trang đặt hàng.</p>
+            }
             <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
             <div class="summary-row total"><span>Tổng cộng</span><span>@Model.TongCong.ToString("N0")đ</span></div>
             <partial name="_InstallmentBadge" model="Model.TongCong" />

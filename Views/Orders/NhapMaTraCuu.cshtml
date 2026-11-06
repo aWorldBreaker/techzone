@@ -1,0 +1,33 @@
+@model TechZone.Models.NhapMaTraCuuViewModel
+@{
+    ViewData["Title"] = "Xem đơn hàng";
+    var loi = ViewBag.Loi as string;
+    var maMoi = ViewBag.GuestTokenMoi as string;
+}
+
+<h1>Xem đơn hàng #@Model.OrderId</h1>
+
+@* SEC-04: ma tra cuu chi gui bang POST (khong nam trong URL). Ma goc vua
+   tao o checkout chi hien 1 LAN duy nhat ngay sau khi dat hang — luu lai
+   de xem don / tra cuu bao hanh sau nay (han 30 ngay). *@
+@if (!string.IsNullOrEmpty(maMoi))
+{
+    <p class="alert alert-info">Mã tra cứu đơn hàng của bạn: <strong>@maMoi</strong> — Lưu mã này lại ngay (chỉ hiện một lần). Dùng mã này để xem lại đơn và tra cứu bảo hành trong 30 ngày.</p>
+}
+
+@if (!string.IsNullOrEmpty(loi))
+{
+    <p class="alert alert-error">@loi</p>
+}
+
+<p>Đơn này cần mã tra cứu để xem. Nhập mã tra cứu bạn nhận được sau khi đặt hàng.</p>
+<form asp-action="@Model.HanhDong" method="post" class="warranty-lookup">
+    <input type="hidden" name="id" value="@Model.OrderId" />
+    <div class="form-group">
+        <label for="token">Mã tra cứu</label>
+        <input type="text" name="token" id="token" class="form-control input-narrow" autocomplete="off" required />
+        <small>Mã có 32 ký tự. Nhập sai 5 lần liên tiếp sẽ khóa tra cứu đơn này 15 phút.</small>
+    </div>
+    <button type="submit" class="btn btn-primary">Xem đơn</button>
+</form>
+<p class="mt">Mất mã? Liên hệ shop để được cấp lại (cần đối chiếu họ tên + số điện thoại đặt hàng).</p>

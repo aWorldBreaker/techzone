@@ -1,7 +1,16 @@
 # TechZone — Website bán đồ công nghệ
 
 Đồ án: website thương mại điện tử B2C, 1 shop, 2 vai trò Khách / Admin.
-ASP.NET Core 8 + EF Core + SQLite (demo) + Razor MVC + Identity.
+**ASP.NET Core 8 + EF Core + SQLite (demo) + Razor MVC + ASP.NET Identity.**
+
+> Trạng thái: Sprint 1–5 xong + vòng P0 Security + Sign-off + P1 follow-up
+> (2026-11-06). Nhánh `security/signoff-20261106`: checkpoint `56dedbe` +
+> follow-up `951c297` (đã commit local, chưa push). Thay đổi chưa commit:
+> Bước 4 (Checkout POST tính lại + xác nhận lại, bảo hành live) + Final
+> Check (P1-1 điểm vãng lai, P1-2 hết quota Flash Sale, GET bảo hành
+> báo trùng).
+> Build 0/0, test **222/222 PASS** (runner trực tiếp, xem `TEST-REPORT.md`).
+> Code hiện tại ở HEAD `951c297` + thay đổi chưa commit (Bước 4 + Final Check).
 
 ## Chạy
 
@@ -11,120 +20,243 @@ dotnet restore
 dotnet run
 ```
 
-Mở `https://localhost:5001` (hoặc cổng http in ra ở terminal).
-Lần chạy đầu tiên tự tạo file `techzone.db` (SQLite) và seed dữ liệu mẫu.
-Muốn seed lại từ đầu: xóa `techzone.db` rồi chạy lại.
+Mở URL http in ra ở terminal (mặc định `http://localhost:5000`).
+Lần chạy đầu tiên tự tạo file `techzone.db` (SQLite), chạy migrations rồi seed
+dữ liệu mẫu. Muốn seed lại từ đầu: xóa `techzone.db` rồi chạy lại
+(DB dev này chỉ là dữ liệu demo, không phải dữ liệu thật).
 
-> Chưa có `dotnet` trên máy thì cài .NET 8 SDK rồi chạy lệnh trên.
-> Code trong repo này chưa từng được build trên máy viết code (không có dotnet),
-> nên lần build đầu có thể lộ lỗi nhỏ — xem mục "Kiểm chứng" bên dưới.
+Yêu cầu .NET 8 SDK (đã xác minh 8.0.427). Trong sandbox, `dotnet` nằm ở
+`~/.dotnet` (không có trên PATH): `export PATH="$HOME/.dotnet:$PATH"`.
 
-## Tài khoản demo (seed sẵn)
+## Tài khoản demo (seed sẵn — CHỈ DEMO)
 
-| Vai trò | Email | Mật khẩu |
-|---------|-------|----------|
-| Admin | admin@techzone.vn | Admin@123 |
-| Khách | khach@techzone.vn | Khach@123 |
+| Vai trò | Email |
+|---------|-------|
+| Admin | admin@techzone.vn |
+| Khách | khach@techzone.vn |
+
+**Mật khẩu demo KHÔNG nằm trong code hay bất kỳ file nào được Git theo
+dõi** — chỉ cấp qua biến môi trường (ASP.NET Core tự map vào cấu hình):
+
+```bash
+# Windows PowerShell (chạy local/demo):
+$env:DemoAccounts__Enabled="true"
+$env:DemoAccounts__AdminPassword="MatKhauAdminManhCuaBan"
+$env:DemoAccounts__CustomerPassword="MatKhauKhachManhCuaBan"
+dotnet run
+```
+
+Quy tắc seed (`Data/SeedData.cs`, SEC-01): tài khoản demo chỉ được tạo khi
+**đủ 3 điều kiện** — `DemoAccounts:Enabled=true` một cách chủ động
+(**mặc định TẮT ở mọi môi trường**, kể cả Development), có đủ email +
+mật khẩu cho từng tài khoản, và mật khẩu lấy từ biến môi trường (hoặc
+User Secrets / `appsettings.Development.json` — file này đã gitignore).
+Thiếu mật khẩu → bỏ qua tài khoản đó + log warning. Production mặc định
+không seed demo; chỉ seed khi bật chủ động có chủ ý + có mật khẩu qua env
+(lúc đó app log cảnh báo LOUD).
+
+**Lưu ý:** tắt seed KHÔNG vô hiệu tài khoản demo đã seed từ trước — nếu DB
+cũ còn tài khoản demo trong khi demo đang tắt (hoặc đang chạy Production),
+app log cảnh báo LOUD khi khởi động. Xóa/vô hiệu thủ công: đăng nhập Admin
+→ Quản lý khách hàng, hoặc đổi mật khẩu mạnh + khóa tài khoản. Trang đăng
+nhập chỉ hiện gợi ý chung về chế độ demo khi demo đang bật, không hiện
+mật khẩu.
 
 ## Luồng demo (theo SCOPE.md)
 
 ### 1. Khách mua hàng + voucher + COD
-1. Trang chủ → tìm "Xiaomi 15" → xem chi tiết (thông số Snapdragon 8 Gen 3, RAM 12GB...).
-2. Chọn phiên bản Đen / 256GB → Thêm vào giỏ.
+1. Trang chủ → tìm "Xiaomi 15" → xem chi tiết (Snapdragon 8 Elite, RAM 12GB...).
+2. Chọn phiên bản → Thêm vào giỏ.
 3. Giỏ hàng → nhập mã `TECHZONE500` → Áp dụng (giảm 500.000đ, đơn tối thiểu 5.000.000đ).
 4. Đặt hàng → nhập tên / SĐT / địa chỉ → chọn COD → Đặt hàng.
-5. Xem đơn ở "Đơn của tôi": trạng thái Chờ xác nhận. Đơn #3 mẫu đã có sẵn để xem.
+5. Xem đơn ở "Đơn của tôi". Khách vãng lai (không đăng nhập) xem đơn bằng
+   **mã tra cứu** hiển thị sau khi đặt hàng (`/Orders/Details/{id}?token=...`).
 
 ### 2. Flash Sale
-1. Trang chủ → mục Flash Sale (đồng hồ đếm ngược đến 23:59 hôm nay).
-2. Mua Xiaomi 15 5G giá sale 12.990.000đ (gốc 15.990.000đ) hoặc Tai nghe Xiaomi Buds 5 giá 1.090.000đ.
-3. Hết giới hạn số lượng là hết deal (cột `GioiHanSL` / `DaBan` trong bảng FlashSales).
+Trang chủ → mục Flash Sale (đếm ngược + khung giờ 0h/12h/20h).
+Mua Xiaomi 15 5G giá sale 12.990.000đ (gốc 15.990.000đ) hoặc Tai nghe
+Xiaomi Buds 5 giá 1.090.000đ. Giá hiển thị ở trang chi tiết dùng chung
+`PriceCalculationService` với giỏ/checkout nên không lệch.
 
 ### 3. Admin
-1. Đăng nhập `admin@techzone.vn` → vào Dashboard: doanh thu tháng, đơn chờ xác nhận, top bán chạy, sản phẩm sắp hết hàng, doanh thu 7 ngày.
-2. Quản lý sản phẩm → Thêm sản phẩm mới (nhập đúng giá + thông số thật) → khách thấy ngay ở trang danh mục.
-3. Quản lý đơn hàng → mở đơn #3 (Chờ xác nhận) → đổi sang Đang giao → Đã giao.
-4. Khách vào chi tiết sản phẩm vừa giao → gửi đánh giá sao → điểm trung bình của sản phẩm cập nhật.
-5. Quản lý voucher → thêm mã mới (vd: `GIAM200` giảm 200.000đ).
+1. Đăng nhập `admin@techzone.vn` → Dashboard: doanh thu, đơn chờ xác nhận,
+   top bán chạy, tồn kho thấp, doanh thu 7 ngày.
+2. Quản lý sản phẩm → Thêm sản phẩm mới (giá/tồn kho được validate phía
+   server: chặn giá âm, khuyến mãi 0 hoặc ≥ giá gốc, tồn âm).
+3. Quản lý đơn hàng → đổi trạng thái theo bảng hợp lệ (Đã hủy/Đã giao là cuối).
+4. Quản lý voucher / combo / Flash Sale + khung giờ / banner / kho / khách hàng.
 
-## Thiết kế hệ thống
+## Tính năng đã có (Sprint 1–5 + vòng P0)
 
-### Cơ sở dữ liệu — 15 bảng
-14 bảng theo SCOPE.md (Users qua Identity `AspNetUsers`, Addresses, Categories,
-Brands, Products, ProductImages, ProductVariants, Carts, CartItems, Orders,
-OrderDetails, Vouchers, FlashSales, Reviews) **+ 1 bảng thêm: ProductSpecs**.
+- Catalog, tìm kiếm/lọc, chi tiết SP, biến thể, so sánh, wishlist, đánh giá
+  có ảnh + Q&A, session cart, đã xem gần đây.
+- Checkout demo 1 transaction: giá tính lại từ DB, trừ kho/voucher có điều
+  kiện, idempotency key (POST trùng không tạo đơn mới), hoàn tác đầy đủ khi
+  hủy/đổi trả (tồn/diểm/voucher/lượt sale/hoàn tiền — chỉ hoàn tiền khi đã
+  thu thật, COD chưa trả thì không tạo hoàn tiền giả).
+- Voucher theo hãng/danh mục/hạng/freeship; combo theo DB; Flash Sale chuẩn
+  + theo khung giờ; loyalty Đồng/Bạc/Vàng/**Bạch kim ≥ 50tr** (1 điểm = 1.000đ).
+- VAT giả lập 8%/10% theo cấu hình + snapshot từng dòng; hóa đơn DN yêu cầu
+  đủ tên/MST/địa chỉ, ghi rõ "demo".
+- Đổi trả / bảo hành online (chỉ đơn đã giao), tra cứu bảo hành theo mã đơn
+  (+ mã tra cứu với đơn vãng lai), timeline theo dõi đơn, hủy/đổi địa chỉ.
+- Trả góp 0% giả lập (6/12 tháng), thanh toán ví giả lập (MoMo/ZaloPay/VNPay).
+- 3D viewer (`model-viewer`) cho Xiaomi 15 / TUF F15 / WH-CH520; 4 file GLB
+  trong `wwwroot/models/` (gamepad chưa map vì seed chưa có SP tay cầm).
+- Dark mode (toggle header, lưu localStorage, mặc định theo hệ thống).
 
-**Lựa chọn về ProductSpecs:** tách thành bảng riêng, quan hệ 1-1 với Products,
-thay vì nhét chip/RAM/ROM/Pin/Màn hình/Camera vào bảng Products. Lý do: thông số
-khác nhau theo loại sản phẩm — đồng hồ không có chip/RAM, chuột không có pin,
-SSD không có màn hình. Các trường trong ProductSpecs đều nullable: chỉ điền
-trường nào sản phẩm thật sự có, không bịa thông số cho sản phẩm không có.
-Bộ lọc danh mục (hãng / chip / RAM / dung lượng / giá) đọc trực tiếp từ bảng này.
+## Thiết kế
 
-### Giỏ hàng
-Bản demo dùng **giỏ hàng session** (`Services/CartService`): dùng được cho cả khách
-vãng lai chưa đăng nhập, giá/tồn kho đọc lại từ DB mỗi lần hiển thị nên luôn mới.
-Bảng Carts + CartItems đã map sẵn trong DbContext để giai đoạn sau đồng bộ giỏ
-session vào DB khi khách đăng nhập — không phải sửa schema.
+Minimalism & Swiss Style (UI UX Pro Max). **Palette đã duyệt:**
+xanh điện `#2563EB`, cam san hô `#FF6B35` (giá/badge sale), teal `#0EA5A4`,
+nền trắng, chữ `#0F172A`, font **Be Vietnam Pro** (1 stack duy nhất),
+bo góc tối đa 8px. Token chuẩn duy nhất: `wwwroot/css/design-tokens.css`
+(bản sao ở `design-system/techzone/`).
 
-### Thanh toán & vận chuyển (giả lập)
-- COD hoặc chuyển khoản: đều là giả lập, không thu tiền thật.
-- Phí ship: miễn phí đơn từ 2.000.000đ sau giảm, không thì 30.000đ.
+## Cơ sở dữ liệu — 35 bảng, 5 migrations
 
-### Design system
-Minimalism & Swiss Style (UI UX Pro Max), nhưng **palette trong MASTER.md đã bị
-ghi đè theo ý đã duyệt**: nền trắng, chữ xám đậm `#0F172A`, chỉ 1 màu nhấn
-xanh navy trầm `#1E3A5F`. Không dùng xanh lá `#059669` / cam `#EA580C` của skill.
-Font Rubik (tiêu đề) + Nunito Sans (nội dung), bo góc tối đa 8px, khoảng cách rộng.
-File: `wwwroot/css/site.css`.
+`InitialCreate` → `AddSprint2Financial` → `AddSprint2Rollback` →
+`AddSprint3Combo` → `AddGuestToken` (mã tra cứu đơn vãng lai) →
+`GuestTokenHardening` (SEC-04: hash + hạn + rate limit, xem dưới).
+Migrate tự chạy khi khởi động (`MigrateAsync`). DB cũ thời `EnsureCreated`
+(21 bảng) chuyển đổi bằng `Data/LegacyDbConverter.cs` — xem
+`DATABASE-MIGRATION.md`, luôn làm trên **bản sao** + backup trước.
 
 ## Dữ liệu seed — thật, không bịa
 
-13 sản phẩm, 8 danh mục (Điện thoại, Laptop, Tablet, Tai nghe, Đồng hồ,
-Phụ kiện, Gaming, Linh kiện PC), 9 hãng. Giá và thông số theo giá bán lẻ thực tế
-tháng 11/2026, ví dụ:
-- Xiaomi 15 5G: 12.990.000đ (gốc 15.990.000đ), Snapdragon 8 Gen 3, RAM 12GB,
-  ROM 256GB, Pin 5000mAh, 6.7" AMOLED, Camera 50MP.
-- iPhone 15 Pro: 28.990.000đ (gốc 31.990.000đ), A17 Pro, 8GB/256GB.
-- Laptop ASUS TUF Gaming F15: 18.490.000đ (gốc 24.650.000đ),
-  i5-12450H/8GB/512GB/RTX 3050.
-- Tai nghe Sony WH-CH520: 890.000đ (gốc 1.150.000đ), Bluetooth 5.2, Pin 50h.
-- Voucher `TECHZONE500` giảm 500.000đ (đơn ≥ 5.000.000đ, hết hạn 31/12/2026).
-- 3 đơn mẫu có tổng tiền khớp với chi tiết đơn (đã tính tay trong `Data/SeedData.cs`).
+13 sản phẩm, 8 danh mục, 9 hãng, giá/thông số theo giá bán lẻ thực tế
+tháng 11/2026. 12/13 ảnh thật đã audit (`IMAGE-AUDIT-SPRINT3.md`); ảnh
+Xiaomi Buds 5 (`earbuds.jpg`) chưa xác minh được nguồn. Ảnh brand chỉ
+dùng demo/phi thương mại; SSD 980 PRO là CC-BY-SA-4.0 (ghi công
+D-Kuru/Wikimedia Commons).
 
-## Ảnh sản phẩm — ảnh thật, không ảnh AI
+## Bảo mật — đã làm (vòng P0 + siết thêm vòng Sign-off, 2026-11-06)
 
-`wwwroot/images/` chỉ có ảnh chụp thật lấy từ image-search:
-- `xiaomi15.png` — ảnh thật Xiaomi 15 → dùng cho Xiaomi 15 5G.
-- `iphone15pro.jpg` — ảnh thật iPhone 15 Pro → dùng cho iPhone 15 Pro.
-- `rog-laptop.png` — ảnh laptop gaming ASUS (ROG Strix) → dùng tạm cho
-  Laptop ASUS TUF Gaming F15 (cùng hãng ASUS, cùng dòng gaming).
-- `earbuds.jpg` — ảnh thật tai nghe true wireless → dùng cho Tai nghe
-  Xiaomi Buds 5 (đúng loại true wireless).
+- Đơn khách vãng lai chỉ xem được bằng **mã tra cứu** không đoán được
+  (`Order.GuestToken`); đơn của tài khoản chỉ chủ đơn/Admin xem được.
+  Áp cho `Orders/Details`, `Orders/HoaDon`, `Returns/TraCuu`.
+  **SEC-04 (2026-11-06) — mã tra cứu siết thêm:**
+  mã sinh bằng `RandomNumberGenerator` (16 byte = 128 bit, hex 32 ký tự);
+  DB chỉ lưu **SHA-256 hash** (hex 64 ký tự), không lưu plaintext —
+  mã gốc chỉ hiện 1 lần duy nhất sau khi đặt hàng (TempData) và khi Admin
+  cấp lại; verify hash rồi so sánh bằng `FixedTimeEquals`. Mã chỉ gửi
+  bằng **form POST** (không còn `?token=` trong URL — tránh lộ vào
+  history/log/Referer); GET không đủ quyền thì hiện form nhập mã chung
+  (không lộ đơn có tồn tại hay thuộc loại nào). **Hạn dùng 30 ngày** kể từ
+  ngày đặt (đủ tra cứu/bảo hành sau khi nhận hàng, không để mã rò rỉ sống
+  mãi); quá hạn thì Admin cấp lại. **Rate limit lưu trong DB:** nhập sai
+  5 lần liên tiếp → khóa tra cứu đơn đó 15 phút; nhập đúng reset đếm.
+  **Không có quyền xem → trả 404** (không phải 403/302) để chống lộ tín
+  hiệu "đơn tồn tại" — kể cả `Returns/Details` (SEC-05); message tra cứu
+  thống nhất một câu chung. Admin cấp lại mã tra cứu
+  (`POST CapLaiMaTraCuu`, chỉ đơn vãng lai — mã cũ vô hiệu ngay) **chỉ
+  sau khi nhập họ tên + SĐT khách cung cấp khớp với đơn** (đơn vãng lai
+  không có email riêng — đối chiếu tên + SĐT trong `DiaChiGiao`).
+  Token cũ (plaintext, trước SEC-04) vẫn dùng được: verify chấp nhận cả
+  hai dạng, lần khớp đầu tiên tự nâng cấp lên hash; migration
+  `GuestTokenHardening` ân hạn 30 ngày cho token cũ, và
+  `Services/GuestTokenBackfill.ChayAsync` hash hàng loạt khi cần (chạy
+  theo lệnh — SQLite không có hàm SHA-256 trong SQL nên không hash được
+  trực tiếp trong migration). Đơn cũ `GuestToken = NULL` vẫn chỉ Admin
+  xem được — không tự động backfill.
+- Tài khoản demo qua cấu hình `DemoAccounts` (xem trên): mặc định TẮT,
+  mật khẩu chỉ cấp qua biến môi trường, không còn trong bất kỳ file nào
+  được Git theo dõi. App log cảnh báo LOUD nếu DB còn tài khoản demo
+  trong khi demo đang tắt / đang chạy Production.
+- Đăng nhập sai 5 lần → khóa 5 phút (`lockoutOnFailure: true`); có test tự
+  động bằng harness SignInManager/UserManager thật (`LockoutTests`). Login
+  một thông báo chung, không phân biệt "không có user" vs "sai mật khẩu".
+- Mọi action nhạy cảm đều `[Authorize]` + kiểm ownership hoặc kiểm tra mã
+  tra cứu (đơn vãng lai); Admin có `[Authorize(Roles="Admin")]` ở class.
 
-### Chỗ còn thiếu ảnh thật
-- **9/13 sản phẩm dùng `placeholder.svg`** (Samsung A55, OPPO Reno11, Lenovo LOQ 15,
-  iPad Gen 10, 2 đồng hồ, chuột Logitech, SSD 980 PRO, Sony WH-CH520).
-  Lý do: chưa có ảnh hãng cho các sản phẩm này trong máy. Đặc biệt lưu ý
-  **Sony WH-CH520 là tai nghe on-ear, không dùng ảnh `earbuds.jpg`** (tai nghe
-  nhét tai) cho nó — dùng sai loại còn tệ hơn dùng placeholder.
-- Muốn đủ ảnh: tải ảnh chính thức từ trang hãng / nhà phân phối cho từng sản phẩm,
-  bỏ vào `wwwroot/images/`, thêm dòng `ProductImage` trong `SeedData.cs`
-  (hoặc thêm form upload ảnh ở Admin — hiện Admin chưa có upload ảnh, chỉ quản lý
-  tên/giá/tồn kho/thông số; xem "Chưa làm" bên dưới).
+## Cảnh báo trước khi public
 
-## Chưa làm (nằm ngoài scope sương sương)
-- Upload ảnh sản phẩm ở trang Admin (hiện chỉ gán ảnh qua seed).
-- Đăng nhập Google / Facebook, thanh toán thật (VNPay/MoMo), vận chuyển thật (GHN/GHTK).
-- Wishlist, chat với shop, gợi ý AI, app mobile.
-- Phân trang admin chưa có (danh sách sản phẩm/đơn hiện toàn bộ).
-- Chuyển sang SQL Server: đổi connection string trong `appsettings.json` và
-  `UseSqlite` → `UseSqlServer` trong `Program.cs`, thêm migration
-  (`dotnet ef migrations add Init` rồi `dotnet ef database update`).
+1. **VAT NEEDS_TAX_REVIEW** — cả 8 nhóm chưa đối chiếu mã HS theo
+   NĐ 174/2025/NĐ-CP; thuế suất 8% là giả định, **không dùng khai thuế thật**.
+2. Thanh toán / hóa đơn VAT đều là **giả lập** — không thu tiền thật, không
+   phát hành hóa đơn điện tử hợp pháp.
+3. Đăng ký chỉ tự xác nhận email (`EmailConfirmed = true`) khi KHÔNG phải
+   Production (Development/demo) vì chưa có hệ thống gửi email thật — ở
+   Production đăng ký để `EmailConfirmed = false`. Phải làm xác thực email
+   thật trước khi public.
+4. Đơn vãng lai tạo trước khi có `GuestToken` (`GuestToken = NULL`) thì chủ
+   cũ không xem được nữa (chỉ Admin xem được) — cần backfill token nếu muốn
+   giữ quyền xem đơn cũ.
 
-## Kiểm chứng (chưa chạy build)
-- Máy viết code **không có dotnet** nên chưa chạy `dotnet build` / `dotnet run`.
-  Trước khi demo, chạy `dotnet build` một lần trên máy có .NET 8 SDK để bắt lỗi
-  biên dịch (nếu có) rồi mới `dotnet run`.
-- Đã kiểm tra bằng mắt: mọi giá seed đều có trong `SeedData.cs`, tổng tiền 3 đơn
-  mẫu đã tính khớp, ảnh gán đúng sản phẩm (trừ 2 trường hợp đã ghi rõ ở trên).
+## Kiểm thử
+
+```bash
+dotnet test TechZone.Tests/TechZone.Tests.csproj   # máy thường / CI
+dotnet run --project TechZone.Tests.Runner/TechZone.Tests.Runner.csproj  # dự phòng
+```
+
+`dotnet test` bị chặn trong sandbox (vstest TCP channel hỏng do proxy) nên
+dùng runner trực tiếp (gọi thẳng các method `[Fact]`, cùng code/assertion).
+Hiện tại: **222/222 PASS** (Migration 5, Checkout 9, FlashSale 10, Rollback
+10, Vat 11, VoucherLoyalty 12, Combo 8, Platinum 10, AdminInventory 25,
+ConcurrencyQa 3, Security 8, DemoAccounts 15, GuestToken 14, Lockout 9,
+GuestTokenHardening 13, CartCheckoutParity 11, CheckoutTampering 30
+(21 Bước 4a + 6 chống race / POST trực tiếp + 3 Final Check: P1-1 ×1,
+P1-2 ×2), Warranty 19 (17 có sẵn + 2 GET báo trùng BH/đổi trả, Final Check)).
+Xem `TEST-REPORT.md` (thư mục docs ngoài). 15 luồng nghiệm thu chạy lại đủ
+vòng Phase 3 follow-up (2026-11-06): **15/15 PASS** — F14 (3D) PASS có lưu ý
+(viewer 72/76, 4 FAIL cùng check reset góc, thuộc tính `camera-orbit` luôn
+đúng map, chỉ số đo theta lag trên headless).
+
+## Chưa làm / còn lại
+
+- VAT đối chiếu mã HS (việc pháp lý, ngoài code); phí ship không tính VAT.
+- **FIN-02 (XONG 2026-11-06, đã kiểm chứng Phase 3):** tổng giỏ = tổng
+  checkout với khách có hạng — cả hai đi qua `PriceCalculationService.
+  TinhTongDonAsync()`; giỏ hiện dòng "Giảm hạng Vàng (2%)". Ví dụ live:
+  2× Xiaomi 15 + TECHZONE500 = 25.980.000đ − 500.000đ − 519.600đ =
+  24.960.400đ ở giỏ, checkout và đơn (11 test `CartCheckoutParityTests`).
+  **Bước 4a (2026-11-06, chưa commit, nhánh `security/signoff-20261106`):**
+  Checkout POST không còn tin `GiamGiaHang`/`GiamGiaDiem`/`FreeShip`/
+  `GiamGiaCombo` từ controller — `CheckoutService` tính lại toàn bộ từ
+  DB trong transaction (giảm hạng theo hạng hiện tại, điểm theo số dư
+  thật + chặn ở phần còn lại, freeship hạng/voucher, phí ship); giá
+  dòng snapshot từ giá tính lại. Đổi dữ liệu giữa GET và POST (hạng,
+  voucher, Flash Sale, điểm) thì POST trả về lại trang Checkout với
+  tổng mới + "Giá đã thay đổi, vui lòng xác nhận lại", submit lại mới
+  đặt; hết hàng thì từ chối thẳng về giỏ. **Chống race (tiếp theo Bước
+  4a, 2026-11-06):** cửa sổ còn lại là giữa lúc controller so với ảnh
+  GET và lúc service chạy transaction — controller truyền tổng đã xác
+  nhận (`KetQuaTongDon.TongCong`) vào service qua `CheckoutInput.
+  TongXacNhan`; service so lại tổng cuối trong transaction trước khi
+  tạo đơn, khác thì hủy toàn bộ, không tạo đơn, trả cờ
+  `CheckoutResult.GiaDaThayDoi = true` để controller hiện lại trang
+  Checkout với tổng mới. **Chính sách xác nhận giá (chốt):**
+  POST trực tiếp không qua GET (không có snapshot) được chấp nhận —
+  tổng service tính lại trong transaction chính là tổng xác nhận
+  (submit = xác nhận); snapshot chỉ bảo vệ trường hợp giá đổi giữa
+  GET và POST. 30 test `CheckoutTamperingTests` (21 Bước 4a + 6 mới
+  chống race / POST trực tiếp + 3 Final Check: P1-1 ×1, P1-2 ×2),
+  runner 222/222 PASS.
+  **Final Check (2026-11-06, chưa commit):** P1-1 — khách vãng lai nhập
+  điểm không còn kẹt vòng lặp "Giá đã thay đổi": controller kiểm tra
+  `LoiDiem` trước `CoThayDoi` bất kể đăng nhập (trả form + lỗi "Cần đăng
+  nhập để dùng điểm tích lũy") và form ẩn ô điểm khi chưa đăng nhập.
+  P1-2 — hết quota Flash Sale xử lý như hết giờ (hướng A: quota chỉ
+  giới hạn số suất GIÁ SALE, khách vẫn mua được giá gốc qua trang xác
+  nhận lại; service chấp nhận khi bên gọi đã gửi giá gốc, vẫn từ chối
+  "vừa hết suất" khi bên gọi còn giữ giá sale cũ; suất mất ngay trong
+  transaction thì trả cờ `GiaDaThayDoi` để xác nhận lại giá gốc).
+  P2 — GET form bảo hành báo trùng ngay khi đã có yêu cầu đang mở.
+- Chống trùng yêu cầu bảo hành/đổi trả hiện là check-then-act (GET/POST
+  kiểm tra rồi mới tạo) nên 2 POST song song vẫn có thể tạo 2 yêu cầu
+  trùng — cần unique index DB (partial index theo trạng thái đang mở) +
+  xử lý lỗi trùng ở POST nếu muốn siết hẳn (P2, còn mở sau Final Check).
+- Thu hồi điểm Earn khi hủy có thể làm số dư điểm âm (đã ghi rõ "nợ điểm").
+- Đơn Chờ xác nhận vẫn tính vào chi tiêu xét hạng; Gold 2% tính trên toàn
+  bộ tạm tính (trước khi trừ combo); lệch làm tròn 1đ/1 điểm.
+- Admin ProductForm vẫn cho sửa tay Tồn kho/Giá (bypass luồng nhập kho
+  StockIn) — đã validate giá trị nhưng chưa khóa hẳn.
+- CI: workflow `.github/workflows/ci.yml` đã tạo (build + `dotnet test` trên
+  runner GitHub) nhưng **chưa chạy thật** — cần duyệt + push; chưa gắn làm
+  required check. **Đã sửa 2026-11-06 (vòng Sign-off):** thêm bước Build
+  Tests (repo không có .sln nên `dotnet build` ở root chỉ build app) +
+  `permissions: contents: read`; đã mô phỏng trên bản sao sạch: DLL Tests
+  tồn tại, `dotnet test --no-build` chỉ dừng ở lỗi vstest transport đã
+  biết trong sandbox (trên runner GitHub thật sẽ chạy test bình thường).
+- Voucher hết hạn dạng date-midnight (hết hiệu lực đầu ngày hết hạn).

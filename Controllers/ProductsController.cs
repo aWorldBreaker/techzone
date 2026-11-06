@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechZone.Data;
 using TechZone.Models;
+using TechZone.Services;
 
 namespace TechZone.Controllers;
 
@@ -22,9 +23,8 @@ public class ProductsController : Controller
     // con han, co chua SP nay), khong hard-code Dictionary nhu truoc
     // (AUDIT P2-12). Khong co combo hop le thi fallback nhu cu: SP cung
     // danh muc ban chay nhat. ViewBag.ComboId de form AddCombo gui kem.
-    private async Task<(Product? SanPhamKem, Combo? ComboDb)> TimComboAsync(int productId)
+    private async Task<(Product? SanPhamKem, Combo? ComboDb)> TimComboAsync(int productId, DateTime now)
     {
-        var now = DateTime.Now;
         var comboDb = await _db.Combos
             .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
             .Where(c => c.IsActive && c.BatDau <= now && c.KetThuc >= now
@@ -41,11 +41,13 @@ public class ProductsController : Controller
 
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _env;
+    private readonly PriceCalculationService _gia;
 
-    public ProductsController(AppDbContext db, IWebHostEnvironment env)
+    public ProductsController(AppDbContext db, IWebHostEnvironment env, PriceCalculationService gia)
     {
         _db = db;
         _env = env;
+        _gia = gia;
     }
 
     public async Task<IActionResult> Index(ProductFilterViewModel filter)
@@ -121,6 +123,20 @@ public class ProductsController : Controller
             .FirstOrDefaultAsync(p => p.Id == id);
         if (product is null) return NotFound();
 
+        // SALE-01: gia hien thi tinh qua PriceCalculationService — cung
+        // ham, cung thu tu uu tien (FlashSale > slot theo gio > gia goc)
+        // nhu Cart/Checkout, so luong mac dinh 1, bien the mac dinh
+        // (giaThem = 0). Dung 1 moc `now` cho ca gia lan combo de cung
+        // 1 thoi diem thi gia Details == gia Cart/Checkout.
+        var now = DateTime.Now;
+        var gia = await _gia.TinhGiaAsync(id, 0, 1, now);
+        ViewBag.GiaHienThi = gia.DonGia;
+        ViewBag.GiaGoc = gia.GiaGoc;
+        ViewBag.TenKhuyenMai = gia.TenKhuyenMai;
+        ViewBag.FlashSaleApDung = gia.FlashSaleId.HasValue
+            ? product.FlashSales.FirstOrDefault(f => f.Id == gia.FlashSaleId.Value)
+            : null;
+
         // Lich su da xem: moi nhat dau, khu trung, toi da 8 (mau CompareController).
         var daXem = LayDaXem();
         daXem.Remove(id);
@@ -144,13 +160,37 @@ public class ProductsController : Controller
         // ViewBag.ComboGiamGia = so tien giam cua 1 bo (neu co combo).
         Product? combo = null;
         Combo? comboDb = null;
-        (combo, comboDb) = await TimComboAsync(id);
+        (combo, comboDb) = await TimComboAsync(id, now);
+        // SALE-01: tong bo + giam gia combo tinh qua TinhGiaComboAsync
+        // (cung ham checkout dung — gia tung mon lay lai qua TinhGiaAsync
+        // nen Flash Sale duoc ap truoc khi giam %). Khong cong GiaBan nua.
+        Dictionary<int, decimal>? giaMonCombo = null;
         if (comboDb is not null)
         {
-            var tongBo = comboDb.Items.Sum(i => i.Product.GiaBan * i.SoLuong);
-            ViewBag.ComboGiamGia = Math.Round(tongBo * comboDb.PhanTramGiam / 100);
-            ViewBag.ComboTongBo = tongBo;
-            ViewBag.ComboId = comboDb.Id;
+            var linesCombo = comboDb.Items.Select(i => new CartLineViewModel
+            {
+                Product = i.Product,
+                Variant = null,
+                SoLuong = i.SoLuong,
+            }).ToList();
+            var ketQuaCombo = await _gia.TinhGiaComboAsync(comboDb.Id, linesCombo, now);
+            if (ketQuaCombo.HopLe)
+            {
+                ViewBag.ComboTongBo = ketQuaCombo.TongTienBo;
+                ViewBag.ComboGiamGia = ketQuaCombo.GiamGia;
+                ViewBag.ComboId = comboDb.Id;
+                // Gia hien thi tung mon (da ap Flash Sale neu co) de tong
+                // cac mon hien thi khop TongTienBo.
+                giaMonCombo = new Dictionary<int, decimal>();
+                foreach (var item in comboDb.Items)
+                {
+                    var g = await _gia.TinhGiaAsync(item.ProductId, 0, item.SoLuong, now);
+                    giaMonCombo[item.ProductId] = g.DonGia;
+                }
+            }
+            // Khong hop le (vd Flash Sale cua 1 mon vua het suat): khong
+            // set ComboId — form AddCombo se them 2 mon nhu hang thuong,
+            // checkout khong ap giam combo; khong hien tong bo sai nhu truoc.
         }
         combo ??= await _db.Products
             .Include(p => p.Images)
@@ -158,6 +198,12 @@ public class ProductsController : Controller
             .OrderByDescending(p => p.LuotBan)
             .FirstOrDefaultAsync();
         ViewBag.Combo = combo;
+        if (giaMonCombo is not null)
+        {
+            ViewBag.ComboGiaChinh = giaMonCombo.TryGetValue(id, out var gc) ? gc : product.GiaBan;
+            ViewBag.ComboGiaKem = combo is not null
+                && giaMonCombo.TryGetValue(combo.Id, out var gk) ? gk : (decimal?)null;
+        }
 
         // Trang thai yeu thich cua tai khoan dang nhap (neu co).
         var daYeuThich = false;

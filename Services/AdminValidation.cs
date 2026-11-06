@@ -42,6 +42,26 @@ public static class AdminValidation
     }
 
     /// <summary>
+    /// Kiem tra gia/ton kho san pham moi (tao/sua). Tra null = hop le.
+    /// GiaKhuyenMai null (form de trong) = khong giam gia; 0 bi chan vi
+    /// GiaBan = GiaKhuyenMai ?? Gia nen 0 se bien SP thanh 0d (mien phi).
+    /// Lop 2 sau [Range] tren model: chan ca truong hop ModelState bi
+    /// bypass hoac gia khuyen mai vuot gia goc (Range rieng le khong
+    /// so sanh duoc 2 field voi nhau).
+    /// </summary>
+    public static string? KiemTraProduct(decimal gia, decimal? giaKhuyenMai, int tonKho)
+    {
+        if (gia < 0) return "Giá bán không được âm.";
+        if (giaKhuyenMai < 0) return "Giá khuyến mãi không được âm.";
+        if (giaKhuyenMai == 0)
+            return "Giá khuyến mãi phải lớn hơn 0, hoặc để trống nếu không giảm giá.";
+        if (giaKhuyenMai > 0 && giaKhuyenMai >= gia)
+            return "Giá khuyến mãi phải nhỏ hơn giá bán.";
+        if (tonKho < 0) return "Tồn kho không được âm.";
+        return null;
+    }
+
+    /// <summary>
     /// Kiem tra 1 mon trong khung Flash Sale. giaGoc = GiaBan cua SP
     /// (GiaKhuyenMai neu co). Gia sale phai &gt; 0 VA re hon gia ban —
     /// PriceCalculationService bo qua sale &gt;= GiaBan nen gia sale

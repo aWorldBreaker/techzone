@@ -118,6 +118,16 @@ public class AdminController : Controller
         ViewBag.Brands = await _db.Brands.OrderBy(b => b.Ten).ToListAsync();
         if (!ModelState.IsValid) return View(model);
 
+        // Validation nghiep vu server-side (DATA-01): chan gia/tồn kho am,
+        // khuyen mai >= gia goc. [Range] tren model la lop 1 (ModelState);
+        // day la lop 2, bat ca truong hop ModelState bi bypass.
+        var loiGia = AdminValidation.KiemTraProduct(model.Gia, model.GiaKhuyenMai, model.TonKho);
+        if (loiGia is not null)
+        {
+            TempData["Error"] = loiGia;
+            return View(model);
+        }
+
         // Kiem tra anh moi truoc khi luu: chi nhan anh, toi da 5MB.
         string? loiAnh = null;
         string? duoiAnh = null;
@@ -248,6 +258,68 @@ public class AdminController : Controller
             .FirstOrDefaultAsync(o => o.Id == id);
         return order is null ? NotFound() : View(order);
     }
+
+    /// <summary>
+    /// SEC-02 + SEC-04 — Cap lai ma tra cuu cho don khach vang lai (chi Admin,
+    /// ep buoc boi [Authorize(Roles = "Admin")] o cap class).
+    /// Quy trinh van hanh (khong gui ma tu dong — chua co email/SMS that):
+    ///  1. Khach mat ma lien he shop, cung cap thong tin dat hang de doi
+    ///     chieu: ten nguoi nhan, SDT, ma don, tong tien.
+    ///  2. Admin mo trang chi tiet don, nhap ten + SDT khach cung cap vao
+    ///     form cap lai. He doi chieu: SDT (chi so, khong phan biet khoang
+    ///     trang/dau) va ho ten (khong phan biet hoa/thuong) PHAI KHOP voi
+    ///     DiaChiGiao tren don — sai thi khong cap lai (SEC-04: tranh
+    ///     Admin bam nham / ke gian doi ten don de cuop ma).
+    ///     Don khong co email rieng (checkout vang lai chi luu ten/SDT/
+    ///     dia chi trong DiaChiGiao) nen doi chieu dung ten + SDT.
+    ///  3. Khop thi he sinh ma moi bang RandomNumberGenerator (128 bit),
+    ///     luu SHA-256 hash + han 30 ngay, reset dem sai/khoa; ma cu het
+    ///     hieu luc ngay lap tuc, khong co thoi gian chong cheo.
+    ///  4. Admin chuyen ma moi cho khach qua kenh da xac minh (goi dien /
+    ///     nhan tin vao SDT tren don). Ma moi chi hien trong thong bao
+    ///     tren trang admin (TempData) — khong ghi log, khong gui tu dong.
+    /// Don cua tai khoan khong cap lai duoc (khach dang nhap la xem duoc);
+    /// don cu khong co token thi KHONG backfill tu dong — chi cap khi
+    /// khach yeu cau va admin xac minh (xem quy trinh tren).
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CapLaiMaTraCuu(int id, string hoTenDoiChieu, string soDienThoaiDoiChieu)
+    {
+        var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id);
+        if (order is null) return NotFound();
+        if (order.UserId is not null)
+        {
+            TempData["Error"] = "Chỉ cấp lại mã tra cứu cho đơn khách vãng lai. Đơn này thuộc tài khoản — khách đăng nhập để xem đơn.";
+            return RedirectToAction(nameof(OrderDetails), new { id });
+        }
+        // SEC-04: doi chieu chu don truoc khi cap lai. DiaChiGiao luu theo
+        // dinh dang "{HoTen}, {SDT}, {DiaChi}" (xem OrdersController.Checkout).
+        var diaChiParts = (order.DiaChiGiao ?? string.Empty)
+            .Split(new[] { ", " }, 3, StringSplitOptions.None);
+        var hoTenTrenDon = diaChiParts.Length > 0 ? diaChiParts[0].Trim() : string.Empty;
+        var sdtTrenDon = diaChiParts.Length > 1 ? ChiLaySo(diaChiParts[1]) : string.Empty;
+        var hoTenNhap = (hoTenDoiChieu ?? string.Empty).Trim();
+        var sdtNhap = ChiLaySo(soDienThoaiDoiChieu ?? string.Empty);
+        if (string.IsNullOrEmpty(hoTenNhap) || string.IsNullOrEmpty(sdtNhap)
+            || sdtTrenDon.Length == 0
+            || !string.Equals(hoTenNhap, hoTenTrenDon, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(sdtNhap, sdtTrenDon, StringComparison.Ordinal))
+        {
+            TempData["Error"] = "Thông tin đối chiếu (họ tên / số điện thoại) không khớp với đơn — không cấp lại mã tra cứu. Kiểm tra lại với khách.";
+            return RedirectToAction(nameof(OrderDetails), new { id });
+        }
+        var tokenMoi = OrderAccess.TaoGuestToken();
+        order.GuestToken = OrderAccess.BamGuestToken(tokenMoi);
+        order.GuestTokenHetHan = DateTime.Now.AddDays(OrderAccess.HanTokenNgay);
+        OrderAccess.GhiNhanDung(order);
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Đã cấp mã tra cứu mới cho đơn #{id}: {tokenMoi}. Mã cũ đã hết hiệu lực — chỉ gửi mã mới cho khách qua kênh đã xác minh.";
+        return RedirectToAction(nameof(OrderDetails), new { id });
+    }
+
+    /// <summary>Chi giu lai chu so (SDT doi chieu khong phan biet khoang trang/dau/gach).</summary>
+    private static string ChiLaySo(string s) => new(s.Where(char.IsDigit).ToArray());
 
     /// <summary>
     /// Admin doi trang thai don. Ep buoc bang chuyen hop le (Sprint 1):

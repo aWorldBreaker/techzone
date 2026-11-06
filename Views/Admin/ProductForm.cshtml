@@ -23,10 +23,12 @@
     <div class="form-group">
         <label asp-for="Gia">Giá gốc (đ)</label>
         <input asp-for="Gia" class="form-control" type="number" min="0" step="1000" />
+        <span asp-validation-for="Gia" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="GiaKhuyenMai">Giá khuyến mãi (đ, để trống nếu không giảm)</label>
         <input asp-for="GiaKhuyenMai" class="form-control" type="number" min="0" step="1000" />
+        <span asp-validation-for="GiaKhuyenMai" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="CategoryId">Danh mục</label>
@@ -39,6 +41,7 @@
     <div class="form-group">
         <label asp-for="TonKho">Tồn kho</label>
         <input asp-for="TonKho" class="form-control" type="number" min="0" />
+        <span asp-validation-for="TonKho" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label><input asp-for="LaNoiBat" /> Sản phẩm nổi bật (hiện ở trang chủ)</label>

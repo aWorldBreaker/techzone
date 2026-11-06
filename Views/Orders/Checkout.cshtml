@@ -5,6 +5,15 @@
 
 <h1>Đặt hàng</h1>
 
+@* Bước 4a: giá đổi giữa GET và POST — POST trả về lại trang này với tổng
+   mới; banner nhắc khách kiểm tra lại tổng mới trước khi bấm đặt lần nữa. *@
+@if (ViewBag.GiaDaThayDoi == true)
+{
+    <div class="alert alert-warning" role="alert">
+        Giá đã thay đổi, vui lòng kiểm tra lại tổng tiền mới bên dưới trước khi xác nhận đặt hàng.
+    </div>
+}
+
 <div class="cart-layout">
     <form asp-action="Checkout" method="post">
         @* Key chong dat don trung (Sprint 1): cung key POST 2 lan chi tao 1 don. *@
@@ -57,11 +66,22 @@
             </select>
             <p class="text-muted" id="tien-gop-thang"></p>
         </div>
-        <div class="form-group">
-            <label asp-for="DiemDung">Dùng điểm tích lũy</label>
-            <input asp-for="DiemDung" type="number" min="0" class="form-control" />
-            <p class="text-muted">Bạn có @ViewBag.DiemHienTai điểm (1 điểm = 1.000đ)</p>
-        </div>
+        @* P1-1 (Final Check): o diem chi hien khi da dang nhap — khach
+           vang lai khong co diem de dung. An o diem tranh truong hop
+           nhap diem roi ket vong lap "Giá đã thay đổi" (server cung
+           chan: OrdersController tra loi ro rang neu van gui diem). *@
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <div class="form-group">
+                <label asp-for="DiemDung">Dùng điểm tích lũy</label>
+                <input asp-for="DiemDung" type="number" min="0" class="form-control" />
+                <p class="text-muted">Bạn có @ViewBag.DiemHienTai điểm (1 điểm = 1.000đ)</p>
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Đăng nhập để dùng điểm tích lũy (1 điểm = 1.000đ).</p>
+        }
         <partial name="_HoaDonVat" model="Model" />
         <button type="submit" class="btn btn-primary btn-block">Đặt hàng — @Model.GioHang.TongCong.ToString("N0")đ</button>
         <p class="text-muted">Bằng cách đặt hàng, bạn đồng ý với Điều khoản &amp; Chính sách bảo mật của TechZone.</p>
@@ -84,11 +104,15 @@
         }
         @if (Model.GioHang.GiamGiaHang > 0)
         {
-            <div class="summary-row"><span>Giảm hạng Vàng</span><span>- @Model.GioHang.GiamGiaHang.ToString("N0")đ</span></div>
+            <div class="summary-row"><span>Giảm hạng @(ViewBag.Hang ?? "thành viên") (2%)</span><span>- @Model.GioHang.GiamGiaHang.ToString("N0")đ</span></div>
         }
         @if (Model.GioHang.GiamGiaCombo > 0)
         {
             <div class="summary-row"><span>Giảm combo</span><span>- @Model.GioHang.GiamGiaCombo.ToString("N0")đ</span></div>
+        }
+        @if (Model.GioHang.GiamGia > 0 || Model.GioHang.GiamGiaDiem > 0 || Model.GioHang.GiamGiaHang > 0 || Model.GioHang.GiamGiaCombo > 0)
+        {
+            <div class="summary-row"><span>Tạm tính sau giảm</span><span>@Model.GioHang.SauGiam.ToString("N0")đ</span></div>
         }
         <div class="summary-row"><span>Phí ship</span><span>@(Model.GioHang.PhiShip == 0 ? "Miễn phí" : Model.GioHang.PhiShip.ToString("N0") + "đ")</span></div>
         <div class="summary-row total"><span>Tổng cộng</span><span>@Model.GioHang.TongCong.ToString("N0")đ</span></div>

@@ -81,6 +81,40 @@ public class Order
     [MaxLength(64)]
     public string? IdempotencyKey { get; set; }
 
+    /// <summary>
+    /// Mã tra cứu riêng của đơn khách vãng lai (SEC-02, siết SEC-04):
+    /// lưu SHA-256 hash (hex 64 ký tự) của mã gốc, KHÔNG lưu plaintext.
+    /// Mã gốc chỉ hiện 1 lần duy nhất ngay sau khi đặt hàng (TempData) và
+    /// khi Admin cấp lại (TempData trên trang Admin) — không ghi log.
+    /// Hàng legacy (trước SEC-04) có thể còn plaintext 32 ký tự: verify
+    /// vẫn chấp nhận (đường đọc kép) và nâng cấp lên hash ngay lần khớp
+    /// đầu tiên, hoặc chạy <see cref="Services.GuestTokenBackfill"/>.
+    /// Null = đơn của tài khoản. Xem Services/OrderAccess.
+    /// </summary>
+    [MaxLength(64)]
+    public string? GuestToken { get; set; }
+
+    /// <summary>
+    /// SEC-04: hạn dùng của mã tra cứu — token mới có hạn 30 ngày kể từ
+    /// ngày đặt (OrderAccess.HanTokenNgay). 30 ngày: đủ cho khách tra cứu /
+    /// bảo hành sau khi nhận hàng, nhưng không để mã rò rỉ sống mãi; quá
+    /// hạn thì Admin cấp lại sau khi đối chiếu thông tin chủ đơn.
+    /// Null = không hạn (chỉ hàng legacy sau migration, được hưởng 30 ngày
+    /// ân hạn kể từ lúc migrate — xem migration GuestTokenHardening).
+    /// </summary>
+    public DateTime? GuestTokenHetHan { get; set; }
+
+    /// <summary>
+    /// SEC-04: số lần nhập sai mã tra cứu liên tiếp của đơn này (rate
+    /// limit lưu trong DB để sống qua restart — thay vì bộ nhớ).
+    /// Đạt 5 lần (OrderAccess.GioiHanSai) thì khóa tra cứu 15 phút
+    /// (GuestTokenKhoaDen); nhập đúng thì reset về 0.
+    /// </summary>
+    public int GuestTokenSaiLan { get; set; }
+
+    /// <summary>SEC-04: tra cứu đơn này bị khóa đến thời điểm này (null = không khóa).</summary>
+    public DateTime? GuestTokenKhoaDen { get; set; }
+
     [MaxLength(20)]
     public string? MaVoucher { get; set; }
 

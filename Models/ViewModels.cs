@@ -72,7 +72,9 @@ public class CartViewModel
     /// <summary>So tien giam do doi diem (nhom B, chi o checkout).</summary>
     public decimal GiamGiaDiem { get; set; }
 
-    /// <summary>So tien giam them cho hang Vang 2% (nhom B, chi o checkout).</summary>
+    /// <summary>So tien giam them cho hang Vang / Bach kim 2% tam tinh (nhom B).
+    /// P1 (2026-11-06): ap ca o gio (qua PriceCalculationService.TinhTongDonAsync),
+    /// khong chi o checkout nua.</summary>
     public decimal GiamGiaHang { get; set; }
 
     /// <summary>So tien giam do combo (Sprint 3 — B-7, chi o checkout).</summary>

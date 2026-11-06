@@ -41,3 +41,39 @@
     <a asp-action="Orders" class="btn btn-secondary">Về danh sách đơn</a>
 </form>
 <p class="text-muted mt">Hủy đơn sẽ hoàn lại tồn kho cho các sản phẩm trong đơn.</p>
+
+@* SEC-02 + SEC-04 — Mã tra cứu đơn khách vãng lai: chỉ hiện cho đơn vãng lai.
+   DB chi luu SHA-256 hash nen KHONG hien duoc ma goc; chi hien trang thai
+   (co ma / han dung / khoa). Cap lai PHAI nhap ten + SDT khach cung cap de
+   doi chieu voi don (AdminController.CapLaiMaTraCuu); ma cu het hieu luc
+   ngay khi cap ma moi. Gui ma moi cho khach qua kenh da xac minh — khong
+   gui tu dong. *@
+@if (Model.UserId is null)
+{
+    <hr />
+    <h2>Mã tra cứu (khách vãng lai)</h2>
+    <p>
+        Mã tra cứu: <strong>@(string.IsNullOrEmpty(Model.GuestToken) ? "chưa có (đơn cũ — chỉ cấp khi khách yêu cầu)" : "đã đặt (lưu dạng hash SHA-256, không hiển thị được mã gốc)")</strong>
+        @if (Model.GuestTokenHetHan.HasValue)
+        {
+            <span>• Hạn dùng: @Model.GuestTokenHetHan.Value.ToString("dd/MM/yyyy HH:mm")</span>
+        }
+        @if (Model.GuestTokenKhoaDen.HasValue && Model.GuestTokenKhoaDen.Value > DateTime.Now)
+        {
+            <span>• Đang khóa tra cứu đến @Model.GuestTokenKhoaDen.Value.ToString("dd/MM/yyyy HH:mm") (nhập sai 5 lần)</span>
+        }
+    </p>
+    <form asp-action="CapLaiMaTraCuu" method="post" class="mt">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <div class="form-group">
+            <label for="hoTenDoiChieu">Họ tên người nhận (khách cung cấp — phải khớp đơn)</label>
+            <input type="text" name="hoTenDoiChieu" id="hoTenDoiChieu" class="form-control" required />
+        </div>
+        <div class="form-group">
+            <label for="soDienThoaiDoiChieu">Số điện thoại đặt hàng (khách cung cấp — phải khớp đơn)</label>
+            <input type="text" name="soDienThoaiDoiChieu" id="soDienThoaiDoiChieu" class="form-control" required />
+        </div>
+        <button type="submit" class="btn btn-warning" onclick="return confirm('Cấp mã mới sẽ vô hiệu mã cũ ngay lập tức. Đã đối chiếu họ tên + SĐT với đơn chưa?');">Cấp lại mã tra cứu</button>
+    </form>
+    <p class="text-muted mt">Chỉ cấp lại khi khách mất mã và đã xác minh đúng người đặt (họ tên + SĐT trên đơn). Mã mới hiện 1 lần trong thông báo sau khi cấp — gửi cho khách qua kênh đã xác minh.</p>
+}

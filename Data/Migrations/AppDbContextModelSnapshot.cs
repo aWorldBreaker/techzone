@@ -584,6 +584,19 @@ namespace TechZone.Data.Migrations
                     b.Property<decimal>("GiamGiaHang")
                         .HasColumnType("decimal(18,0)");
 
+                    b.Property<string>("GuestToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("GuestTokenHetHan")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("GuestTokenKhoaDen")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GuestTokenSaiLan")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("IdempotencyKey")
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");

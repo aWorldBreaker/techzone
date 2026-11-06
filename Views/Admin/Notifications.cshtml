@@ -35,7 +35,7 @@
     }
     else
     {
-        <table class="table">
+        <div class="table-wrap"><table class="table">
             <thead><tr><th>Ngày gửi</th><th>Người nhận</th><th>Tiêu đề</th><th>Nội dung</th><th>Đã đọc</th></tr></thead>
             <tbody>
                 @foreach (var n in Model)
@@ -49,7 +49,7 @@
                     </tr>
                 }
             </tbody>
-        </table>
+        </table></div>
     }
 </section>
 

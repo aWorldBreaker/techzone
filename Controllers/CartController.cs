@@ -105,10 +105,24 @@ public class CartController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    /// <summary>
+    /// M5-1: cap so luong ve ton kho. Truoc day input co max=TonKho nen
+    /// trinh duyet chan submit bang native validation (bubble tieng Anh,
+    /// khong co thong bao trong trang); POST vuot max (tat validation) thi
+    /// session luu so luong vuot kho ma khong bao gi. Gio cap ve TonKho +
+    /// bao bang TempData (giong Add). Khong doi logic gia/tien.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
     public IActionResult Update(int productId, int? variantId, int soLuong)
     {
+        var product = _db.Products.Find(productId);
+        if (product is null) return NotFound();
+        if (soLuong > product.TonKho)
+        {
+            soLuong = product.TonKho;
+            TempData["Error"] = $"Chỉ còn {product.TonKho} sản phẩm trong kho — đã cập nhật số lượng tối đa.";
+        }
         _cart.UpdateSoLuong(productId, variantId, soLuong);
         return RedirectToAction(nameof(Index));
     }

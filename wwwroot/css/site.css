@@ -10,6 +10,9 @@ html { font-size: 16px; }
 body {
   margin: 0; background: var(--color-background); color: var(--color-foreground);
   font-family: var(--font-sans); line-height: 1.5;
+  /* Sprint 6 Module 1 — footer dính đáy trang ngắn: body là flex column
+     cao tối thiểu 100vh, main co giãn đẩy footer xuống đáy. */
+  display: flex; flex-direction: column; min-height: 100vh;
 }
 h1, h2, h3, h4 { font-family: var(--font-sans); line-height: 1.25; margin: 0 0 var(--space-md); }
 a { color: var(--color-primary-text); text-decoration: none; }
@@ -30,20 +33,41 @@ input, textarea, select { caret-color: var(--color-primary); }
 .price-big, .product-price strong, .summary-row.total, .stat-card .value { font-variant-numeric: tabular-nums; }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-md); }
-.main-content { padding-top: var(--space-lg); padding-bottom: var(--space-2xl); }
+/* M6-1: main la flex item cua body (flex column, Module 1) — width:auto
+   khien main rong theo noi dung min-content (VD bieu do Dashboard 30 cot
+   keo main thanh 1124px o viewport 390, tran 734px). width:100% ghim main
+   ve be rong viewport; bieu do co overflow-x:auto tu cuon trong. */
+.main-content { padding-top: var(--space-lg); padding-bottom: var(--space-2xl); flex: 1 0 auto; width: 100%; }
 
-/* Header */
-.site-header { border-bottom: 1px solid var(--color-border); background: var(--color-card); }
-.header-inner { display: flex; align-items: center; gap: var(--space-lg); padding-top: var(--space-md); padding-bottom: var(--space-md); flex-wrap: wrap; }
-.logo { font-family: var(--font-sans); font-size: 1.75rem; font-weight: 700; color: var(--color-foreground); }
+/* M6-1: khung cuon ngang cho bang (Admin + MyOrders): bang rong hon
+   viewport thi cuon trong khung, khong day tran ca trang. */
+.table-wrap { overflow-x: auto; }
+
+/* Skip link — Sprint 6 Module 1: chỉ hiện khi focus bàn phím, đưa thẳng tới #main-content. */
+.skip-link { position: absolute; left: var(--space-md); top: -100px; z-index: 10; background: var(--color-primary); color: var(--color-on-primary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius); font-weight: 600; transition: top 200ms ease; }
+.skip-link:focus { top: var(--space-sm); color: var(--color-on-primary); text-decoration: none; }
+
+/* Header — z-index 2 (cao hơn main z-index 1) để dropdown tài khoản phủ
+   lên nội dung main khi mở; vẫn trên lớp nền WebGL z-index 0. */
+.site-header { border-bottom: 1px solid var(--color-border); background: var(--color-card); position: relative; z-index: 2; }
+.header-inner { display: flex; align-items: center; gap: var(--space-md); padding-top: var(--space-md); padding-bottom: var(--space-md); flex-wrap: wrap; }
+.logo { font-family: var(--font-sans); font-size: 1.75rem; font-weight: 700; color: var(--color-foreground); flex-shrink: 0; }
 .logo span { color: var(--color-primary-text); }
 .logo:hover { text-decoration: none; }
-.search { display: flex; flex: 1; min-width: 240px; }
-.search input { flex: 1; padding: 10px 14px; border: 1px solid var(--color-border); border-radius: var(--radius) 0 0 var(--radius); font-size: 1rem; }
-.search button { padding: 10px 20px; border: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--color-primary); color: var(--color-on-primary); font-weight: 600; transition: background 200ms ease; }
+.search { display: flex; flex: 1; min-width: 200px; }
+.search input { flex: 1; min-width: 0; padding: 12px var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius) 0 0 var(--radius); font-size: 1rem; }
+/* Placeholder dùng màu chữ mờ theo token (light 7.58:1, dark 5.71:1 trên nền
+   input) — Sprint 6 Module 1: sửa tương phản thấp ở dark mode mobile. */
+.search input::placeholder { color: var(--color-muted-foreground); opacity: 1; }
+.search button { padding: 12px var(--space-lg); border: none; border-radius: 0 var(--radius) var(--radius) 0; background: var(--color-primary); color: var(--color-on-primary); font-weight: 600; transition: background 200ms ease; flex-shrink: 0; }
 .search button:hover { background: var(--color-primary-hover); }
-.header-actions { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
-.header-actions a { color: var(--color-foreground); font-weight: 600; }
+.header-actions { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; flex-shrink: 0; }
+.header-actions a { color: var(--color-foreground); font-weight: 600; white-space: nowrap; }
+/* Badge số lượng giỏ — Sprint 6 Module 1: pill inline sau chữ "Giỏ hàng",
+   cùng style với .bell-badge (nền destructive, chữ trắng, radius 8px);
+   chỉ render khi giỏ > 0 (ViewComponent GioHangBadge). */
+.cart-link { position: relative; display: inline-flex; align-items: center; }
+.cart-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 4px; margin-left: 4px; border-radius: var(--radius); background: var(--color-destructive); color: var(--color-on-primary); font-size: .7rem; font-weight: 700; line-height: 1; }
 .hello { color: var(--color-muted-foreground); font-size: .9rem; }
 /* Nút chuyển sáng/tối — trong header, dễ thấy, icon đổi theo theme (JS theme.js). */
 .theme-toggle { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); color: var(--color-foreground); font-size: 1.15rem; line-height: 1; transition: all 200ms ease; }
@@ -51,6 +75,34 @@ input, textarea, select { caret-color: var(--color-primary); }
 .inline-form { display: inline; }
 .link-button { background: none; border: none; color: var(--color-primary-text); font-weight: 600; padding: 0; }
 .link-button:hover { text-decoration: underline; }
+
+/* Nút hamburger — Sprint 6 Module 1: chỉ hiện ≤768px (xem media query cuối
+   file); trên desktop luôn display:none. */
+.menu-toggle { display: none; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); color: var(--color-foreground); font-size: 1.25rem; line-height: 1; }
+.menu-toggle:hover { border-color: var(--color-primary); color: var(--color-primary-text); }
+
+/* Menu thu gọn mobile — Sprint 6 Module 1: panel chứa nav chính + category
+   + link tài khoản; chỉ mở khi [hidden] được JS gỡ (≤768px). Lưu ý: rule
+   [hidden] phải thắng display của .mobile-menu nên khai báo tường minh. */
+.mobile-menu { display: none; }
+.mobile-menu[hidden] { display: none; }
+
+/* Dropdown tài khoản desktop — Sprint 6 Module 1: gom chuông/điểm giữ
+   nguyên ngoài, còn Đơn của tôi/Tài khoản/Admin/Đăng xuất vào dropdown
+   "Xin chào, email" để header đã login về 1 hàng ở 1440px. */
+.user-menu { position: relative; flex-shrink: 0; }
+.user-menu-btn { display: inline-flex; align-items: center; gap: var(--space-xs); max-width: 150px; padding: var(--space-sm) var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); color: var(--color-foreground); font-weight: 600; }
+.user-menu-btn:hover { border-color: var(--color-primary); }
+/* min-width: 0 bắt buộc để ellipsis hoạt động: label là flex item, mặc định
+   min-width: auto sẽ không co dưới độ dài tên user → nút phình quá
+   max-width và ô search header bị bóp (Sprint 6 Module 3 — placeholder
+   search 1440 đã login bị cắt với tên user dài). */
+.user-menu-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.user-menu-panel { position: absolute; right: 0; top: calc(100% + var(--space-sm)); z-index: 5; display: flex; flex-direction: column; min-width: 200px; padding: var(--space-sm); background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius); box-shadow: var(--shadow-lg); }
+.user-menu-panel[hidden] { display: none; }
+.user-menu-panel a, .user-menu-panel .link-button { display: block; padding: var(--space-sm) var(--space-md); border-radius: var(--radius); text-align: left; color: var(--color-foreground); }
+.user-menu-panel a:hover, .user-menu-panel .link-button:hover { background: var(--color-muted); text-decoration: none; }
+.user-menu-panel .link-button { width: 100%; }
 .category-nav { background: var(--color-muted); }
 .category-nav .container { display: flex; gap: var(--space-lg); overflow-x: auto; padding-top: 10px; padding-bottom: 10px; }
 .category-nav a { color: var(--color-foreground); font-weight: 600; white-space: nowrap; }
@@ -65,6 +117,10 @@ input, textarea, select { caret-color: var(--color-primary); }
 .btn-sm { padding: 8px 14px; font-size: .9rem; }
 .btn-block { width: 100%; }
 .btn-danger { background: var(--color-destructive); color: var(--color-on-primary); }
+/* Sprint 6 Module 1 — .btn-warning từng được dùng nhưng chưa định nghĩa
+   (Admin/OrderDetails "Cấp lại mã tra cứu" render trần). */
+.btn-warning { background: var(--color-warning-bg); color: var(--color-warning-fg); border-color: var(--color-warning-border); }
+.btn-warning:hover { filter: brightness(.96); }
 
 /* Hero — editorial, giá dẫn đầu, một sản phẩm thật */
 .hero { display: grid; grid-template-columns: 1.05fr .95fr; gap: var(--space-2xl); align-items: center; padding: var(--space-2xl) 0 var(--space-xl); background-image: linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px); background-size: 32px 32px; animation: hero-fade .7s ease both; }
@@ -145,6 +201,19 @@ input, textarea, select { caret-color: var(--color-primary); }
 .filter-bar { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: end; background: var(--color-muted); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-lg); }
 .filter-bar .form-group { margin-bottom: 0; min-width: 150px; }
 .filter-bar select, .filter-bar input { width: 100%; }
+/* [hidden] phải thắng display: flex của .filter-bar — Sprint 6 Module 3
+   (M3-2): JS gắn hidden khi thu gọn panel lọc ở mobile. */
+.filter-bar[hidden] { display: none; }
+/* Placeholder trong filter-bar dùng cùng token chữ mờ như header search
+   (light 7.58:1, dark 5.71:1 trên nền input) — Sprint 6 Module 3 (M3-3):
+   trước đây không có rule riêng nên trình duyệt dùng màu mặc định #757575,
+   chỉ 3.17:1 ở dark, rớt WCAG AA 4.5:1. */
+.filter-bar input::placeholder { color: var(--color-muted-foreground); opacity: 1; }
+/* Nút "Bộ lọc" mobile — Sprint 6 Module 3 (M3-2): mặc định ẩn; chỉ hiện
+   ở ≤768px khi JS đã gắn (class .is-ready) — không JS thì nút không hiện
+   và form lọc luôn mở, vẫn dùng được. */
+.filter-toggle { display: none; }
+.filter-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius); background: var(--color-accent); color: var(--color-on-primary); font-size: .8rem; font-weight: 700; line-height: 1; }
 
 /* Tables */
 .table { width: 100%; border-collapse: collapse; }
@@ -174,6 +243,12 @@ input, textarea, select { caret-color: var(--color-primary); }
 .alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: var(--space-md); }
 .alert-success { background: var(--color-success-bg); color: var(--color-success-fg); border: 1px solid var(--color-success-border); }
 .alert-error { background: var(--color-error-bg); color: var(--color-error-fg); border: 1px solid var(--color-error-border); }
+/* Sprint 6 Module 1 (P0 design-system) — 3 class alert từng được dùng nhưng
+   chưa định nghĩa: warning (Checkout), info (NhapMaTraCuu), danger
+   (Admin/Combos, Admin/SuaCombo — danger dùng chung token error). */
+.alert-warning { background: var(--color-warning-bg); color: var(--color-warning-fg); border: 1px solid var(--color-warning-border); }
+.alert-info { background: var(--color-info-bg); color: var(--color-info-fg); border: 1px solid var(--color-info-border); }
+.alert-danger { background: var(--color-error-bg); color: var(--color-error-fg); border: 1px solid var(--color-error-border); }
 
 /* Detail page */
 .detail-layout { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2xl); align-items: start; }
@@ -198,8 +273,8 @@ input, textarea, select { caret-color: var(--color-primary); }
 .badge-giao { background: var(--color-info-bg); color: var(--color-info-fg); }
 .badge-huy { background: var(--color-danger-soft-bg); color: var(--color-danger-soft-fg); }
 
-/* Footer */
-.site-footer { border-top: 1px solid var(--color-border); background: var(--color-muted); padding: var(--space-xl) 0; margin-top: var(--space-2xl); }
+/* Footer — margin-top: auto để dính đáy nhờ body flex column (Module 1). */
+.site-footer { border-top: 1px solid var(--color-border); background: var(--color-muted); padding: var(--space-xl) 0; margin-top: auto; }
 .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); margin-bottom: var(--space-lg); }
 .trust strong { display: block; }
 .trust span { color: var(--color-muted-foreground); font-size: .9rem; }
@@ -230,7 +305,8 @@ input, textarea, select { caret-color: var(--color-primary); }
 #webgl-bg, .bg-dots { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 #webgl-bg { display: block; }
 .bg-dots { background-color: var(--color-veil); background-image: radial-gradient(var(--color-border) 1.1px, transparent 1.3px); background-size: 26px 26px; }
-.site-header, .main-content, .site-footer { position: relative; z-index: 1; }
+.site-header { position: relative; z-index: 2; } /* cao hơn main (xem rule .site-header ở đầu file): dropdown tài khoản phủ lên main */
+.main-content, .site-footer { position: relative; z-index: 1; }
 
 /* Khối hiện khi cuộn tới (JS IntersectionObserver ở trang chủ; chỉ ẩn khi có JS) */
 .js .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
@@ -253,6 +329,11 @@ input, textarea, select { caret-color: var(--color-primary); }
 /* Voucher: họa tiết chấm trắng trên nền xanh điện */
 .voucher-band { background-image: radial-gradient(var(--color-dot-light) 1px, transparent 1.4px); background-size: 16px 16px; }
 
+@media (min-width: 1025px) {
+  /* Desktop — Sprint 6 Module 1: header không wrap (đã login về 1 hàng ở
+     1440px nhờ dropdown tài khoản + nút user cắt ellipsis). */
+  .header-inner, .header-actions { flex-wrap: nowrap; }
+}
 @media (max-width: 1024px) {
   .product-grid { grid-template-columns: repeat(3, 1fr); }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
@@ -264,13 +345,45 @@ input, textarea, select { caret-color: var(--color-primary); }
   .hero-image img { max-height: 320px; }
   .product-grid { grid-template-columns: repeat(2, 1fr); }
   .trust { grid-template-columns: repeat(2, 1fr); }
-  .header-inner { flex-direction: column; align-items: stretch; }
-  .category-nav .container { flex-wrap: wrap; overflow-x: visible; }
-  .category-nav a { white-space: normal; }
+  /* Header mobile — Sprint 6 Module 1: 2 hàng (hàng 1: hamburger + logo +
+     chuông + toggle theme; hàng 2: search full-width). Nav chính, category
+     nav và link tài khoản gọn vào #mobile-menu (mở bằng hamburger); mục
+     tiêu header ≤ ~120px ở 390px (trước sửa: 391px). */
+  .header-inner { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
+  .menu-toggle { display: inline-flex; }
+  .logo { flex: 1; font-size: 1.5rem; }
+  .search { order: 3; flex: 1 1 100%; min-width: 0; }
+  .header-actions { gap: var(--space-sm); margin-left: auto; }
+  .header-actions > a, .header-actions .member-points, .header-actions .user-menu, .header-actions .btn { display: none; }
+  .category-nav { display: none; }
+  .mobile-menu:not([hidden]) { display: block; background: var(--color-card); border-top: 1px solid var(--color-border); }
+  .mobile-menu a, .mobile-menu .link-button { display: block; padding: 12px var(--space-md); border-bottom: 1px solid var(--color-border); font-weight: 600; color: var(--color-foreground); }
+  .mobile-menu a:hover, .mobile-menu .link-button:hover { background: var(--color-muted); text-decoration: none; }
+  .mobile-menu .link-button { width: 100%; text-align: left; }
+  .mobile-menu .mobile-menu-group { padding: var(--space-sm) var(--space-md) var(--space-xs); font-size: .85rem; font-weight: 700; color: var(--color-muted-foreground); text-transform: uppercase; }
+  .mobile-menu .inline-form { display: block; }
   .rank-row { grid-template-columns: 32px 56px 1fr; }
   .rank-thumb img { width: 56px; height: 56px; }
   .rank-price { grid-column: 3; }
   .proof-strip { gap: var(--space-lg); }
+  /* Bộ lọc thu gọn — Sprint 6 Module 3 (M3-2): nút "Bộ lọc" mở panel;
+     panel mở cuộn trong tối đa ~1 màn hình, cụm nút Lọc/Xóa lọc sticky
+     đáy panel để luôn bấm được mà không cần cuộn hết form. Trừ 320px =
+     header (~115px) + H1 + số lượng + nút toggle (~200px) để toàn bộ
+     panel vừa trong 1 viewport ở 390×844 (panel bắt đầu ~top 300px). */
+  .filter-toggle.is-ready { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-sm); width: 100%; padding: 12px var(--space-md); margin-bottom: var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); color: var(--color-foreground); font-weight: 600; }
+  .filter-toggle.is-ready:hover { border-color: var(--color-primary); color: var(--color-primary-text); }
+  .filter-bar { max-height: calc(100vh - 320px); max-height: calc(100dvh - 320px); overflow-y: auto; }
+  .filter-actions { position: sticky; bottom: 0; display: flex; gap: var(--space-sm); width: 100%; padding-top: var(--space-sm); padding-bottom: var(--space-xs); background: var(--color-muted); }
+  .filter-actions .btn { flex: 1; }
+}
+@media (max-width: 480px) {
+  /* Nút trong card ở màn hẹp — Sprint 6 Module 3 (M3-4): card ~170px,
+     .card-actions chia 2 cột nên form So sánh chỉ ~63px rộng, nút
+     "＋ So sánh" gãy 3 dòng. Xếp dọc 2 nút + giữ 1 dòng (chữ nhỏ hơn)
+     thì cả "So sánh" và "Thêm vào giỏ" đều vừa 1 dòng. */
+  .card-actions { flex-direction: column; }
+  .card-actions .btn, .product-info > form .btn { white-space: nowrap; font-size: .85rem; padding: 8px 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; transform: none !important; animation: none !important; }

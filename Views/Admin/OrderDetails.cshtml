@@ -13,7 +13,7 @@
 <p>Giao đến: @Model.DiaChiGiao</p>
 <p>Phương thức: @Model.PhuongThucTT</p>
 
-<table class="table">
+<div class="table-wrap"><table class="table">
     <thead><tr><th>Sản phẩm</th><th>Phiên bản</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th></tr></thead>
     <tbody>
         @foreach (var d in Model.ChiTiet)
@@ -27,7 +27,7 @@
             </tr>
         }
     </tbody>
-</table>
+</table></div>
 
 <partial name="_BangTienDon" model="Model" />
 

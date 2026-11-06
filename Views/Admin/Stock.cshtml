@@ -5,7 +5,7 @@
 }
 <h1>Quản lý kho</h1>
 
-<table class="table">
+<div class="table-wrap"><table class="table">
     <thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Đã bán</th><th>Nhập thêm</th></tr></thead>
     <tbody>
         @foreach (var p in Model)
@@ -25,7 +25,7 @@
             </tr>
         }
     </tbody>
-</table>
+</table></div>
 
 <section class="mt">
     <h2>10 lần nhập kho gần nhất</h2>
@@ -35,7 +35,7 @@
     }
     else
     {
-        <table class="table">
+        <div class="table-wrap"><table class="table">
             <thead><tr><th>Ngày nhập</th><th>Sản phẩm</th><th>Số lượng</th><th>Ghi chú</th></tr></thead>
             <tbody>
                 @foreach (var s in nhapGanDay)
@@ -48,7 +48,7 @@
                     </tr>
                 }
             </tbody>
-        </table>
+        </table></div>
     }
 </section>
 

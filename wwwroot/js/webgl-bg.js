@@ -70,11 +70,15 @@
         '  float w1 = fbm(p * 1.6 + vec2(t * 0.05, t * 0.03) + m);',
         '  float w2 = fbm(p * 2.6 + vec2(-t * 0.03, t * 0.04 + uScroll * 0.0004) - m * 0.6);',
         '  float w = w1 * 0.65 + w2 * 0.35;',
-        '  vec3 blue = mix(vec3(0.145, 0.388, 0.922), vec3(0.376, 0.647, 0.984), uDark);',
-        '  vec3 teal = mix(vec3(0.055, 0.647, 0.643), vec3(0.180, 0.831, 0.749), uDark);',
+        '  vec3 blue = mix(vec3(0.145, 0.388, 0.922), vec3(0.250, 0.450, 0.850), uDark);',
+        '  vec3 teal = mix(vec3(0.055, 0.647, 0.643), vec3(0.100, 0.600, 0.600), uDark);',
         '  vec3 col = mix(blue, teal, smoothstep(0.35, 0.75, w2));',
-        '  col = mix(col, vec3(1.0), smoothstep(0.72, 0.95, w) * (0.35 + 0.10 * uDark));',
-        '  float alpha = smoothstep(0.45, 0.85, w) * mix(0.22, 0.34, uDark) * (1.0 + uHover * 0.6);',
+        // Sprint 6 Module 1: dark mode từng trộn mạnh về trắng (0.45) khiến nền
+        // phủ sáng toàn trang, chữ mờ khó đọc — dark chỉ trộn 0.12 về trắng.
+        '  col = mix(col, vec3(1.0), smoothstep(0.72, 0.95, w) * mix(0.35, 0.12, uDark));',
+        // Sprint 6 Module 1: alpha dark 0.34 → 0.20, trần alpha dark 0.60 → 0.32
+        // (giữ sóng thấy được nhưng không át nền/chữ; veil dark cũng tăng .40 → .55).
+        '  float alpha = smoothstep(0.45, 0.85, w) * mix(0.22, 0.20, uDark) * (1.0 + uHover * 0.6);',
         '  float rip = 0.0;',
         '  for (int i = 0; i < 8; i++) {',
         '    vec4 r = uRipples[i];',
@@ -85,8 +89,8 @@
         '      rip += ring * r.w;',
         '    }',
         '  }',
-        '  alpha += clamp(rip, 0.0, 1.0) * mix(0.12, 0.18, uDark);',
-        '  gl_FragColor = vec4(col, clamp(alpha, 0.0, mix(0.45, 0.60, uDark)));',
+        '  alpha += clamp(rip, 0.0, 1.0) * mix(0.12, 0.10, uDark);',
+        '  gl_FragColor = vec4(col, clamp(alpha, 0.0, mix(0.45, 0.32, uDark)));',
         '}'
     ].join('\n');
 

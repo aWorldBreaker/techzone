@@ -10,7 +10,7 @@
 }
 else
 {
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Link</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead>
         <tbody>
             @foreach (var b in Model)
@@ -34,7 +34,7 @@ else
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 }
 
 <h2 class="mt">Thêm banner mới</h2>

@@ -1,6 +1,19 @@
 @model TechZone.Models.ProductFilterViewModel
 @{
     ViewData["Title"] = "Danh mục sản phẩm";
+    // Sprint 6 Module 3 (M3-2): đếm filter đang bật để hiện badge trên nút
+    // "Bộ lọc" mobile + tự mở panel khi đã có filter (người dùng cần thấy
+    // trạng thái lọc thay vì tưởng chưa lọc gì).
+    var activeFilterCount = 0;
+    if (Model.CategoryId.HasValue) activeFilterCount++;
+    if (Model.BrandId.HasValue) activeFilterCount++;
+    if (!string.IsNullOrWhiteSpace(Model.Chip)) activeFilterCount++;
+    if (!string.IsNullOrWhiteSpace(Model.Ram)) activeFilterCount++;
+    if (!string.IsNullOrWhiteSpace(Model.DungLuong)) activeFilterCount++;
+    if (Model.GiaTu.HasValue) activeFilterCount++;
+    if (Model.GiaDen.HasValue) activeFilterCount++;
+    if (!string.IsNullOrWhiteSpace(Model.TuKhoa)) activeFilterCount++;
+    if (Model.SapXep != "mac-dinh") activeFilterCount++;
 }
 
 <h1>Sản phẩm @if (Model.CategoryId.HasValue)
@@ -9,7 +22,17 @@
 }</h1>
 <p class="text-muted">@Model.TongSo sản phẩm</p>
 
-<form method="get" class="filter-bar" aria-label="Lọc sản phẩm">
+@* Nút mở/đóng panel lọc — chỉ hiện ở ≤768px khi JS chạy (xem site.css +
+   js/filter-toggle.js); desktop form luôn mở, nút ẩn. *@
+<button type="button" id="filter-toggle" class="filter-toggle" aria-expanded="@(activeFilterCount > 0 ? "true" : "false")" aria-controls="filter-panel">
+    Bộ lọc <span aria-hidden="true">▾</span>
+    @if (activeFilterCount > 0)
+    {
+        <span class="filter-count-badge" aria-label="@activeFilterCount bộ lọc đang bật">@activeFilterCount</span>
+    }
+</button>
+
+<form method="get" id="filter-panel" class="filter-bar" data-active-filters="@activeFilterCount" aria-label="Lọc sản phẩm">
     <div class="form-group">
         <label for="CategoryId">Danh mục</label>
         <select id="CategoryId" name="CategoryId" class="form-control" asp-items="@(new SelectList(Model.DanhMuc, "Id", "Ten", Model.CategoryId))">
@@ -62,8 +85,10 @@
         <label for="TuKhoa">Tìm kiếm</label>
         <input id="TuKhoa" name="TuKhoa" type="search" class="form-control" value="@Model.TuKhoa" placeholder="Tên sản phẩm..." />
     </div>
-    <button type="submit" class="btn btn-primary">Lọc</button>
-    <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
+    <div class="filter-actions">
+        <button type="submit" class="btn btn-primary">Lọc</button>
+        <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
+    </div>
 </form>
 
 @if (!Model.KetQua.Any())
@@ -98,4 +123,8 @@ else
             }
         </nav>
     }
+}
+
+@section Scripts {
+    <script src="~/js/filter-toggle.js"></script>
 }

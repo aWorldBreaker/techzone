@@ -18,6 +18,8 @@ public class HomeController : Controller
             .Include(f => f.Product).ThenInclude(p => p.Images)
             .Include(f => f.Product).ThenInclude(p => p.Category)
             .Include(f => f.Product).ThenInclude(p => p.Specs)
+            // M4-3: the Flash Sale o Home tinh sao tu Reviews da duyet.
+            .Include(f => f.Product).ThenInclude(p => p.Reviews.Where(r => r.IsApproved))
             // Sprint 2 — B-5: chi hien sale con suat (het quota thi dung hien
             // gia sale keo khach mua nhung checkout lai thu gia goc).
             .Where(f => f.BatDau <= DateTime.Now && f.KetThuc >= DateTime.Now
@@ -30,6 +32,8 @@ public class HomeController : Controller
             .Include(p => p.Category)
             .Include(p => p.Brand)
             .Include(p => p.Specs)
+            // M4-3: _ProductCard tinh sao tu Reviews da duyet.
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .Where(p => p.LaNoiBat)
             .OrderByDescending(p => p.LuotBan)
             .ToListAsync();
@@ -38,6 +42,8 @@ public class HomeController : Controller
             .Include(p => p.Images)
             .Include(p => p.Category)
             .Include(p => p.Specs)
+            // M4-3: hang "Ban chay nhat" tinh sao tu Reviews da duyet.
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .OrderByDescending(p => p.LuotBan)
             .Take(8)
             .ToListAsync();
@@ -72,6 +78,18 @@ public class HomeController : Controller
         ViewBag.TongHang = await _db.Brands.CountAsync();
         ViewBag.TongDanhMuc = await _db.Categories.CountAsync();
 
+        // Hero (follow-up M4-3): Xiaomi 15 la SP Id 1 — ten/gia/link "Mua ngay"
+        // da ghi cung Id 1 trong view, nen lay dung SP do de tinh sao dong
+        // tu Reviews da duyet, khong ghi tay "4,8/5 sao" nhu truoc (TB that
+        // demo-on la 4.5, demo-off la 0 review). 0 review -> ViewBag = 0,
+        // view bo luon cau danh gia khoi hero chu khong hien so sai.
+        var hero = await _db.Products
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
+            .FirstOrDefaultAsync(p => p.Id == 1);
+        ViewBag.HeroSoDanhGia = hero?.Reviews.Count ?? 0;
+        ViewBag.HeroDiemTB = hero is not null && hero.Reviews.Count > 0
+            ? Math.Round(hero.Reviews.Average(r => r.Sao), 1) : 0;
+
         // Đã xem gần đây (nhóm A): đọc session, giữ đúng thứ tự xem.
         var daXemJson = HttpContext.Session.GetString("TechZone.RecentlyViewed");
         var daXemIds = string.IsNullOrEmpty(daXemJson)
@@ -80,6 +98,8 @@ public class HomeController : Controller
         var daXem = await _db.Products
             .Include(p => p.Images)
             .Include(p => p.Specs)
+            // M4-3: _RecentlyViewed dung _ProductCard (tinh sao tu Reviews).
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .Where(p => daXemIds.Contains(p.Id))
             .ToListAsync();
         ViewBag.RecentlyViewed = daXemIds
@@ -91,4 +111,18 @@ public class HomeController : Controller
 
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
     public IActionResult Error() => View();
+
+    /// <summary>
+    /// M6-2 — Trang 404 than thien theo design-system. Duoc goi qua
+    /// UseStatusCodePagesWithReExecute("/Home/Error404") khi controller tra
+    /// NotFound() (VD /Products/Details/9999) hoac khong co route khop.
+    /// Giu status 404 (khong redirect) de khong danh lua SEO/trinh duyet.
+    /// Khong doi logic routing.
+    /// </summary>
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult Error404()
+    {
+        Response.StatusCode = 404;
+        return View();
+    }
 }

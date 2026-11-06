@@ -38,6 +38,10 @@ public class CompareController : Controller
             .Include(p => p.Specs)
             .Include(p => p.Category)
             .Include(p => p.Brand)
+            // Follow-up M4-3: hang "Danh gia" tinh sao tu Reviews da duyet,
+            // khong dung p.DanhGiaTB (seed cu — VD Id 1 seed 4.8 trong khi
+            // TB that 4.5; SP 0 review van hien "X.Y sao").
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .Where(p => ids.Contains(p.Id))
             .ToListAsync();
         // Where khong dam bao thu tu: sap lai theo thu tu da them.

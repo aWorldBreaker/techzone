@@ -7,7 +7,7 @@
     <a class="btn btn-primary" asp-action="ProductForm">+ Thêm sản phẩm</a>
 </div>
 
-<table class="table">
+<div class="table-wrap"><table class="table">
     <thead>
         <tr><th>Sản phẩm</th><th>Danh mục</th><th>Hãng</th><th>Giá bán</th><th>Tồn kho</th><th>Đã bán</th><th></th></tr>
     </thead>
@@ -34,7 +34,7 @@
             </tr>
         }
     </tbody>
-</table>
+</table></div>
 
 @if ((int)ViewBag.TongTrang > 1)
 {

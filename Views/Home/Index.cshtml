@@ -6,6 +6,13 @@
     var banChay = (List<Product>)ViewBag.BanChay;
     var danhMuc = (List<Category>)ViewBag.DanhMuc;
     var ketThuc = (DateTime?)ViewBag.FlashSaleKetThuc;
+    // Follow-up M4-3 (hero dong): cau danh gia chi xuat hien khi Xiaomi 15
+    // co review da duyet; 0 review -> bo luon, khong hien so ghi tay.
+    var heroSoDG = (int?)ViewBag.HeroSoDanhGia ?? 0;
+    var heroTB = (double?)ViewBag.HeroDiemTB ?? 0;
+    var heroDanhGia = heroSoDG > 0
+        ? $" Đánh giá {heroTB.ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))}/5 sao ({heroSoDG} đánh giá)."
+        : "";
 }
 
 @* Hero: một sản phẩm thật, giá thật, thông số thật — không slogan chung chung. *@
@@ -17,7 +24,7 @@
             <s>15.990.000đ</s>
             <span class="hero-save">Giảm 3.000.000đ</span>
         </p>
-        <p class="lead">Snapdragon 8 Elite • Camera Leica 50MP • Màn hình AMOLED 120Hz • Pin 5400mAh. Đánh giá 4,8/5 sao.</p>
+        <p class="lead">Snapdragon 8 Elite • Camera Leica 50MP • Màn hình AMOLED 120Hz • Pin 5400mAh.@heroDanhGia</p>
         <div class="hero-actions">
             <a class="btn btn-primary" asp-controller="Products" asp-action="Details" asp-route-id="1">Mua ngay — 12.990.000đ</a>
             <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
@@ -69,7 +76,14 @@
                         {
                             <p class="product-specs">@string.Join(" • ", f.Product.SpecsNgan)</p>
                         }
-                        <p class="product-meta">★ @f.Product.DanhGiaTB.ToString("0.0") · Đã bán @f.Product.LuotBan</p>
+                        @* M4-3: nhu _ProductCard — TB tu review da duyet
+                           (f.Product.Reviews da loc IsApproved o controller),
+                           0 review -> "Chua co danh gia". *@
+                        @{
+                            var soDGFlash = f.Product.Reviews.Count;
+                            var tbFlash = soDGFlash > 0 ? Math.Round(f.Product.Reviews.Average(r => r.Sao), 1) : 0;
+                        }
+                        <p class="product-meta">@(soDGFlash > 0 ? $"★ {tbFlash:0.0} ({soDGFlash} đánh giá)" : "Chưa có đánh giá") · Đã bán @f.Product.LuotBan</p>
                         <p class="product-price">
                             <strong>@f.GiaSale.ToString("N0")đ</strong>
                             <s>@f.Product.Gia.ToString("N0")đ</s>
@@ -135,7 +149,14 @@
                     {
                         <p class="product-specs">@string.Join(" • ", p.sp.SpecsNgan)</p>
                     }
-                    <p class="product-meta">@p.sp.DanhGiaTB.ToString("0.0") sao • Đã bán @p.sp.LuotBan</p>
+                    @* M4-3: nhu _ProductCard — TB tu review da duyet
+                       (p.sp.Reviews da loc IsApproved o controller),
+                       0 review -> "Chua co danh gia". *@
+                    @{
+                        var soDGRank = p.sp.Reviews.Count;
+                        var tbRank = soDGRank > 0 ? Math.Round(p.sp.Reviews.Average(r => r.Sao), 1) : 0;
+                    }
+                    <p class="product-meta">@(soDGRank > 0 ? $"{tbRank:0.0} sao ({soDGRank} đánh giá)" : "Chưa có đánh giá") • Đã bán @p.sp.LuotBan</p>
                 </div>
                 <p class="rank-price"><strong>@p.sp.GiaBan.ToString("N0")đ</strong></p>
             </li>

@@ -26,7 +26,19 @@
                 <s>@Model.Gia.ToString("N0")đ</s>
             }
         </p>
-        <p class="product-meta">@Model.DanhGiaTB.ToString("0.0") sao • Đã bán @Model.LuotBan</p>
+        @* M4-3: diem sao tinh tu review da duyet (Model.Reviews da loc
+           IsApproved o controller), khong dung Model.DanhGiaTB (gia tri
+           seed cu — cung ho M4-1 o Details: VD Id 1 seed 4.8 trong khi
+           2 review 5+4 TB that 4.5; SP 0 review van hien "4.8 sao").
+           0 review -> "Chua co danh gia", khong hien so sao. Chi hien
+           thi, khong doi logic review/DanhGiaTB. LuotBan giu nguyen:
+           bo dem tich luy do Checkout tang / Huy-Tra hoan, seed la
+           tong lich su (khong phai so don trong DB) — xem TEST-REPORT §19. *@
+        @{
+            var soDanhGia = Model.Reviews.Count;
+            var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
+        }
+        <p class="product-meta">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan</p>
         <form asp-controller="Cart" asp-action="Add" method="post">
             <input type="hidden" name="productId" value="@Model.Id" />
             <input type="hidden" name="soLuong" value="1" />

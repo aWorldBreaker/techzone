@@ -4,7 +4,7 @@
 }
 <h1>Quản lý voucher</h1>
 
-<table class="table">
+<div class="table-wrap"><table class="table">
     <thead><tr><th>Mã</th><th>Loại</th><th>Giá trị</th><th>Đơn tối thiểu</th><th>Hết hạn</th><th>Đã dùng / Số lượng</th><th></th></tr></thead>
     <tbody>
         @foreach (var v in Model)
@@ -25,7 +25,7 @@
             </tr>
         }
     </tbody>
-</table>
+</table></div>
 
 <h2 class="mt">Thêm voucher mới</h2>
 <form asp-action="ThemVoucher" method="post">

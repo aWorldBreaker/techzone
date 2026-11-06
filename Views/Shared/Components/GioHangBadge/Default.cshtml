@@ -1,0 +1,8 @@
+@model int
+
+<a class="cart-link" asp-controller="Cart" asp-action="Index" aria-label="@(Model > 0 ? $"Giỏ hàng, {Model} sản phẩm" : "Giỏ hàng")">Giỏ hàng
+    @if (Model > 0)
+    {
+        <span class="cart-badge" aria-hidden="true">@Model</span>
+    }
+</a>

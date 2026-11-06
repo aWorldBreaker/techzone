@@ -15,6 +15,15 @@
 
 <section>
     <h2>Doanh thu 30 ngày gần nhất</h2>
+    @* M7-1: chua co don nao trong 30 ngay thi tat ca cot = 0 — JS dung ve
+       (max &lt;= 0 thi return) de lai khung chart trong + 30 nhan ngay,
+       trong nhu bieu do hong. Hien cau empty state thay cho khung chart. *@
+    @if (!Model.DoanhThu30Ngay.Any(d => d.DoanhThu > 0))
+    {
+        <p class="text-muted">Chưa có doanh thu trong 30 ngày qua — biểu đồ sẽ hiện khi có đơn hàng mới.</p>
+    }
+    else
+    {
     <div class="chart" role="img" aria-label="Biểu đồ cột doanh thu 30 ngày gần nhất">
         @foreach (var d in Model.DoanhThu30Ngay)
         {
@@ -24,6 +33,7 @@
             </div>
         }
     </div>
+    }
 </section>
 
 <section class="mt">
@@ -34,7 +44,7 @@
     }
     else
     {
-        <table class="table">
+        <div class="table-wrap"><table class="table">
             <thead><tr><th>Trạng thái</th><th>Số đơn</th></tr></thead>
             <tbody>
                 @foreach (var kv in Model.DonTheoTrangThai.OrderByDescending(kv => kv.Value))
@@ -42,13 +52,13 @@
                     <tr><td>@kv.Key</td><td>@kv.Value</td></tr>
                 }
             </tbody>
-        </table>
+        </table></div>
     }
 </section>
 
 <section>
     <h2>Doanh thu 7 ngày gần nhất</h2>
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead><tr><th>Ngày</th><th>Doanh thu</th></tr></thead>
         <tbody>
             @foreach (var d in Model.DoanhThu7Ngay)
@@ -56,12 +66,12 @@
                 <tr><td>@d.Ngay</td><td>@d.DoanhThu.ToString("N0")đ</td></tr>
             }
         </tbody>
-    </table>
+    </table></div>
 </section>
 
 <section class="mt">
     <h2>Top bán chạy</h2>
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead><tr><th>Sản phẩm</th><th>Đã bán</th><th>Tồn kho</th><th>Giá bán</th></tr></thead>
         <tbody>
             @foreach (var p in Model.TopBanChay)
@@ -74,7 +84,7 @@
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 </section>
 
 <section class="mt">
@@ -85,7 +95,7 @@
     }
     else
     {
-        <table class="table">
+        <div class="table-wrap"><table class="table">
             <thead><tr><th>Sản phẩm</th><th>Tồn kho</th></tr></thead>
             <tbody>
                 @foreach (var p in Model.SapHetHang)
@@ -93,7 +103,7 @@
                     <tr><td>@p.Ten</td><td><strong>@p.TonKho</strong></td></tr>
                 }
             </tbody>
-        </table>
+        </table></div>
     }
 </section>
 
@@ -102,7 +112,7 @@
         <h2>Đơn gần đây</h2>
         <a asp-action="Orders">Xem tất cả đơn →</a>
     </div>
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
         <tbody>
             @foreach (var o in Model.DonGanDay)
@@ -115,7 +125,7 @@
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
     <p class="mt">
         <a class="btn btn-secondary" asp-action="Products">Quản lý sản phẩm</a>
         <a class="btn btn-secondary" asp-action="Vouchers">Quản lý voucher</a>

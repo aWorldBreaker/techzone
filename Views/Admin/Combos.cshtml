@@ -14,7 +14,7 @@
     <p class="alert alert-success">@ok</p>
 }
 
-<table class="table">
+<div class="table-wrap"><table class="table">
     <thead><tr><th>Tên combo</th><th>% giảm</th><th>Hiệu lực</th><th>Đã bán / Giới hạn</th><th>Trạng thái</th><th>Món trong combo</th><th></th></tr></thead>
     <tbody>
         @foreach (var c in Model)
@@ -65,7 +65,7 @@
             </tr>
         }
     </tbody>
-</table>
+</table></div>
 
 <h2 class="mt">Thêm combo mới</h2>
 <form asp-action="ThemCombo" method="post">

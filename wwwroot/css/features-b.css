@@ -18,7 +18,7 @@
 /* Chuong thong bao o header */
 .bell-link { position: relative; display: inline-flex; align-items: center; font-size: 1.25rem; line-height: 1; }
 .bell-link:hover { text-decoration: none; }
-.bell-badge { position: absolute; top: -8px; right: -10px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; background: var(--color-destructive); color: var(--color-on-primary); font-size: .7rem; font-weight: 700; line-height: 18px; text-align: center; }
+.bell-badge { position: absolute; top: -8px; right: -10px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: var(--radius); background: var(--color-destructive); color: var(--color-on-primary); font-size: .7rem; font-weight: 700; line-height: 18px; text-align: center; }
 
 /* The slot Flash Sale */
 .slot-section { margin-top: var(--space-lg); }

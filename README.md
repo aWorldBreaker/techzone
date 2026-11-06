@@ -4,13 +4,36 @@
 **ASP.NET Core 8 + EF Core + SQLite (demo) + Razor MVC + ASP.NET Identity.**
 
 > Trạng thái: Sprint 1–5 xong + vòng P0 Security + Sign-off + P1 follow-up
-> (2026-11-06). Nhánh `security/signoff-20261106`: checkpoint `56dedbe` +
-> follow-up `951c297` (đã commit local, chưa push). Thay đổi chưa commit:
-> Bước 4 (Checkout POST tính lại + xác nhận lại, bảo hành live) + Final
-> Check (P1-1 điểm vãng lai, P1-2 hết quota Flash Sale, GET bảo hành
-> báo trùng).
-> Build 0/0, test **222/222 PASS** (runner trực tiếp, xem `TEST-REPORT.md`).
-> Code hiện tại ở HEAD `951c297` + thay đổi chưa commit (Bước 4 + Final Check).
+> (2026-11-06) + **Sprint 6 XONG toàn bộ (Module 1 Global Layout/Header/
+> Footer + Module 3 Listing + Module 4 Details + Module 5 Cart/Checkout +
+> Module 6 Account/Admin + Module 7 Admin/3D/micro) — 7 lỗi mở #10–16 đều
+> XONG, chưa commit**. Nhánh `security/signoff-20261106`,
+> HEAD `41bef27` (Step 4 đã push lên remote `main` thành commit `40c9bd90`
+> 2026-11-06, trừ file `.github/workflows/ci.yml` — App thiếu quyền
+> Workflows, user up tay sau; **CI thật đã PASS lần đầu 2026-11-06 ~19:42**
+> (run #1, `dotnet test` 222/222)). Thay đổi chưa commit:
+> Sprint 6 Module 1 (hamburger menu mobile, dropdown tài khoản, cart badge,
+> footer dính đáy, placeholder, WebGL dark, alert/button còn thiếu + skip
+> link) + Module 3 (cast `(double)` sort giá, panel lọc mobile thu gọn +
+> nút "Bộ lọc" có badge, placeholder filter dùng token, nút card 1 dòng ở
+> mobile + 3 test `ProductsSortTests`) + Module 4 (rating tính từ review đã
+> duyệt, form đánh giá chỉ khi login) + Module 5 (clamp SL về tồn kho 2 lớp
+> + `cart-qty.js`) + Module 6 (`.main-content { width: 100% }` + 17 bảng
+> bọc `.table-wrap`, trang 404 thân thiện giữ status 404) + Module 7
+> (empty state chart doanh thu trống, `favicon.ico`) + follow-up M4-3
+> (sao ở Listing/Home tính từ review đã duyệt, không in `DanhGiaTB` stale)
+> + follow-up cuối M4-3a/b (bảng Compare tính sao từ review đã duyệt; hero
+> tính động từ review đã duyệt của Xiaomi 15, 0 review thì bỏ câu đánh giá).
+> Build 0/0, test **225/225 PASS** (runner trực tiếp, xem `TEST-REPORT.md`
+> §15–20; E2E Playwright cuối **14/14 PASS**, visual regression 5 PASS /
+> 11 FAIL đã giải thích từng diff). M4-3 đã XONG (follow-up 2026-11-06,
+> runner 225/225 + E2E 14/14 sau fix — xem `TEST-REPORT.md` §19);
+> M4-3a/b đã XONG (follow-up cuối 2026-11-06, runner 225/225 + E2E 14/14
+> sau fix — xem `TEST-REPORT.md` §20). Chi tiết
+> Sprint 6: `docs/UI-AUDIT.md`, `docs/UI-ROADMAP.md`.
+> Space TechZone (artifact `techzone`): đã đồng bộ 11 thay đổi Module 1+3
+> ngày 2026-11-06 (build thành công, builder probe VERIFIED 11/11; xem
+> `TEST-REPORT.md` §14).
 
 ## Chạy
 
@@ -192,12 +215,13 @@ dotnet run --project TechZone.Tests.Runner/TechZone.Tests.Runner.csproj  # dự 
 
 `dotnet test` bị chặn trong sandbox (vstest TCP channel hỏng do proxy) nên
 dùng runner trực tiếp (gọi thẳng các method `[Fact]`, cùng code/assertion).
-Hiện tại: **222/222 PASS** (Migration 5, Checkout 9, FlashSale 10, Rollback
+Hiện tại: **225/225 PASS** (Migration 5, Checkout 9, FlashSale 10, Rollback
 10, Vat 11, VoucherLoyalty 12, Combo 8, Platinum 10, AdminInventory 25,
 ConcurrencyQa 3, Security 8, DemoAccounts 15, GuestToken 14, Lockout 9,
 GuestTokenHardening 13, CartCheckoutParity 11, CheckoutTampering 30
 (21 Bước 4a + 6 chống race / POST trực tiếp + 3 Final Check: P1-1 ×1,
-P1-2 ×2), Warranty 19 (17 có sẵn + 2 GET báo trùng BH/đổi trả, Final Check)).
+P1-2 ×2), Warranty 19 (17 có sẵn + 2 GET báo trùng BH/đổi trả, Final Check),
+ProductsSort 3 (Sprint 6 Module 3: sort giá tăng/giảm + phân trang)).
 Xem `TEST-REPORT.md` (thư mục docs ngoài). 15 luồng nghiệm thu chạy lại đủ
 vòng Phase 3 follow-up (2026-11-06): **15/15 PASS** — F14 (3D) PASS có lưu ý
 (viewer 72/76, 4 FAIL cùng check reset góc, thuộc tính `camera-orbit` luôn
@@ -211,7 +235,9 @@ vòng Phase 3 follow-up (2026-11-06): **15/15 PASS** — F14 (3D) PASS có lưu 
   TinhTongDonAsync()`; giỏ hiện dòng "Giảm hạng Vàng (2%)". Ví dụ live:
   2× Xiaomi 15 + TECHZONE500 = 25.980.000đ − 500.000đ − 519.600đ =
   24.960.400đ ở giỏ, checkout và đơn (11 test `CartCheckoutParityTests`).
-  **Bước 4a (2026-11-06, chưa commit, nhánh `security/signoff-20261106`):**
+  **Bước 4a (2026-11-06, đã commit local `41bef27` + đã push lên remote
+  `main` thành `40c9bd90` (trừ file ci.yml, user up tay sau), nhánh
+  `security/signoff-20261106`):**
   Checkout POST không còn tin `GiamGiaHang`/`GiamGiaDiem`/`FreeShip`/
   `GiamGiaCombo` từ controller — `CheckoutService` tính lại toàn bộ từ
   DB trong transaction (giảm hạng theo hạng hiện tại, điểm theo số dư
@@ -232,8 +258,8 @@ vòng Phase 3 follow-up (2026-11-06): **15/15 PASS** — F14 (3D) PASS có lưu 
   (submit = xác nhận); snapshot chỉ bảo vệ trường hợp giá đổi giữa
   GET và POST. 30 test `CheckoutTamperingTests` (21 Bước 4a + 6 mới
   chống race / POST trực tiếp + 3 Final Check: P1-1 ×1, P1-2 ×2),
-  runner 222/222 PASS.
-  **Final Check (2026-11-06, chưa commit):** P1-1 — khách vãng lai nhập
+  runner 225/225 PASS (xem §Kiểm thử — lúc Step 4 commit là 222/222).
+  **Final Check (2026-11-06, đã commit local `41bef27` cùng Step 4):** P1-1 — khách vãng lai nhập
   điểm không còn kẹt vòng lặp "Giá đã thay đổi": controller kiểm tra
   `LoiDiem` trước `CoThayDoi` bất kể đăng nhập (trả form + lỗi "Cần đăng
   nhập để dùng điểm tích lũy") và form ẩn ô điểm khi chưa đăng nhập.
@@ -253,8 +279,10 @@ vòng Phase 3 follow-up (2026-11-06): **15/15 PASS** — F14 (3D) PASS có lưu 
 - Admin ProductForm vẫn cho sửa tay Tồn kho/Giá (bypass luồng nhập kho
   StockIn) — đã validate giá trị nhưng chưa khóa hẳn.
 - CI: workflow `.github/workflows/ci.yml` đã tạo (build + `dotnet test` trên
-  runner GitHub) nhưng **chưa chạy thật** — cần duyệt + push; chưa gắn làm
-  required check. **Đã sửa 2026-11-06 (vòng Sign-off):** thêm bước Build
+  runner GitHub) nhưng **chưa chạy thật** — Step 4 đã push lên remote `main`
+  (`40c9bd90`, 2026-11-06) trừ file ci.yml (App thiếu quyền Workflows, user
+  up tay sau qua giao diện web); CI chạy lần đầu khi ci.yml có mặt trên
+  remote; chưa gắn làm required check. **Đã sửa 2026-11-06 (vòng Sign-off):** thêm bước Build
   Tests (repo không có .sln nên `dotnet build` ở root chỉ build app) +
   `permissions: contents: read`; đã mô phỏng trên bản sao sạch: DLL Tests
   tồn tại, `dotnet test --no-build` chỉ dừng ở lỗi vstest transport đã

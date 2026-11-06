@@ -42,7 +42,20 @@ else
             <tr><th>Màn hình</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.ManHinh)</td> }</tr>
             <tr><th>Camera</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Camera)</td> }</tr>
             <tr><th>Card đồ họa</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.CardDoHoa)</td> }</tr>
-            <tr><th>Đánh giá</th>@foreach (var p in Model) { <td>@p.DanhGiaTB.ToString("0.0") sao</td> }</tr>
+            <tr>
+                <th>Đánh giá</th>
+                @foreach (var p in Model)
+                {
+                    @* Follow-up M4-3: nhu _ProductCard — TB tu review da duyet
+                       (p.Reviews da loc IsApproved o controller), khong dung
+                       p.DanhGiaTB (seed cu). 0 review -> "Chưa có đánh giá".
+                       Chi hien thi, khong doi logic compare/review. LuotBan
+                       giu nguyen: bo dem tich luy (xem TEST-REPORT §19). *@
+                    var soDG = p.Reviews.Count;
+                    var tb = soDG > 0 ? Math.Round(p.Reviews.Average(r => r.Sao), 1) : 0;
+                    <td>@(soDG > 0 ? $"{tb:0.0} sao ({soDG} đánh giá)" : "Chưa có đánh giá")</td>
+                }
+            </tr>
             <tr><th>Đã bán</th>@foreach (var p in Model) { <td>@p.LuotBan</td> }</tr>
             <tr><th>Tồn kho</th>@foreach (var p in Model) { <td>@(p.TonKho > 0 ? p.TonKho.ToString() : "Hết hàng")</td> }</tr>
             <tr><th>Bảo hành</th>@foreach (var p in Model) { <td>24 tháng</td> }</tr>

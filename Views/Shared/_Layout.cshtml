@@ -19,6 +19,8 @@
         document.documentElement.classList.add('js');
     </script>
     <title>@ViewData["Title"] - TechZone</title>
+    @* M7-2: favicon (truoc day /favicon.ico tra 404 moi trang). *@
+    <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/css/features-a.css" />
     <link rel="stylesheet" href="~/css/features-b.css" />
@@ -27,35 +29,41 @@
     <link rel="stylesheet" href="~/css/features-3d.css" />
 </head>
 <body>
+    <a class="skip-link" href="#main-content">Bỏ qua tới nội dung chính</a>
     <canvas id="webgl-bg" aria-hidden="true"></canvas>
     <div class="bg-dots" aria-hidden="true"></div>
     <header class="site-header">
         <div class="container header-inner">
+            <button type="button" id="menu-toggle" class="menu-toggle" aria-expanded="false" aria-controls="mobile-menu" aria-label="Mở menu điều hướng"><span aria-hidden="true">☰</span></button>
             <a class="logo" asp-controller="Home" asp-action="Index">Tech<span>Zone</span></a>
             <form class="search" asp-controller="Products" asp-action="Index" method="get" role="search">
-                <input type="search" name="TuKhoa" placeholder="Tìm điện thoại, laptop, tai nghe..." aria-label="Tìm sản phẩm" />
+                <input type="search" name="TuKhoa" placeholder="Tìm sản phẩm…" aria-label="Tìm sản phẩm" />
                 <button type="submit">Tìm</button>
             </form>
             <nav class="header-actions" aria-label="Tài khoản và giỏ hàng">
                 <a asp-controller="Products" asp-action="Index">Sản phẩm</a>
                 <a asp-controller="Compare" asp-action="Index">So sánh</a>
-                <a asp-controller="Cart" asp-action="Index">Giỏ hàng</a>
+                @await Component.InvokeAsync("GioHangBadge")
                 <a asp-controller="Wishlist" asp-action="Index">Yêu thích</a>
                 <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     @await Component.InvokeAsync("ThongBaoBell")
                     @await Component.InvokeAsync("DiemThanhVien")
-                    <a asp-controller="Orders" asp-action="MyOrders">Đơn của tôi</a>
-                    <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
-                    @if (User.IsInRole("Admin"))
-                    {
-                        <a asp-controller="Admin" asp-action="Dashboard">Admin</a>
-                    }
-                    <span class="hello">Xin chào, @User.Identity.Name</span>
-                    <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
-                        <button type="submit" class="link-button">Đăng xuất</button>
-                    </form>
+                    <div class="user-menu">
+                        <button type="button" id="user-menu-btn" class="user-menu-btn" aria-haspopup="true" aria-expanded="false" aria-controls="user-menu-panel"><span class="user-menu-label">Xin chào, @User.Identity.Name</span><span aria-hidden="true"> ▾</span></button>
+                        <div id="user-menu-panel" class="user-menu-panel" hidden>
+                            <a asp-controller="Orders" asp-action="MyOrders">Đơn của tôi</a>
+                            <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="Admin" asp-action="Dashboard">Admin</a>
+                            }
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
+                                <button type="submit" class="link-button">Đăng xuất</button>
+                            </form>
+                        </div>
+                    </div>
                 }
                 else
                 {
@@ -63,6 +71,41 @@
                     <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-sm">Đăng ký</a>
                 }
             </nav>
+        </div>
+        <div id="mobile-menu" class="mobile-menu" hidden>
+            <div class="mobile-menu-group">Điều hướng</div>
+            <a asp-controller="Products" asp-action="Index">Sản phẩm</a>
+            <a asp-controller="Compare" asp-action="Index">So sánh</a>
+            <a asp-controller="Cart" asp-action="Index">Giỏ hàng</a>
+            <a asp-controller="Wishlist" asp-action="Index">Yêu thích</a>
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                <div class="mobile-menu-group">Tài khoản</div>
+                <a asp-controller="Orders" asp-action="MyOrders">Đơn của tôi</a>
+                <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Admin" asp-action="Dashboard">Admin</a>
+                }
+                <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
+                    <button type="submit" class="link-button">Đăng xuất</button>
+                </form>
+            }
+            else
+            {
+                <div class="mobile-menu-group">Tài khoản</div>
+                <a asp-controller="Account" asp-action="Login">Đăng nhập</a>
+                <a asp-controller="Account" asp-action="Register">Đăng ký</a>
+            }
+            <div class="mobile-menu-group">Danh mục</div>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="1">Điện thoại</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="2">Laptop</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="3">Tablet</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="4">Tai nghe</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="5">Đồng hồ</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="6">Phụ kiện</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="7">Gaming</a>
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="8">Linh kiện PC</a>
         </div>
         <nav class="category-nav" aria-label="Danh mục">
             <div class="container">
@@ -78,7 +121,7 @@
         </nav>
     </header>
 
-    <main class="container main-content">
+    <main id="main-content" class="container main-content">
         @if (TempData["Success"] is string ok)
         {
             <div class="alert alert-success" role="alert">@ok</div>
@@ -111,6 +154,7 @@
     </footer>
 
     <script src="~/js/theme.js"></script>
+    <script src="~/js/header-menu.js"></script>
     <script src="~/js/webgl-bg.js"></script>
     <script src="~/js/features-b.js"></script>
     @await RenderSectionAsync("Scripts", required: false)

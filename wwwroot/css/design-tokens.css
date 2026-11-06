@@ -42,10 +42,13 @@
   --color-error-border: #F5C6CB;
   --color-warning-bg: #FFF3CD;
   --color-warning-fg: #664D03;
+  --color-warning-border: #E6C87A;
   --color-info-bg: #D1E7DD;
   --color-info-fg: #0F5132;
+  --color-info-border: #A3C9B8;
   --color-danger-soft-bg: #F8D7DA;
   --color-danger-soft-fg: #842029;
+  --color-danger-soft-border: #E8A0A8;
 
   /* Typography — MỘT stack duy nhất cho mọi chữ. Đổi 2026-11-05 sang
      Be Vietnam Pro (user chốt "Áp dụng đi"): Rubik render dấu tiếng Việt
@@ -100,7 +103,7 @@ html[data-theme="dark"] {
   --color-primary-ring: rgba(96, 165, 250, .35); /* focus ring/glow rõ trên nền tối */
   --color-primary-ghost: rgba(96, 165, 250, .08);/* sọc chéo Flash Sale */
   --color-primary-text: #60A5FA;   /* chữ xanh nhạt trên nền tối, tương phản ~7:1 (xanh #2563EB chỉ ~3.5:1) */
-  --color-veil: rgba(15, 23, 42, .40);  /* veil phủ nền WebGL ở dark */
+  --color-veil: rgba(15, 23, 42, .55);  /* veil phủ nền WebGL ở dark — Sprint 6 Module 1: tăng .40 → .55 để chữ/nút đọc được trên nền WebGL */
   --color-shine: rgba(255, 255, 255, .35); /* vệt sáng Flash Sale */
   --color-success-bg: #14532D; --color-success-fg: #BBF7D0; --color-success-border: #166534;
   --color-error-bg: #450A0A; --color-error-fg: #FECACA; --color-error-border: #7F1D1D;

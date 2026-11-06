@@ -57,6 +57,9 @@ public class ProductsController : Controller
             .Include(p => p.Category)
             .Include(p => p.Brand)
             .Include(p => p.Specs)
+            // M4-3: _ProductCard tinh sao tu Reviews da duyet (giong
+            // Details) nen Listing phai nap Reviews — chi review da duyet.
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .AsQueryable();
 
         if (filter.CategoryId.HasValue)
@@ -79,10 +82,21 @@ public class ProductsController : Controller
             query = query.Where(p => p.Ten.Contains(kw) || (p.MoTa != null && p.MoTa.Contains(kw)));
         }
 
+        // P1 Sprint 6 Module 3: SQLite khong ORDER BY duoc cot decimal
+        // ("SQLite does not support expressions of type 'decimal' in
+        // ORDER BY") nen ep gia hieu dung sang double ngay trong ORDER BY.
+        // Gia VND la so nguyen (decimal(18,0), toi da 1e9 theo Range tren
+        // Product) nen double bieu dien CHINH XAC toi 2^53 — khong mat
+        // precision thuc te, thu tu sort giu nguyen. Sort van chay phia DB,
+        // TRUOC Skip/Take nen phan trang dung; khong materialize roi moi
+        // sort (cach do se phai tai toan bo bang ve bo nho).
+        // (PriceCalculationService da ghi nhan gioi han tuong tu cho
+        // FlashSale: sort decimal o client sau ToListAsync — o day khong
+        // ap dung duoc vi listing co phan trang.)
         query = filter.SapXep switch
         {
-            "gia-tang" => query.OrderBy(p => p.GiaKhuyenMai ?? p.Gia),
-            "gia-giam" => query.OrderByDescending(p => p.GiaKhuyenMai ?? p.Gia),
+            "gia-tang" => query.OrderBy(p => (double)(p.GiaKhuyenMai ?? p.Gia)),
+            "gia-giam" => query.OrderByDescending(p => (double)(p.GiaKhuyenMai ?? p.Gia)),
             "ban-chay" => query.OrderByDescending(p => p.LuotBan),
             "moi-nhat" => query.OrderByDescending(p => p.NgayTao),
             _ => query.OrderByDescending(p => p.LaNoiBat).ThenByDescending(p => p.LuotBan),
@@ -148,6 +162,8 @@ public class ProductsController : Controller
         var sanPhamDaXem = await _db.Products
             .Include(p => p.Images)
             .Include(p => p.Specs)
+            // M4-3: _RecentlyViewed dung _ProductCard (tinh sao tu Reviews).
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .Where(p => idDaXemKhac.Contains(p.Id))
             .ToListAsync();
         // Where khong dam bao thu tu: sap lai theo thu tu da xem.
@@ -228,6 +244,8 @@ public class ProductsController : Controller
         var tuongTu = await _db.Products
             .Include(p => p.Images)
             .Include(p => p.Specs)
+            // M4-3: "San pham tuong tu" dung _ProductCard (tinh sao tu Reviews).
+            .Include(p => p.Reviews.Where(r => r.IsApproved))
             .Where(p => p.CategoryId == product.CategoryId && p.Id != id)
             .OrderByDescending(p => p.LuotBan)
             .Take(4)

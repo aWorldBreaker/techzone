@@ -21,7 +21,7 @@ else
             }
             else
             {
-                <table class="table">
+                <div class="table-wrap"><table class="table">
                     <thead><tr><th>Sản phẩm</th><th>Giá sale</th><th></th></tr></thead>
                     <tbody>
                         @foreach (var item in s.Items)
@@ -38,7 +38,7 @@ else
                             </tr>
                         }
                     </tbody>
-                </table>
+                </table></div>
             }
             <form asp-action="ThemSlotItem" method="post" class="filter-bar">
                 <input type="hidden" name="slotId" value="@s.Id" />

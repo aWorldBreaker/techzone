@@ -81,6 +81,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// M6-2: trang 404 than thien — NotFound() hoac khong co route khop thi
+// chay lai /Home/Error404 (giu nguyen status 404, khong redirect).
+app.UseStatusCodePagesWithReExecute("/Home/Error404");
+
 app.UseHttpsRedirection();
 // Phuc vu file .glb/.gltf cho viewer 3D: StaticFiles mac dinh khong biet
 // dinh dang nay nen tra 404. Them mapping MIME chuan.

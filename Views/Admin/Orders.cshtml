@@ -20,7 +20,7 @@
 }
 else
 {
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead>
             <tr><th>Mã đơn</th><th>Ngày đặt</th><th>Giao đến</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr>
         </thead>
@@ -37,7 +37,7 @@ else
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
     @if ((int)ViewBag.TongTrang > 1)
     {
         <nav class="pagination" aria-label="Phân trang">

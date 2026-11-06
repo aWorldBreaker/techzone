@@ -73,7 +73,17 @@
 
     <div>
         <h1>@Model.Ten</h1>
-        <p>@Model.DanhGiaTB.ToString("0.0") sao (@Model.Reviews.Count đánh giá) • Đã bán @Model.LuotBan • @(Model.TonKho > 0 ? $"Còn {Model.TonKho} trong kho" : "Hết hàng")</p>
+        @* M4-1: diem sao hien thi TINH TU danh gia da duyet dang co (Model.Reviews
+           da loc IsApproved o controller), khong dung Model.DanhGiaTB (gia tri
+           seed cu, lech khoi TB that: VD Id 1 seed 4.8 trong khi 2 review 5+4
+           TB that 4.5; SP 0 review van hien "4.8 sao (0 danh gia)").
+           0 review -> "Chua co danh gia", khong hien so sao. Chi hien thi,
+           khong doi logic review/DanhGiaTB. *@
+        @{
+            var soDanhGia = Model.Reviews.Count;
+            var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
+        }
+        <p>@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan • @(Model.TonKho > 0 ? $"Còn {Model.TonKho} trong kho" : "Hết hàng")</p>
         <p>
             <span class="price-big">@giaHienThi.ToString("N0")đ</span>
             @if (giaHienThi < giaGoc)
@@ -224,6 +234,11 @@
             @if (!string.IsNullOrWhiteSpace(r.ImageUrl)) { <img src="@r.ImageUrl" alt="Ảnh đánh giá của @r.User?.HoTen" class="review-image" /> }
         </div>
     }
+    @* M4-2: form danh gia chi hien khi da login (POST DanhGia co [Authorize],
+       khach chua login bam Gui se bi day sang Login, mat noi dung da go).
+       Anon thay link dang nhap, giong khoi Hoi & dap ben duoi. *@
+    @if (User.Identity?.IsAuthenticated == true)
+    {
     <form asp-action="DanhGia" method="post" enctype="multipart/form-data" class="mt">
         <input type="hidden" name="productId" value="@Model.Id" />
         <div class="form-group">
@@ -240,6 +255,11 @@
         </div>
         <button type="submit" class="btn btn-secondary">Gửi đánh giá</button>
     </form>
+    }
+    else
+    {
+        <p class="mt"><a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Products", new { id = Model.Id })">Đăng nhập</a> để đánh giá sản phẩm này.</p>
+    }
 </section>
 
 <section class="section qa-block">

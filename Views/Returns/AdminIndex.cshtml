@@ -1,5 +1,6 @@
 @model List<TechZone.Models.ReturnRequest>
 @{
+    Layout = "_AdminLayout";
     ViewData["Title"] = "Duyệt đổi trả / bảo hành";
     var baoHanh = (List<TechZone.Models.WarrantyClaim>)ViewBag.BaoHanh;
     var trangThai = (string?)ViewBag.TrangThai;
@@ -30,7 +31,7 @@
 }
 else
 {
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead>
             <tr><th>Mã</th><th>Khách</th><th>Đơn</th><th>Sản phẩm</th><th>Lý do</th><th>Ngày tạo</th><th>Trạng thái</th><th>Duyệt</th></tr>
         </thead>
@@ -61,7 +62,7 @@ else
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 }
 
 <h2>Bảo hành</h2>
@@ -71,7 +72,7 @@ else
 }
 else
 {
-    <table class="table">
+    <div class="table-wrap"><table class="table">
         <thead>
             <tr><th>Mã</th><th>Khách</th><th>Đơn</th><th>Sản phẩm</th><th>Mô tả lỗi</th><th>Ngày tạo</th><th>Trạng thái</th><th>Duyệt</th></tr>
         </thead>
@@ -102,5 +103,5 @@ else
                 </tr>
             }
         </tbody>
-    </table>
+    </table></div>
 }

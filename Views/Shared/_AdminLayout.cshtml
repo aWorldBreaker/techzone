@@ -1,0 +1,179 @@
+@* TechZone — Layout riêng cho khu Admin (Sprint 6 Continuation, Phase 2).
+   Chỉ load design tokens + admin.css + theme.js + admin.js: KHÔNG load
+   site.css/features-*.css, KHÔNG webgl-bg.js, KHÔNG header-menu.js,
+   KHÔNG features-b.js, KHÔNG search/category-nav/footer của shop.
+   Breadcrumb suy ra từ RouteData (controller/action) + ViewData["Title"],
+   không cần sửa từng view. Sidebar active cũng tính từ RouteData:
+   ProductForm -> Sản phẩm, OrderDetails -> Đơn hàng, SuaCombo -> Combo. *@
+@{
+    var route = ViewContext.RouteData.Values;
+    var controller = (route["controller"] as string) ?? "";
+    var action = (route["action"] as string) ?? "";
+    var title = (ViewData["Title"] as string) ?? "Quản trị";
+    // Nhóm active: trang chi tiết thuộc về mục cha của nó.
+    string NhomActive(string ctrl, string act) => (ctrl, act) switch
+    {
+        ("Admin", "Dashboard") => "Dashboard",
+        ("Admin", "Products") => "Products",
+        ("Admin", "ProductForm") => "Products",
+        ("Admin", "Orders") => "Orders",
+        ("Admin", "OrderDetails") => "Orders",
+        ("Admin", "KhachHang") => "KhachHang",
+        ("Admin", "Kho") => "Kho",
+        ("Admin", "Vouchers") => "Vouchers",
+        ("Admin", "Combos") => "Combos",
+        ("Admin", "SuaCombo") => "Combos",
+        ("Admin", "FlashSaleSlots") => "FlashSaleSlots",
+        ("Admin", "Banners") => "Banners",
+        ("Admin", "Reviews") => "Reviews",
+        ("Admin", "ThongBao") => "ThongBao",
+        ("Returns", "AdminIndex") => "Returns",
+        _ => ""
+    };
+    var active = NhomActive(controller, action);
+    string ActiveClass(string nhom) => nhom == active ? "is-active" : "";
+    // Highlight chính xác theo (controller, action): "Sản phẩm" chỉ sáng ở
+    // Products, "+ Thêm sản phẩm" chỉ sáng ở ProductForm (trước đây cả 2
+    // cùng dùng ActiveClass("Products") nên sáng kép ở cả 2 trang).
+    string ActiveClassExact(string ctrl, string act) => (controller == ctrl && action == act) ? "is-active" : "";
+    // Breadcrumb: "Trang quản trị" (= Dashboard) + mục hiện tại (+ trang con).
+    string TenMuc(string nhom) => nhom switch
+    {
+        "Dashboard" => "Dashboard",
+        "Products" => "Sản phẩm",
+        "Orders" => "Đơn hàng",
+        "KhachHang" => "Khách hàng",
+        "Kho" => "Kho",
+        "Vouchers" => "Voucher",
+        "Combos" => "Combo",
+        "FlashSaleSlots" => "Flash Sale",
+        "Banners" => "Banner",
+        "Reviews" => "Đánh giá & hỏi đáp",
+        "ThongBao" => "Thông báo",
+        "Returns" => "Đổi trả / Bảo hành",
+        _ => title
+    };
+    // Trang con (không có mục sidebar riêng): lấy tên gọn từ Title.
+    string? trangCon = (controller, action) switch
+    {
+        ("Admin", "ProductForm") => title.Contains("Thêm") ? "Thêm sản phẩm" : "Sửa sản phẩm",
+        ("Admin", "OrderDetails") => title.Replace("Admin — ", ""),
+        ("Admin", "SuaCombo") => "Sửa combo",
+        _ => null
+    };
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        /* Đặt theme TRƯỚC KHI trang vẽ (giống _Layout): localStorage
+           'techzone-theme', chưa có thì theo prefers-color-scheme. */
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('techzone-theme') || ''; } catch (e) { /* bỏ qua */ }
+            if (t !== 'dark' && t !== 'light') {
+                t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+        document.documentElement.classList.add('js');
+    </script>
+    <title>@title - TechZone Admin</title>
+    <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="~/css/admin.css" />
+</head>
+<body class="admin-body">
+    <a class="skip-link" href="#admin-main">Bỏ qua tới nội dung chính</a>
+    <div class="admin-shell" id="admin-shell">
+        <div class="admin-overlay" id="admin-overlay" aria-hidden="true"></div>
+        <aside class="admin-sidebar" id="admin-sidebar" aria-label="Điều hướng quản trị">
+            <a class="admin-logo" asp-controller="Home" asp-action="Index">Tech<span>Zone</span> <small>Admin</small></a>
+            <nav aria-label="Quản trị">
+                <div class="admin-nav-group">Tổng quan</div>
+                <a class="@ActiveClass("Dashboard")" asp-controller="Admin" asp-action="Dashboard" aria-current="@(active == "Dashboard" ? "page" : null)">📊 Dashboard</a>
+                <div class="admin-nav-group">Bán hàng</div>
+                <a class="@ActiveClassExact("Admin", "Products")" asp-controller="Admin" asp-action="Products" aria-current="@(controller == "Admin" && action == "Products" ? "page" : null)">📦 Sản phẩm</a>
+                <a class="admin-nav-sub @ActiveClassExact("Admin", "ProductForm")" asp-controller="Admin" asp-action="ProductForm" aria-current="@(controller == "Admin" && action == "ProductForm" ? "page" : null)">＋ Thêm sản phẩm</a>
+                <a class="@ActiveClass("Orders")" asp-controller="Admin" asp-action="Orders" aria-current="@(active == "Orders" ? "page" : null)">🧾 Đơn hàng</a>
+                <a class="@ActiveClass("KhachHang")" asp-controller="Admin" asp-action="KhachHang" aria-current="@(active == "KhachHang" ? "page" : null)">👥 Khách hàng</a>
+                <a class="@ActiveClass("Kho")" asp-controller="Admin" asp-action="Kho" aria-current="@(active == "Kho" ? "page" : null)">🏬 Kho</a>
+                <div class="admin-nav-group">Khuyến mãi</div>
+                <a class="@ActiveClass("Vouchers")" asp-controller="Admin" asp-action="Vouchers" aria-current="@(active == "Vouchers" ? "page" : null)">🎟️ Voucher</a>
+                <a class="@ActiveClass("Combos")" asp-controller="Admin" asp-action="Combos" aria-current="@(active == "Combos" ? "page" : null)">🎁 Combo</a>
+                <a class="@ActiveClass("FlashSaleSlots")" asp-controller="Admin" asp-action="FlashSaleSlots" aria-current="@(active == "FlashSaleSlots" ? "page" : null)">⚡ Flash Sale</a>
+                <a class="@ActiveClass("Banners")" asp-controller="Admin" asp-action="Banners" aria-current="@(active == "Banners" ? "page" : null)">🖼️ Banner</a>
+                <div class="admin-nav-group">Chăm sóc khách</div>
+                <a class="@ActiveClass("Reviews")" asp-controller="Admin" asp-action="Reviews" aria-current="@(active == "Reviews" ? "page" : null)">⭐ Đánh giá &amp; hỏi đáp</a>
+                <a class="@ActiveClass("Returns")" asp-controller="Returns" asp-action="AdminIndex" aria-current="@(active == "Returns" ? "page" : null)">↩️ Đổi trả / Bảo hành</a>
+                <a class="@ActiveClass("ThongBao")" asp-controller="Admin" asp-action="ThongBao" aria-current="@(active == "ThongBao" ? "page" : null)">🔔 Thông báo</a>
+            </nav>
+            <div class="admin-sidebar-foot">
+                <a asp-controller="Home" asp-action="Index">← Về cửa hàng</a>
+            </div>
+        </aside>
+
+        <div class="admin-main-wrap">
+            <header class="admin-topbar">
+                <button type="button" id="admin-menu-toggle" class="admin-menu-toggle" aria-expanded="false" aria-controls="admin-sidebar" aria-label="Mở menu quản trị"><span aria-hidden="true">☰</span></button>
+                <nav class="admin-breadcrumb" aria-label="Đường dẫn">
+                    <a asp-controller="Admin" asp-action="Dashboard">Trang quản trị</a>
+                    @if (active != "" && active != "Dashboard")
+                    {
+                        <span aria-hidden="true"> / </span>
+                        @if (trangCon is null)
+                        {
+                            <span aria-current="page">@TenMuc(active)</span>
+                        }
+                        else
+                        {
+                            <a asp-controller="Admin" asp-action="@(active == "Products" ? "Products" : active == "Orders" ? "Orders" : "Combos")">@TenMuc(active)</a>
+                            <span aria-hidden="true"> / </span>
+                            <span aria-current="page">@trangCon</span>
+                        }
+                    }
+                    else if (active == "Dashboard")
+                    {
+                        <span aria-hidden="true"> / </span>
+                        <span aria-current="page">Dashboard</span>
+                    }
+                </nav>
+                <div class="admin-topbar-actions">
+                    <a asp-controller="Home" asp-action="Index">Về cửa hàng</a>
+                    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="admin-user">Xin chào, @User.Identity.Name</span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
+                            <button type="submit" class="link-button">Đăng xuất</button>
+                        </form>
+                    }
+                </div>
+            </header>
+
+            <main id="admin-main" class="admin-main">
+                @if (TempData["Success"] is string ok)
+                {
+                    <div class="alert alert-success" role="alert">@ok</div>
+                }
+                @if (TempData["Error"] is string err)
+                {
+                    <div class="alert alert-error" role="alert">@err</div>
+                }
+                @RenderBody()
+            </main>
+
+            <footer class="admin-footer">
+                <p>© 2026 TechZone — Khu quản trị</p>
+            </footer>
+        </div>
+    </div>
+
+    @* theme.js dùng chung với shop (chỉ bind #theme-toggle + localStorage,
+       không có hiệu ứng storefront). admin.js chỉ toggle sidebar mobile. *@
+    <script src="~/js/theme.js"></script>
+    <script src="~/js/admin.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

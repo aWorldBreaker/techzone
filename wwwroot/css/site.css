@@ -30,7 +30,7 @@ input, textarea, select { caret-color: var(--color-primary); }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: var(--color-muted); }
 ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: var(--radius); }
-.price-big, .product-price strong, .summary-row.total, .stat-card .value { font-variant-numeric: tabular-nums; }
+.price-big, .product-price strong, .summary-row.total { font-variant-numeric: tabular-nums; }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 0 var(--space-md); }
 /* M6-1: main la flex item cua body (flex column, Module 1) — width:auto
@@ -191,6 +191,13 @@ input, textarea, select { caret-color: var(--color-primary); }
 .chip-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin: var(--space-lg) 0; }
 .chip { display: inline-block; padding: 8px 16px; border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-foreground); font-weight: 600; }
 .chip:hover { border-color: var(--color-teal); color: var(--color-teal); text-decoration: none; }
+/* Phân trang listing — Sprint 6 Module 3 (P1): trang hiện tại nổi bật
+   (đi cùng aria-current="page" ở view); nút Trước/Sau ở biên chỉ là
+   nhãn mờ, không phải link; dấu … ngăn cách khoảng trang windowing. */
+.chip-active { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+.chip-active:hover { color: var(--color-on-primary); border-color: var(--color-primary); }
+.chip-disabled { opacity: .5; cursor: default; }
+.pagination-ellipsis { display: inline-block; padding: 8px 4px; color: var(--color-muted-foreground); }
 .chip-count { color: var(--color-muted-foreground); font-weight: 400; font-size: .85rem; }
 
 /* Forms */
@@ -213,6 +220,10 @@ input, textarea, select { caret-color: var(--color-primary); }
    ở ≤768px khi JS đã gắn (class .is-ready) — không JS thì nút không hiện
    và form lọc luôn mở, vẫn dùng được. */
 .filter-toggle { display: none; }
+/* Nút "Đóng" trong panel lọc — Sprint 6 Module 3: chỉ hiện ở mobile
+   (≤768px, xem media query cuối file); desktop panel luôn mở nên nút ẩn
+   và không có tác dụng (JS cũng chỉ đóng khi matchMedia mobile). */
+.filter-close { display: none; }
 .filter-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: var(--radius); background: var(--color-accent); color: var(--color-on-primary); font-size: .8rem; font-weight: 700; line-height: 1; }
 
 /* Tables */
@@ -230,6 +241,13 @@ input, textarea, select { caret-color: var(--color-primary); }
 .qty { display: inline-flex; align-items: center; gap: var(--space-xs); }
 .qty button { width: 40px; height: 40px; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); font-weight: 700; }
 .thumb-sm { width: 72px; height: 72px; object-fit: contain; background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius); }
+/* Sprint 6 Module 4 — thumbnail tuong tac trang Details: nut boc anh
+   (con tro + vien trang thai chon). Ghi de `.detail-image img
+   { width: 100% }` de anh nho giu dung 72px nhu .thumb-sm dinh. */
+.thumb-btn { padding: 0; border: 2px solid transparent; border-radius: var(--radius); background: none; cursor: pointer; line-height: 0; }
+.thumb-btn:hover { border-color: var(--color-border); }
+.thumb-btn[aria-current="true"] { border-color: var(--color-primary); }
+.detail-image .thumb-btn img { width: 72px; height: 72px; }
 .input-narrow { max-width: 120px; }
 .review-item { border-bottom: 1px solid var(--color-border); padding: 12px 0; }
 .cart-item-title { margin: 0; }
@@ -263,11 +281,7 @@ input, textarea, select { caret-color: var(--color-primary); }
 .variant { border: 2px solid var(--color-border); border-radius: var(--radius); padding: 8px 14px; font-weight: 600; background: var(--color-card); }
 .variant.selected { border-color: var(--color-primary); background: var(--color-muted); }
 
-/* Admin */
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); margin-bottom: var(--space-xl); }
-.stat-card { border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-lg); background: var(--color-card); }
-.stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--color-primary-text); }
-.stat-card .label { color: var(--color-muted-foreground); }
+/* Badges — dùng chung shop + Admin (Admin có bản copy trong admin.css). */
 .badge { display: inline-block; padding: 2px 10px; border-radius: var(--radius); font-size: .85rem; font-weight: 600; background: var(--color-muted); }
 .badge-cho { background: var(--color-warning-bg); color: var(--color-warning-fg); }
 .badge-giao { background: var(--color-info-bg); color: var(--color-info-fg); }
@@ -336,7 +350,6 @@ input, textarea, select { caret-color: var(--color-primary); }
 }
 @media (max-width: 1024px) {
   .product-grid { grid-template-columns: repeat(3, 1fr); }
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
   .hero, .detail-layout, .cart-layout { grid-template-columns: 1fr; }
@@ -375,7 +388,10 @@ input, textarea, select { caret-color: var(--color-primary); }
   .filter-toggle.is-ready:hover { border-color: var(--color-primary); color: var(--color-primary-text); }
   .filter-bar { max-height: calc(100vh - 320px); max-height: calc(100dvh - 320px); overflow-y: auto; }
   .filter-actions { position: sticky; bottom: 0; display: flex; gap: var(--space-sm); width: 100%; padding-top: var(--space-sm); padding-bottom: var(--space-xs); background: var(--color-muted); }
-  .filter-actions .btn { flex: 1; }
+  /* 3 nút (Lọc / Xóa lọc / Đóng) chia đều 1 hàng: không gãy chữ
+     ("Xóa lọc" gãy 2 dòng khi để padding mặc định 24px). */
+  .filter-actions .btn { flex: 1; min-width: 0; white-space: nowrap; padding-left: 8px; padding-right: 8px; }
+  .filter-close { display: inline-block; }
 }
 @media (max-width: 480px) {
   /* Nút trong card ở màn hẹp — Sprint 6 Module 3 (M3-4): card ~170px,
@@ -384,8 +400,66 @@ input, textarea, select { caret-color: var(--color-primary); }
      thì cả "So sánh" và "Thêm vào giỏ" đều vừa 1 dòng. */
   .card-actions { flex-direction: column; }
   .card-actions .btn, .product-info > form .btn { white-space: nowrap; font-size: .85rem; padding: 8px 10px; }
+  /* Gio hang — QA Phase 4 (fix): nut - / + lam form .qty rong 180px
+     (truoc 96px) nen cot giua `1fr` cua .cart-item khong co lai duoc
+     (minmax(auto,1fr) giu min-content) → .cart-item + .summary rong
+     435px, tran ngang 61px o 390 (nut Xoa lot ra ngoai mep phai, khong
+     bam duoc tren mobile). O ≤480px: bo cot `auto` (tong dong + Xoa
+     xuong hang rieng full-width), form .qty duoc wrap de min-content
+     con 136px → vua ca 390 (358px) lan 320 (288px). */
+  .cart-item { grid-template-columns: 96px 1fr; }
+  .cart-item > .text-right { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
+  .cart-item > .text-right p { margin: 0; }
+  .qty { flex-wrap: wrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; transform: none !important; animation: none !important; }
   .js .reveal { opacity: 1 !important; }
+}
+
+/* ============ Phase 5 — Landing: FEATURES-FIRST + VISUAL POLISH ============
+   Chi hieu ung hien thi, khong doi bo cuc / logic. Moi transition/animation
+   moi deu bi tat boi khoi prefers-reduced-motion o tren (giong cac
+   animation cu: hero-fade, hero-float, shine, cd-glow). */
+/* Giu hoa tiet luoi 32px goc cua .hero (background-image o tren), chi them
+   lop gradient xanh mo o goc tren trai + vien bo. */
+.hero { background-image: linear-gradient(135deg, var(--color-primary-ghost), transparent 55%), linear-gradient(var(--color-border) 1px, transparent 1px), linear-gradient(90deg, var(--color-border) 1px, transparent 1px); border: 1px solid var(--color-border); border-radius: var(--radius); padding-left: var(--space-lg); padding-right: var(--space-lg); }
+.hero-eyebrow { display: inline-block; font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-primary-text); background: var(--color-primary-ghost); border: 1px solid var(--color-primary); border-radius: 999px; padding: 4px 12px; margin: 0 0 var(--space-md); }
+.hero h1 { letter-spacing: -0.02em; }
+.hero-price strong { font-size: 2.25rem; }
+.hero-facts { border-top: 1px solid var(--color-border); padding-top: var(--space-md); }
+.hero-image { border: 1px solid var(--color-border); box-shadow: var(--shadow-lg); }
+.hero-image img { transition: transform .4s ease; }
+.hero-image:hover img { transform: scale(1.03); }
+/* Card: anh zoom nhe khi hover (kem translateY -6px da co); anh goc vuong
+   khong tran vi .product-image co overflow hidden tu .product-card. */
+.product-card .product-image { overflow: hidden; }
+.product-card .product-image img { transition: transform .35s ease; }
+.product-card:hover .product-image img { transform: scale(1.06); }
+/* Ton kho tren card (Phase 5): xanh teal = con nhieu, cam accent = sap het
+   (TonKho <= 10, theo Admin), do loi = het hang. */
+.stock-ok { color: var(--color-teal); font-weight: 700; }
+.stock-low { color: var(--color-accent); font-weight: 700; }
+.stock-out { color: var(--color-error-fg); font-weight: 700; }
+.product-card .btn[disabled] { opacity: .55; cursor: not-allowed; }
+/* Danh muc: chu cai dau lam "icon" tron (Category khong co anh/icon trong DB). */
+.chip { display: inline-flex; align-items: center; gap: 8px; transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease; }
+.chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+.chip-icon { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: var(--color-primary); color: var(--color-on-primary); font-size: .9rem; font-weight: 700; text-transform: uppercase; flex-shrink: 0; }
+/* Empty state: khung mo thay vi trang tron, nhan manh bang chu + vien dut. */
+.empty-state { border: 1px dashed var(--color-border); border-radius: var(--radius); background: var(--color-muted); color: var(--color-muted-foreground); padding: var(--space-lg); text-align: center; margin: var(--space-lg) 0 0; }
+/* Flash Sale: so dem nguoc tabular (khong nhay chieu rong khi doi so),
+   badge "Flash Sale" dam hon tren nen soc cheo. */
+.flash-countdown span b { font-variant-numeric: tabular-nums; }
+.flash-sale .badge-giam { box-shadow: var(--shadow-sm); }
+/* Voucher band: vien dut kieu phieu giam gia + nut noi hon. */
+.voucher-band { border: 2px dashed var(--color-dot-light); }
+.voucher-band h2 { letter-spacing: .02em; }
+.voucher-band .btn-light { font-weight: 700; box-shadow: var(--shadow-sm); }
+/* Bang xep hang Ban chay: hang hover noi len de de bam tren mobile. */
+.rank-row { transition: background 200ms ease; border-radius: var(--radius); }
+.rank-row:hover { background: var(--color-muted); }
+@media (max-width: 768px) {
+  .hero { padding-left: var(--space-md); padding-right: var(--space-md); }
+  .hero-price strong { font-size: 1.9rem; }
 }

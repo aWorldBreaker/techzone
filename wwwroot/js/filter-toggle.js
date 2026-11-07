@@ -5,6 +5,8 @@
    - Có filter đang bật (server render data-active-filters > 0) thì panel
      tự mở để người dùng thấy trạng thái lọc.
    - Esc đóng panel (chỉ khi đang thu gọn ở mobile), trả focus về nút.
+   - Nút "Đóng" trong panel (#filter-close, chỉ hiện ở mobile): đóng
+     panel như Esc, cũng trả focus về nút toggle.
    - Không animation khi đóng/mở (đổi [hidden] tức thì) nên không ảnh
      hưởng prefers-reduced-motion.
    - Theo mẫu header-menu.js (Module 1): aria-expanded, Esc, focus. */
@@ -13,6 +15,7 @@
     var btn = document.getElementById('filter-toggle');
     var panel = document.getElementById('filter-panel');
     if (!btn || !panel) return;
+    var closeBtn = document.getElementById('filter-close');
     var mq = window.matchMedia('(max-width: 768px)');
     var activeFilters = parseInt(panel.getAttribute('data-active-filters') || '0', 10) || 0;
     var userToggled = false;
@@ -22,6 +25,14 @@
         btn.setAttribute('aria-expanded', open ? 'true' : 'false');
     }
     function isOpen() { return !panel.hidden; }
+    /* Đóng panel ở mobile + trả focus về nút toggle (dùng chung cho nút
+       Đóng và phím Esc). Desktop: không làm gì (panel luôn mở). */
+    function closePanel() {
+        if (!mq.matches || !isOpen()) return;
+        userToggled = true;
+        set(false);
+        btn.focus();
+    }
     function applyForViewport() {
         if (!mq.matches) { set(true); return; }      // desktop: luôn mở
         if (!userToggled) set(activeFilters > 0);    // mobile lần đầu: mở chỉ khi có filter
@@ -32,9 +43,10 @@
         userToggled = true;
         set(!isOpen());
     });
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
-        if (mq.matches && isOpen()) { userToggled = true; set(false); btn.focus(); }
+        closePanel();
     });
     if (typeof mq.addEventListener === 'function') {
         mq.addEventListener('change', applyForViewport);

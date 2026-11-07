@@ -1,37 +1,52 @@
 @model TechZone.Controllers.RegisterViewModel
 @{
     ViewData["Title"] = "Đăng ký";
+    Layout = "_AuthLayout";
+    var hoTenCoLoi = ViewData.ModelState["HoTen"]?.Errors.Count > 0;
+    var emailCoLoi = ViewData.ModelState["Email"]?.Errors.Count > 0;
+    var soDienThoaiCoLoi = ViewData.ModelState["SoDienThoai"]?.Errors.Count > 0;
+    var matKhauCoLoi = ViewData.ModelState["MatKhau"]?.Errors.Count > 0;
+    var nhapLaiMatKhauCoLoi = ViewData.ModelState["NhapLaiMatKhau"]?.Errors.Count > 0;
 }
 <div class="auth-box">
     <h1>Đăng ký tài khoản</h1>
-    <form asp-action="Register" method="post">
+    <p class="auth-subtitle">Tạo tài khoản để mua sắm, theo dõi đơn hàng và tích điểm thành viên.</p>
+    <form asp-action="Register" method="post" class="auth-form">
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
         <div class="form-group">
             <label asp-for="HoTen">Họ tên</label>
-            <input asp-for="HoTen" class="form-control" />
-            <span asp-validation-for="HoTen" class="text-danger"></span>
+            <input asp-for="HoTen" class="form-control" aria-invalid="@(hoTenCoLoi ? "true" : null)" aria-describedby="@(hoTenCoLoi ? "HoTen-error" : null)" />
+            <span asp-validation-for="HoTen" id="HoTen-error" class="text-danger"></span>
         </div>
         <div class="form-group">
             <label asp-for="Email">Email</label>
-            <input asp-for="Email" class="form-control" type="email" />
-            <span asp-validation-for="Email" class="text-danger"></span>
+            <input asp-for="Email" class="form-control" type="email" aria-invalid="@(emailCoLoi ? "true" : null)" aria-describedby="@(emailCoLoi ? "Email-error" : null)" />
+            <span asp-validation-for="Email" id="Email-error" class="text-danger"></span>
         </div>
         <div class="form-group">
             <label asp-for="SoDienThoai">Số điện thoại</label>
-            <input asp-for="SoDienThoai" class="form-control" />
-            <span asp-validation-for="SoDienThoai" class="text-danger"></span>
+            <input asp-for="SoDienThoai" class="form-control" aria-invalid="@(soDienThoaiCoLoi ? "true" : null)" aria-describedby="@(soDienThoaiCoLoi ? "SoDienThoai-error" : null)" />
+            <span asp-validation-for="SoDienThoai" id="SoDienThoai-error" class="text-danger"></span>
         </div>
         <div class="form-group">
             <label asp-for="MatKhau">Mật khẩu (tối thiểu 6 ký tự)</label>
-            <input asp-for="MatKhau" class="form-control" type="password" />
-            <span asp-validation-for="MatKhau" class="text-danger"></span>
+            <div class="password-field">
+                <input asp-for="MatKhau" class="form-control" type="password" aria-invalid="@(matKhauCoLoi ? "true" : null)" aria-describedby="@(matKhauCoLoi ? "MatKhau-error" : null)" />
+                <button type="button" class="password-toggle" aria-label="Hiện mật khẩu" aria-pressed="false">Hiện</button>
+            </div>
+            <p class="capslock-warning" hidden>⚠ Caps Lock đang bật — mật khẩu có phân biệt chữ hoa/thường.</p>
+            <span asp-validation-for="MatKhau" id="MatKhau-error" class="text-danger"></span>
         </div>
         <div class="form-group">
             <label asp-for="NhapLaiMatKhau">Nhập lại mật khẩu</label>
-            <input asp-for="NhapLaiMatKhau" class="form-control" type="password" />
-            <span asp-validation-for="NhapLaiMatKhau" class="text-danger"></span>
+            <div class="password-field">
+                <input asp-for="NhapLaiMatKhau" class="form-control" type="password" aria-invalid="@(nhapLaiMatKhauCoLoi ? "true" : null)" aria-describedby="@(nhapLaiMatKhauCoLoi ? "NhapLaiMatKhau-error" : null)" />
+                <button type="button" class="password-toggle" aria-label="Hiện mật khẩu" aria-pressed="false">Hiện</button>
+            </div>
+            <p class="capslock-warning" hidden>⚠ Caps Lock đang bật — mật khẩu có phân biệt chữ hoa/thường.</p>
+            <span asp-validation-for="NhapLaiMatKhau" id="NhapLaiMatKhau-error" class="text-danger"></span>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Đăng ký</button>
+        <button type="submit" class="btn btn-primary btn-block auth-submit">Đăng ký</button>
     </form>
-    <p class="mt">Đã có tài khoản? <a asp-action="Login">Đăng nhập</a></p>
+    <p class="mt auth-switch">Đã có tài khoản? <a asp-action="Login">Đăng nhập</a></p>
 </div>

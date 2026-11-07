@@ -136,10 +136,20 @@
     <footer class="site-footer">
         <div class="container footer-inner">
             <div class="trust">
-                <div><strong>Bảo hành 24 tháng</strong><span>Chính hãng, bảo hành tận nơi</span></div>
-                <div><strong>Trả góp 0%</strong><span>Hỗ trợ trả góp 0% lãi suất</span></div>
-                <div><strong>Giao nhanh 2h</strong><span>Miễn phí giao nội thành HN/HCM</span></div>
-                <div><strong>Đổi trả 30 ngày</strong><span>Đổi trả dễ dàng, không phí</span></div>
+                @* Phase 5 — go/lam mem cam ket chua xac minh (xem bao cao):
+                   - "Bao hanh 24 thang" GIU: chinh sach that trong code
+                     (TraCuuBaoHanh/Warranty: han = NgayDat.AddMonths(24)).
+                   - "Giao nhanh 2h" + "Mien phi giao noi thanh HN/HCM" GO:
+                     khong co logic giao 2h / theo khu vuc nao; mien phi ship
+                     that trong code la don >= 2.000.000d (PriceCalculationService:112).
+                   - "Doi tra 30 ngay / khong phi" LAM MEM: khong co cua so
+                     30 ngay nao trong ReturnService/ReturnsController ("30 ngay"
+                     o Order.cs la han token tra cuu, khong phai doi tra).
+                   - "Tra gop 0%" them "(gia lap)" theo mau Checkout. *@
+                <div><strong>Bảo hành 24 tháng</strong><span>Bảo hành theo đơn hàng, 24 tháng từ ngày đặt</span></div>
+                <div><strong>Trả góp 0% (giả lập)</strong><span>Trả góp mô phỏng, không thu tiền thật</span></div>
+                <div><strong>Miễn phí ship đơn từ 2.000.000đ</strong><span>Đơn từ 2.000.000đ được miễn phí ship</span></div>
+                <div><strong>Đổi trả online</strong><span>Gửi yêu cầu đổi trả ngay trên web</span></div>
             </div>
             <p>
                 <a asp-controller="Returns" asp-action="TraCuu">Tra cứu bảo hành</a>

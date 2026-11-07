@@ -29,15 +29,11 @@
 /* Form doi tra / bao hanh / doi dia chi / tra cuu */
 .return-form, .address-form { max-width: 640px; }
 .warranty-lookup { max-width: 420px; }
-.filter-links a { margin-right: var(--space-sm); }
-
-/* Form duyet cua admin trong bang: select + nut nam gon trong o */
-.admin-duyet { display: flex; gap: var(--space-sm); align-items: center; margin-top: var(--space-xs); }
-.admin-duyet select { width: auto; }
+/* NOTE Phase 2: .filter-links + .admin-duyet (chi dung ở Returns/AdminIndex)
+   đã dời sang wwwroot/css/admin.css — không định nghĩa lại ở đây. */
 
 @media (max-width: 768px) {
   .invoice { padding: var(--space-md); }
-  .admin-duyet { flex-wrap: wrap; }
 }
 
 @media print {

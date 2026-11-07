@@ -9,9 +9,20 @@
    mới; banner nhắc khách kiểm tra lại tổng mới trước khi bấm đặt lần nữa. *@
 @if (ViewBag.GiaDaThayDoi == true)
 {
-    <div class="alert alert-warning" role="alert">
-        Giá đã thay đổi, vui lòng kiểm tra lại tổng tiền mới bên dưới trước khi xác nhận đặt hàng.
-    </div>
+    @* Sprint 6 Module 4 — hien ro tong cu -> tong moi + chenh lech
+       (lay tu ViewBag do controller set; khong co so thi giu cau chung). *@
+    @if (ViewBag.GiaCu is decimal giaCu && ViewBag.GiaMoi is decimal giaMoi && ViewBag.ChenhLech is decimal chenhLech)
+    {
+        <div class="alert alert-warning" role="alert">
+            Giá đã thay đổi: tổng cũ @giaCu.ToString("N0")đ → tổng mới @giaMoi.ToString("N0")đ (chênh lệch @(chenhLech >= 0 ? "+" : "")@chenhLech.ToString("N0")đ). Vui lòng kiểm tra lại tổng tiền mới bên dưới trước khi xác nhận đặt hàng.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning" role="alert">
+            Giá đã thay đổi, vui lòng kiểm tra lại tổng tiền mới bên dưới trước khi xác nhận đặt hàng.
+        </div>
+    }
 }
 
 <div class="cart-layout">
@@ -115,9 +126,16 @@
             <div class="summary-row"><span>Tạm tính sau giảm</span><span>@Model.GioHang.SauGiam.ToString("N0")đ</span></div>
         }
         <div class="summary-row"><span>Phí ship</span><span>@(Model.GioHang.PhiShip == 0 ? "Miễn phí" : Model.GioHang.PhiShip.ToString("N0") + "đ")</span></div>
+        @* Sprint 6 Module 4 — tom tat cung hien tong cu + chenh lech
+           (tong moi la dong "Tổng cộng" ben duoi). *@
+        @if (ViewBag.GiaCu is decimal giaCuTomTat && ViewBag.ChenhLech is decimal chenhLechTomTat)
+        {
+            <div class="summary-row"><span>Tổng trước khi đổi giá</span><span>@giaCuTomTat.ToString("N0")đ</span></div>
+            <div class="summary-row"><span>Chênh lệch</span><span>@(chenhLechTomTat >= 0 ? "+" : "")@chenhLechTomTat.ToString("N0")đ</span></div>
+        }
         <div class="summary-row total"><span>Tổng cộng</span><span>@Model.GioHang.TongCong.ToString("N0")đ</span></div>
         <p class="text-muted">Giá đã bao gồm VAT (thuế GTGT được tách ra trên hóa đơn, tổng thanh toán không đổi).</p>
-        <p class="text-muted">Giao nhanh trong 2h (nội thành HN/HCM) • Đổi trả 30 ngày</p>
+        <p class="text-muted">Miễn phí ship đơn từ 2.000.000đ • Đổi trả online</p>
     </aside>
 </div>
 

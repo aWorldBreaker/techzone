@@ -17,6 +17,10 @@ else
     <form asp-action="XoaHet" method="post" class="inline-form">
         <button type="submit" class="btn btn-secondary btn-sm">Xóa hết so sánh</button>
     </form>
+    @* Sprint 6 Module 3: bọc bảng trong .table-wrap (như 17 bảng Admin ở
+       Module 6) — bảng 3 SP rộng 426px, tràn 52px ở viewport 390 nếu để
+       trần; trong khung thì cuộn ngang trong bảng, trang không tràn. *@
+    <div class="table-wrap">
     <table class="table compare-table mt">
         <thead>
             <tr>
@@ -80,5 +84,6 @@ else
             </tr>
         </tbody>
     </table>
+    </div>
     <p class="mt"><a asp-controller="Products" asp-action="Index">← Tiếp tục mua sắm</a></p>
 }

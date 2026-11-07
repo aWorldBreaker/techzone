@@ -60,6 +60,11 @@ public class ProductsController : Controller
             // M4-3: _ProductCard tinh sao tu Reviews da duyet (giong
             // Details) nen Listing phai nap Reviews — chi review da duyet.
             .Include(p => p.Reviews.Where(r => r.IsApproved))
+            // AsNoTracking: Index chi doc; cuoi ham co the gan de
+            // GiaKhuyenMai cua SP trong trang hien tai ve gia hieu dung
+            // (de _ProductCard hien gia thuc tra) ma khong lo vo tinh
+            // luu xuong DB (khong co SaveChanges nao o day).
+            .AsNoTracking()
             .AsQueryable();
 
         if (filter.CategoryId.HasValue)
@@ -72,43 +77,88 @@ public class ProductsController : Controller
             query = query.Where(p => p.Specs != null && p.Specs.Ram == filter.Ram);
         if (!string.IsNullOrWhiteSpace(filter.DungLuong))
             query = query.Where(p => p.Specs != null && p.Specs.Rom == filter.DungLuong);
-        if (filter.GiaTu.HasValue)
-            query = query.Where(p => (p.GiaKhuyenMai ?? p.Gia) >= filter.GiaTu.Value);
-        if (filter.GiaDen.HasValue)
-            query = query.Where(p => (p.GiaKhuyenMai ?? p.Gia) <= filter.GiaDen.Value);
+        // GiaTu/GiaDen KHONG loc o DB nua: loc tren GIA HIEU DUNG o memory
+        // ben duoi (loc tren GiaBan se loai sai SP dang sale — vd Buds 5
+        // GiaBan 1.190.000d nhung thuc tra 1.090.000d phai lot qua
+        // GiaDen = 1.100.000d).
         if (!string.IsNullOrWhiteSpace(filter.TuKhoa))
         {
             var kw = filter.TuKhoa.Trim();
             query = query.Where(p => p.Ten.Contains(kw) || (p.MoTa != null && p.MoTa.Contains(kw)));
         }
 
-        // P1 Sprint 6 Module 3: SQLite khong ORDER BY duoc cot decimal
-        // ("SQLite does not support expressions of type 'decimal' in
-        // ORDER BY") nen ep gia hieu dung sang double ngay trong ORDER BY.
-        // Gia VND la so nguyen (decimal(18,0), toi da 1e9 theo Range tren
-        // Product) nen double bieu dien CHINH XAC toi 2^53 — khong mat
-        // precision thuc te, thu tu sort giu nguyen. Sort van chay phia DB,
-        // TRUOC Skip/Take nen phan trang dung; khong materialize roi moi
-        // sort (cach do se phai tai toan bo bang ve bo nho).
-        // (PriceCalculationService da ghi nhan gioi han tuong tu cho
-        // FlashSale: sort decimal o client sau ToListAsync — o day khong
-        // ap dung duoc vi listing co phan trang.)
-        query = filter.SapXep switch
-        {
-            "gia-tang" => query.OrderBy(p => (double)(p.GiaKhuyenMai ?? p.Gia)),
-            "gia-giam" => query.OrderByDescending(p => (double)(p.GiaKhuyenMai ?? p.Gia)),
-            "ban-chay" => query.OrderByDescending(p => p.LuotBan),
-            "moi-nhat" => query.OrderByDescending(p => p.NgayTao),
-            _ => query.OrderByDescending(p => p.LaNoiBat).ThenByDescending(p => p.LuotBan),
-        };
+        // Sprint 6 Module 3 — sort theo GIA HIEU DUNG (decimal, khong ep
+        // kieu so thuc nua: SQLite khong ORDER BY duoc cot decimal nen sort
+        // chuyen sang memory sau khi loc).
+        // Thu tu: loc DB -> tinh gia hieu dung batch -> loc gia -> sort
+        // decimal -> phan trang trong memory. Filter gia chay TRUOC
+        // pagination nen TongSo/TongTrang tinh tren tap da loc gia.
+        // GIOI HAN SCALE: catalog hien 13 SP; batch in-memory phu hop toi
+        // vai tram SP. Vuot ~500 SP thi do lai latency listing truoc khi
+        // mo rong (xem EffectivePriceCalculator).
+        var daLoc = await query.ToListAsync();
+        var now = DateTime.Now;
+        var ids = daLoc.Select(p => p.Id).ToList();
+        // 2 query gop duy nhat cho toan bo SP da loc (khong N+1, khong goi
+        // TinhGiaAsync tung SP — ham do lam 2 query/SP).
+        var flashSales = ids.Count == 0
+            ? new List<FlashSale>()
+            : await _db.FlashSales.AsNoTracking()
+                .Where(f => ids.Contains(f.ProductId)).ToListAsync();
+        var slotItems = ids.Count == 0
+            ? new List<FlashSaleSlotItem>()
+            : await _db.FlashSaleSlotItems.AsNoTracking()
+                .Include(i => i.Slot)
+                .Where(i => ids.Contains(i.ProductId)).ToListAsync();
+        var giaHieuDung = EffectivePriceCalculator.TinhBatch(daLoc, flashSales, slotItems, now);
 
-        filter.TongSo = await query.CountAsync();
-        var trang = Math.Max(1, filter.Trang);
+        // Loc khoang gia tren gia hieu dung (cung gia voi sort + hien thi).
+        IEnumerable<Product> daLocGia = daLoc;
+        if (filter.GiaTu.HasValue)
+            daLocGia = daLocGia.Where(p => giaHieuDung[p.Id] >= filter.GiaTu.Value);
+        if (filter.GiaDen.HasValue)
+            daLocGia = daLocGia.Where(p => giaHieuDung[p.Id] <= filter.GiaDen.Value);
+
+        // Sort decimal + tie-breaker ThenBy(Id) o MOI nhanh: SP dong gia
+        // (vd Reno11 = iPad = 9.990.000d) co thu tu on dinh, khong trung/
+        // mat SP o bien trang.
+        var daSapXep = (filter.SapXep switch
+        {
+            "gia-tang" => daLocGia.OrderBy(p => giaHieuDung[p.Id]).ThenBy(p => p.Id),
+            "gia-giam" => daLocGia.OrderByDescending(p => giaHieuDung[p.Id]).ThenBy(p => p.Id),
+            "ban-chay" => daLocGia.OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+            "moi-nhat" => daLocGia.OrderByDescending(p => p.NgayTao).ThenBy(p => p.Id),
+            _ => daLocGia.OrderByDescending(p => p.LaNoiBat).ThenByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+        }).ToList();
+
+        filter.TongSo = daSapXep.Count;
+        filter.GiaHieuDung = daSapXep.ToDictionary(p => p.Id, p => giaHieuDung[p.Id]);
+
+        // Pagination: clamp Trang ve trang cuoi khi vuot TongTrang
+        // (TongTrang > 0); giu clamp Trang=0/am ve 1. TrangVuotGioiHan de
+        // view hien thong bao phan biet (khong phai "khong tim thay SP").
+        var tongTrang = filter.TongTrang;
+        filter.TrangVuotGioiHan = tongTrang > 0 && filter.Trang > tongTrang;
+        filter.TrangYeuCau = filter.Trang;
+        var trang = filter.Trang;
+        if (trang < 1) trang = 1;
+        else if (tongTrang == 0) trang = 1;
+        else if (trang > tongTrang) trang = tongTrang;
         filter.Trang = trang;
-        filter.KetQua = await query
+        var ketQuaTrang = daSapXep
             .Skip((trang - 1) * ProductFilterViewModel.SoMoiTrang)
             .Take(ProductFilterViewModel.SoMoiTrang)
-            .ToListAsync();
+            .ToList();
+
+        // Gia listing hien thi = gia hieu dung: gan de GiaKhuyenMai cua SP
+        // trong trang hien tai (entity AsNoTracking, khong luu DB). Khi do
+        // _ProductCard hien GiaBan = gia hieu dung, gach Gia goc, badge -%
+        // tinh theo gia hieu dung — khop sort + loc gia + gia checkout.
+        // Gia hieu dung khong bao gio vuot GiaBan nen chi gan khi lech.
+        foreach (var p in ketQuaTrang)
+            if (giaHieuDung[p.Id] != p.GiaBan)
+                p.GiaKhuyenMai = giaHieuDung[p.Id];
+        filter.KetQua = ketQuaTrang;
 
         filter.DanhMuc = await _db.Categories.OrderBy(c => c.Ten).ToListAsync();
         filter.ThuongHieu = await _db.Brands.OrderBy(b => b.Ten).ToListAsync();
@@ -150,6 +200,30 @@ public class ProductsController : Controller
         ViewBag.FlashSaleApDung = gia.FlashSaleId.HasValue
             ? product.FlashSales.FirstOrDefault(f => f.Id == gia.FlashSaleId.Value)
             : null;
+
+        // Sprint 6 Module 4 — gia hien thi theo tung bien the (de view
+        // cap nhat gia ngay khi doi select, khong reload): cung ham
+        // TinhGiaAsync nhu khi them gio (DonGia da cong GiaThem, xem
+        // PriceCalculationService — DonGia = GiaSale/GiaBan + GiaThem).
+        // View chi doc dict nay de gan data-gia; khong doi logic server.
+        // QA Phase 4 (fix): GiaGoc de GACH GIA phai la gia niem yet
+        // (Model.Gia + GiaThem), KHONG phai TinhGiaAsync.GiaGoc
+        // (= GiaBan + GiaThem). Voi SP dang sale, DonGia == GiaGoc
+        // (vd Xiaomi flash 12.990.000 == GiaBan) nen JS so `gia <
+        // giaGoc` sai → an nham gia gach ma server render dung o
+        // Details (nhanh `Model.GiaKhuyenMai.HasValue` → <s>15,990,000đ</s>).
+        // Gia niem yet + GiaThem thi dung moi truong hop: co sale thi
+        // DonGia < GiaGoc (hien gach), khong sale thi bang nhau (an).
+        if (product.Variants.Any())
+        {
+            var giaTheoVariant = new Dictionary<int, GiaApDungResult>();
+            foreach (var v in product.Variants)
+            {
+                var g = await _gia.TinhGiaAsync(id, v.GiaThem, 1, now);
+                giaTheoVariant[v.Id] = g with { GiaGoc = product.Gia + v.GiaThem };
+            }
+            ViewBag.GiaTheoVariant = giaTheoVariant;
+        }
 
         // Lich su da xem: moi nhat dau, khu trung, toi da 8 (mau CompareController).
         var daXem = LayDaXem();
@@ -198,11 +272,29 @@ public class ProductsController : Controller
                 // Gia hien thi tung mon (da ap Flash Sale neu co) de tong
                 // cac mon hien thi khop TongTienBo.
                 giaMonCombo = new Dictionary<int, decimal>();
+                // Sprint 6 Module 4 — danh sach DU mon combo de view render
+                // (kem SoLuong tung mon + gia hieu dung tung mon); mon chinh
+                // len dau, cac mon kem giu thu tu combo. Tong/giam van lay
+                // tu TinhGiaComboAsync o tren — chi doi cach LAY/HIEN mon.
+                var comboMon = new List<CartLineViewModel>();
                 foreach (var item in comboDb.Items)
                 {
                     var g = await _gia.TinhGiaAsync(item.ProductId, 0, item.SoLuong, now);
                     giaMonCombo[item.ProductId] = g.DonGia;
+                    comboMon.Add(new CartLineViewModel
+                    {
+                        Product = item.Product,
+                        Variant = null,
+                        SoLuong = item.SoLuong,
+                        DonGia = g.DonGia,
+                        GiaGoc = g.GiaGoc,
+                        TenKhuyenMai = g.TenKhuyenMai,
+                    });
                 }
+                // OrderBy on dinh nen cac mon kem giu nguyen thu tu combo.
+                ViewBag.ComboMon = comboMon
+                    .OrderByDescending(m => m.Product.Id == id)
+                    .ToList();
             }
             // Khong hop le (vd Flash Sale cua 1 mon vua het suat): khong
             // set ComboId — form AddCombo se them 2 mon nhu hang thuong,

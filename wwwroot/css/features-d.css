@@ -1,65 +1,8 @@
-/* Nhom D — Admin & van hanh: bieu do cot doanh thu, highlight ton kho
-   thap, bang admin. Chi dung token var(--color-*) o design-tokens.css,
-   khong hex hard-code, khong z-index am, an toan dark mode. */
-
-/* Bieu do cot doanh thu 30 ngay: chieu cao cot do JS set luc chay
-   (theo % cua gia tri lon nhat), CSS chi dinh khung + mau. */
-.chart {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-xs);
-  height: 180px;
-  padding: var(--space-md) var(--space-sm) 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-card);
-  overflow-x: auto;
-}
-.chart-col {
-  flex: 1 1 0;
-  min-width: 18px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 100%;
-}
-.chart-bar {
-  width: 100%;
-  max-width: 28px;
-  height: 0;
-  background: var(--color-primary);
-  border-radius: var(--radius) var(--radius) 0 0;
-  transition: height 300ms ease;
-}
-.chart-bar:hover { background: var(--color-primary-hover); }
-.chart-label {
-  flex-shrink: 0;
-  padding-top: var(--space-xs);
-  font-size: .75rem;
-  color: var(--color-muted-foreground);
-  white-space: nowrap;
-}
-
-/* Ton kho thap (< 5): nen do nhat + chu do dam, doc duoc ca 2 theme. */
-.low-stock {
-  background: var(--color-danger-soft-bg);
-  color: var(--color-danger-soft-fg);
-  font-weight: 700;
-}
-
-/* Link nhanh cac trang Admin o cuoi Dashboard. */
-.admin-links { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
-
-/* Form nhap kho trong tung dong bang kho. */
-.stock-form { display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; }
-
-/* Anh nho trong bang banner. */
-.banner-thumb {
-  width: 96px;
-  height: 54px;
-  object-fit: cover;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  background: var(--color-muted);
-}
+/* Nhom D — Admin & van hanh (Phase 2, Sprint 6 Continuation).
+   TOAN BO rule trong file nay da DOI sang wwwroot/css/admin.css
+   (.chart/.chart-col/.chart-bar/.chart-label, .low-stock, .admin-links,
+   .stock-form, .banner-thumb) — layout Admin chi load admin.css nên các
+   class đó không còn ở đây nữa. File giữ lại làm stub để _Layout khỏi
+   lỗi nếu link còn trỏ tới; _Layout vẫn load file này (0 rule, không
+   ảnh hưởng hiển thị shop). Không thêm rule Admin mới vào đây — thêm
+   vào admin.css. */

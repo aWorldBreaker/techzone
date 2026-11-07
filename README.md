@@ -7,11 +7,14 @@
 > (2026-11-06) + **Sprint 6 XONG toàn bộ (Module 1 Global Layout/Header/
 > Footer + Module 3 Listing + Module 4 Details + Module 5 Cart/Checkout +
 > Module 6 Account/Admin + Module 7 Admin/3D/micro) — 7 lỗi mở #10–16 đều
-> XONG, chưa commit**. Nhánh `security/signoff-20261106`,
-> HEAD `41bef27` (Step 4 đã push lên remote `main` thành commit `40c9bd90`
-> 2026-11-06, trừ file `.github/workflows/ci.yml` — App thiếu quyền
-> Workflows, user up tay sau; **CI thật đã PASS lần đầu 2026-11-06 ~19:42**
-> (run #1, `dotnet test` 222/222)). Thay đổi chưa commit:
+> XONG + follow-up M4-3, M4-3a/b**. Nhánh `security/signoff-20261106`,
+> HEAD `980e996` (commit Sprint 6, đã push lên remote `main` thành
+> `7930fac4` 2026-11-06 ~23:56, parent `c44df1e5`, trừ file
+> `.github/workflows/ci.yml` trong manifest — App thiếu quyền Workflows;
+> ci.yml SỐNG SÓT sau snapshot (SHA `5fe1d838…`) nên user KHÔNG cần up lại
+> tay. **CI thật run #2 PASS 2026-11-06 ~23:57** (run #2, id 42257072894,
+> 1m33s, job build-and-test + cả 7 bước xanh). Thay đổi Sprint 6 đã commit
+> + push:
 > Sprint 6 Module 1 (hamburger menu mobile, dropdown tài khoản, cart badge,
 > footer dính đáy, placeholder, WebGL dark, alert/button còn thiếu + skip
 > link) + Module 3 (cast `(double)` sort giá, panel lọc mobile thu gọn +
@@ -29,11 +32,41 @@
 > 11 FAIL đã giải thích từng diff). M4-3 đã XONG (follow-up 2026-11-06,
 > runner 225/225 + E2E 14/14 sau fix — xem `TEST-REPORT.md` §19);
 > M4-3a/b đã XONG (follow-up cuối 2026-11-06, runner 225/225 + E2E 14/14
-> sau fix — xem `TEST-REPORT.md` §20). Chi tiết
+> sau fix — xem `TEST-REPORT.md` §20). **Phase 1 — Hoàn thiện Module 3
+> XONG 2026-11-07, chưa commit** (sort giá hiệu dụng batch, bỏ cast
+> `(double)`; tie-breaker `ThenBy(Id)`; pagination `aria-current`/clamp/
+> windowing; badge chỉ đếm filter; nút Đóng; axe-core 8 lượt 0 critical;
+> viewport 320/360/1024 lần đầu; Compare 390 hết tràn — runner **237/237**,
+> E2E 14 cũ xanh + 10 test Phase 1 mới PASS, xem `TEST-REPORT.md` §24).
+> **Phase 2 — Tách Admin XONG 2026-11-07, chưa commit** (`_AdminLayout` +
+> `admin.css` + `admin.js` + `_ViewStart` Admin; 14 view Admin + Returns
+> AdminIndex sang layout mới; sidebar/topbar/breadcrumb; dời CSS Admin;
+> Admin không tải WebGL/`site.css`; Returns tràn 422px @390 đã sửa → 0px;
+> axe Dashboard/Products 0 violation — runner **237/237**, E2E full 44
+> passed / 4 skipped / 0 failed, xem `TEST-REPORT.md` §25).
+> **Phase 3 — Authentication UX XONG 2026-11-07, chưa commit** (`_AuthLayout` +
+> `auth.css` + `auth.js`; show/hide password, Caps Lock, chống submit lặp,
+> Register không lộ email; Caps Lock sửa `closest('.form-group')`, link
+> gạch chân `auth.css:67` — axe 0 violation; runner **243/243**, E2E auth
+> 16/16, hồi quy full 68 passed / 0 failed / 4 skipped, tràn 0px mọi
+> viewport 320–1440, xem `TEST-REPORT.md` §26 + §26.11).
+> **Phase 4 — Product & Cart XONG 2026-11-07, chưa commit** (gallery
+> `thumb-btn` + variant `data-gia`/`data-gia-goc` + nút +/− giỏ + Remove
+> TempData + điểm trong giỏ + `ViewBag.ComboMon` + banner checkout cũ→mới
+> qua `TraVeXacNhanLaiGia`/`TongCongTuAnh`; 4 fix sau QA: text guest về
+> điểm, GiaGoc = Gia + GiaThem, `dinhDangTien` en-US, tràn giỏ 390; runner
+> **255/255**, E2E Phase 4 **18/18**, axe Details/Cart 12 lượt 0 critical,
+> hồi quy full 98 passed / 0 failed / 4 skipped (hiệu dụng — 3 fail do
+> `/tmp` đầy, chạy lại 3/3 PASS), tràn 0px cả 24 tổ hợp, không-JS PASS,
+> xem `TEST-REPORT.md` §27).
+> **Phase 5 — Landing XONG 2026-11-07, chưa commit** (hero + voucher đọc từ DB, tồn kho trên card theo ngưỡng TonKho ≤ 10 có sẵn, cam kết giữ/gỡ/làm mềm theo căn cứ code, "Trả góp 0% (giả lập)" mọi chỗ, polish: pill hero, gradient + viền, chip chữ cái, hover zoom 1.06, countdown tabular, voucher viền đứt; runner **259/259**, E2E Phase 5 **18/18**, axe Home 8 lượt 0 critical (0 violation mới), hồi quy full 98 passed / 0 failed / 4 skipped, tràn 0px cả 72 tổ hợp, before/after 17 ảnh/bên; xem `TEST-REPORT.md` §28). **Sprint 6 Continuation xong cả 5 phase.**
+> Chi tiết
 > Sprint 6: `docs/UI-AUDIT.md`, `docs/UI-ROADMAP.md`.
 > Space TechZone (artifact `techzone`): đã đồng bộ 11 thay đổi Module 1+3
 > ngày 2026-11-06 (build thành công, builder probe VERIFIED 11/11; xem
-> `TEST-REPORT.md` §14).
+> `TEST-REPORT.md` §14) và Module 4–7 + M4-3 + M4-3a/b ngày 2026-11-07
+> (build thành công, builder probe VERIFIED 11/11 + mục đo Compare 390
+> 0px; xem `TEST-REPORT.md` §22).
 
 ## Chạy
 
@@ -279,10 +312,13 @@ vòng Phase 3 follow-up (2026-11-06): **15/15 PASS** — F14 (3D) PASS có lưu 
 - Admin ProductForm vẫn cho sửa tay Tồn kho/Giá (bypass luồng nhập kho
   StockIn) — đã validate giá trị nhưng chưa khóa hẳn.
 - CI: workflow `.github/workflows/ci.yml` đã tạo (build + `dotnet test` trên
-  runner GitHub) nhưng **chưa chạy thật** — Step 4 đã push lên remote `main`
-  (`40c9bd90`, 2026-11-06) trừ file ci.yml (App thiếu quyền Workflows, user
-  up tay sau qua giao diện web); CI chạy lần đầu khi ci.yml có mặt trên
-  remote; chưa gắn làm required check. **Đã sửa 2026-11-06 (vòng Sign-off):** thêm bước Build
+  runner GitHub). **CI thật đã chạy 2 lần, đều PASS:** run #1 2026-11-06
+  ~19:42 (`dotnet test` 222/222) trên commit `c44df1e5`; run #2 2026-11-06
+  ~23:57 (id 42257072894, 1m33s, job build-and-test + cả 7 bước xanh) trên
+  commit Sprint 6 `7930fac4` — ci.yml sống sót sau snapshot push nên không
+  cần up lại tay; chưa gắn làm required check. Số test run #2 đã đọc trực
+  tiếp từ log bước Test qua browser 2026-11-07 00:05: **Passed: 225,
+  Failed: 0, Total: 225 — VERIFIED**. **Đã sửa 2026-11-06 (vòng Sign-off):** thêm bước Build
   Tests (repo không có .sln nên `dotnet build` ở root chỉ build app) +
   `permissions: contents: read`; đã mô phỏng trên bản sao sạch: DLL Tests
   tồn tại, `dotnet test --no-build` chỉ dừng ở lỗi vstest transport đã

@@ -34,7 +34,11 @@ else
                         <form asp-action="Update" method="post" class="qty">
                             <input type="hidden" name="productId" value="@line.Product.Id" />
                             <input type="hidden" name="variantId" value="@line.Variant?.Id" />
+                            @* Sprint 6 Module 4 — nut - / + (xem cart-qty.js):
+                               - o 1 ve 0 = xoa dong; + kep ve TonKho. *@
+                            <button type="button" class="qty-btn" data-delta="-1" aria-label="Giảm số lượng">−</button>
                             <input type="number" name="soLuong" min="0" max="@line.Product.TonKho" value="@line.SoLuong" aria-label="Số lượng" />
+                            <button type="button" class="qty-btn" data-delta="1" aria-label="Tăng số lượng">+</button>
                             <button type="submit">Cập nhật</button>
                         </form>
                     </div>
@@ -77,6 +81,44 @@ else
             <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
             <div class="summary-row total"><span>Tổng cộng</span><span>@Model.TongCong.ToString("N0")đ</span></div>
             <partial name="_InstallmentBadge" model="Model.TongCong" />
+
+            @* Sprint 6 Module 4 — diem tich luy (CHI HIEN THI): diem se
+               tich = 1% tong don, cung cong thuc LoyaltyService
+               (TongTien / 100.000, lam tron xuong) — tong o day la
+               TongCong (sau giam + ship) giong TongTien don that.
+               Chi hien so du + nhac dung o checkout; checkout KHONG co
+               session luu diem (DiemDung la field POST cua form Checkout)
+               nen gio khong co o dung diem, khong phat minh co che moi. *@
+            @if (ViewBag.DiemSeTich is int diemSeTich)
+            {
+                <div class="summary-row"><span>Điểm sẽ tích</span><span>@diemSeTich điểm (≈ @((diemSeTich * 1000).ToString("N0"))đ)</span></div>
+            }
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (ViewBag.DiemHienTai is int diemHienTai)
+                {
+                    <div class="summary-row"><span>Điểm hiện có</span><span>@diemHienTai điểm</span></div>
+                }
+                <p class="text-muted">Bạn có thể dùng điểm ở bước đặt hàng (1 điểm = 1.000đ).</p>
+            }
+            else
+            {
+                @* QA Phase 4 (fix): guest KHONG tich diem that —
+                   LoyaltyService.GhiDiemMuaHangAsync return som khi
+                   Order.UserId is null (runner test Guest_KhongTichDiem).
+                   Dong cu "Đăng nhập để dùng điểm tích lũy" + dong "Điểm
+                   sẽ tích: N điểm" o tren de doc thanh guest se duoc N
+                   diem. Doi thanh cau co dieu kien dang nhap, chi doi
+                   text, khong doi logic tinh diem. *@
+                @if (ViewBag.DiemSeTich is int diemGuest && diemGuest > 0)
+                {
+                    <p class="text-muted">Đăng nhập để tích @diemGuest điểm cho đơn này (≈ @((diemGuest * 1000).ToString("N0"))đ).</p>
+                }
+                else
+                {
+                    <p class="text-muted">Đăng nhập để dùng điểm tích lũy (1 điểm = 1.000đ).</p>
+                }
+            }
 
             <form asp-action="ApDungVoucher" method="post" class="mt">
                 <div class="form-group">

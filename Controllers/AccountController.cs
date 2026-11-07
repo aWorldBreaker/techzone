@@ -137,8 +137,27 @@ public class AccountController : Controller
         var result = await _userManager.CreateAsync(user, model.MatKhau);
         if (!result.Succeeded)
         {
+            // Phase 3 (Sprint 6 Continuation, Module 5): lỗi DuplicateUserName /
+            // DuplicateEmail KHÔNG được trả nguyên văn — text mặc định của
+            // Identity tiết lộ email đã đăng ký (user enumeration). Gộp mọi
+            // lỗi trùng thành MỘT thông báo chung duy nhất, không chứa email,
+            // không chứa "đã tồn tại"/"đã đăng ký"/"trùng". Các lỗi Identity
+            // khác (mật khẩu yếu...) giữ nguyên mô tả.
+            var daBaoLoiTrung = false;
             foreach (var error in result.Errors)
-                ModelState.AddModelError(string.Empty, error.Description);
+            {
+                if (error.Code is "DuplicateUserName" or "DuplicateEmail")
+                {
+                    if (daBaoLoiTrung) continue;
+                    ModelState.AddModelError(string.Empty,
+                        "Không thể tạo tài khoản với thông tin này. Vui lòng kiểm tra lại thông tin đã nhập.");
+                    daBaoLoiTrung = true;
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+            }
             return View(model);
         }
         await _userManager.AddToRoleAsync(user, "Khach");

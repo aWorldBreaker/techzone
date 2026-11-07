@@ -13,28 +13,65 @@
     var heroDanhGia = heroSoDG > 0
         ? $" Đánh giá {heroTB.ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))}/5 sao ({heroSoDG} đánh giá)."
         : "";
+    // Phase 5 — Landing: hero dong tu DB (HomeController: ViewBag.Hero =
+    // SP Id 1 kem Specs/Images). Ten/gia/gia gach/anh/link deu lay tu DB.
+    var hero = ViewBag.Hero as Product;
+    var heroSpecs = hero?.Specs is null ? Array.Empty<string>() : new[]
+        { hero.Specs.Chip, hero.Specs.Camera, hero.Specs.ManHinh, hero.Specs.Pin }
+        .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToArray();
+    var heroLead = heroSpecs.Length > 0
+        ? string.Join(" • ", heroSpecs)
+        : (hero?.MoTa ?? "");
 }
 
-@* Hero: một sản phẩm thật, giá thật, thông số thật — không slogan chung chung. *@
-<section class="hero">
-    <div>
-        <h1>Xiaomi 15 5G</h1>
-        <p class="hero-price">
-            <strong>12.990.000đ</strong>
-            <s>15.990.000đ</s>
-            <span class="hero-save">Giảm 3.000.000đ</span>
-        </p>
-        <p class="lead">Snapdragon 8 Elite • Camera Leica 50MP • Màn hình AMOLED 120Hz • Pin 5400mAh.@heroDanhGia</p>
-        <div class="hero-actions">
-            <a class="btn btn-primary" asp-controller="Products" asp-action="Details" asp-route-id="1">Mua ngay — 12.990.000đ</a>
-            <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
+@* Hero: một sản phẩm thật, giá thật, thông số thật — không slogan chung chung.
+   Phase 5: ten/gia/anh/link doc tu DB (ViewBag.Hero); Id 1 khong co trong DB
+   thi hien hero chung khong kem gia, khong ghi tay gia SP khac. *@
+@if (hero is not null)
+{
+    <section class="hero">
+        <div>
+            <p class="hero-eyebrow">Sản phẩm nổi bật</p>
+            <h1>@hero.Ten</h1>
+            <p class="hero-price">
+                <strong>@hero.GiaBan.ToString("N0")đ</strong>
+                @if (hero.GiaKhuyenMai.HasValue && hero.Gia > hero.GiaBan)
+                {
+                    <s>@hero.Gia.ToString("N0")đ</s>
+                    <span class="hero-save">Giảm @((hero.Gia - hero.GiaBan).ToString("N0"))đ</span>
+                }
+            </p>
+            <p class="lead">@heroLead.@heroDanhGia</p>
+            <div class="hero-actions">
+                <a class="btn btn-primary" asp-controller="Products" asp-action="Details" asp-route-id="@hero.Id">Mua ngay — @hero.GiaBan.ToString("N0")đ</a>
+                <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
+            </div>
+            @* Phase 5 — go cam ket chua xac minh: "Giao nhanh 2h noi thanh"
+               khong co can cu nao trong code (PhiShip chi theo don >= 2tr /
+               voucher / hang — PriceCalculationService:112), thay bang muc
+               mien phi ship that co trong code; "Tra gop 0%" ghi ro gia lap
+               theo mau Checkout. "Bao hanh 24 thang" GIU — chinh sach that:
+               TraCuuBaoHanh/Warranty tinh han = NgayDat.AddMonths(24). *@
+            <p class="hero-facts">Bảo hành 24 tháng <span aria-hidden="true">•</span> Miễn phí ship đơn từ 2.000.000đ <span aria-hidden="true">•</span> Trả góp 0% (giả lập)</p>
         </div>
-        <p class="hero-facts">Bảo hành 24 tháng <span aria-hidden="true">•</span> Giao nhanh 2h nội thành <span aria-hidden="true">•</span> Trả góp 0%</p>
-    </div>
-    <div class="hero-image">
-        <img src="/images/xiaomi15.png" alt="Điện thoại Xiaomi 15 5G" fetchpriority="high" />
-    </div>
-</section>
+        <div class="hero-image">
+            <img src="@hero.AnhDaiDien" alt="@hero.Ten" fetchpriority="high" />
+        </div>
+    </section>
+}
+else
+{
+    <section class="hero">
+        <div>
+            <p class="hero-eyebrow">TechZone</p>
+            <h1>Công nghệ chính hãng, giá thật mỗi ngày</h1>
+            <p class="lead">Sản phẩm nổi bật hiện chưa có trong cửa hàng — xem toàn bộ danh mục bên dưới.</p>
+            <div class="hero-actions">
+                <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
+            </div>
+        </div>
+    </section>
+}
 
 @* Banner khuyen mai do Admin quan ly (nhom D) — partial tu an khi khong co. *@
 @if (ViewBag.Banners is List<Banner> banners && banners.Any())
@@ -100,6 +137,17 @@
         </div>
     </section>
 }
+else
+{
+    @* Phase 5 — empty state: hien thong bao thay vi an han muc (khach
+       quen cho co Flash Sale se biet quay lai sau, khong tuong trang loi). *@
+    <section class="section flash-sale reveal" aria-label="Flash Sale">
+        <div class="section-head">
+            <h2>Flash Sale</h2>
+        </div>
+        <p class="empty-state">Hiện chưa có Flash Sale đang chạy — quay lại sau để săn giá tốt nhé.</p>
+    </section>
+}
 
 @* Flash Sale theo khung gio (nhom B) — partial tu doc ViewBag.Slots. *@
 <partial name="_FlashSaleSlots" />
@@ -108,12 +156,21 @@
     <div class="section-head">
         <h2>Danh mục</h2>
     </div>
-    <div class="chip-row">
-        @foreach (var c in danhMuc)
-        {
-            <a class="chip" asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id">@c.Ten <span class="chip-count">@c.Products.Count sản phẩm</span></a>
-        }
-    </div>
+    @if (danhMuc.Any())
+    {
+        <div class="chip-row">
+            @foreach (var c in danhMuc)
+            {
+                @* Phase 5 — chip co chu cai dau lam "icon" (Category khong
+                   co truong icon/anh trong DB, khong bia anh). *@
+                <a class="chip" asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id"><span class="chip-icon" aria-hidden="true">@c.Ten[0]</span>@c.Ten <span class="chip-count">@c.Products.Count sản phẩm</span></a>
+            }
+        </div>
+    }
+    else
+    {
+        <p class="empty-state">Chưa có danh mục nào — sản phẩm sẽ hiện ở đây khi cửa hàng thêm danh mục mới.</p>
+    }
 </section>
 
 <section class="section reveal">
@@ -121,12 +178,19 @@
         <h2>Sản phẩm nổi bật</h2>
         <a asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
     </div>
-    <div class="product-grid">
-        @foreach (var p in noiBat)
-        {
-            <partial name="_ProductCard" model="p" />
-        }
-    </div>
+    @if (noiBat.Any())
+    {
+        <div class="product-grid">
+            @foreach (var p in noiBat)
+            {
+                <partial name="_ProductCard" model="p" />
+            }
+        </div>
+    }
+    else
+    {
+        <p class="empty-state">Chưa có sản phẩm nổi bật — xem <a asp-controller="Products" asp-action="Index">tất cả sản phẩm</a>.</p>
+    }
 </section>
 
 @* Bán chạy: danh sách xếp hạng thay vì lưới thẻ thứ hai giống hệt lưới trên. *@
@@ -135,9 +199,11 @@
         <h2>Bán chạy nhất</h2>
         <a asp-controller="Products" asp-action="Index" asp-route-SapXep="ban-chay">Xem theo lượt bán</a>
     </div>
-    <ol class="rank-list">
-        @foreach (var p in banChay.Take(5).Select((sp, i) => new { sp, hang = i + 1 }))
-        {
+    @if (banChay.Any())
+    {
+        <ol class="rank-list">
+            @foreach (var p in banChay.Take(5).Select((sp, i) => new { sp, hang = i + 1 }))
+            {
             <li class="rank-row">
                 <span class="rank-num" aria-label="Hạng @p.hang">@p.hang</span>
                 <a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id" class="rank-thumb">
@@ -160,8 +226,13 @@
                 </div>
                 <p class="rank-price"><strong>@p.sp.GiaBan.ToString("N0")đ</strong></p>
             </li>
-        }
-    </ol>
+            }
+        </ol>
+    }
+    else
+    {
+        <p class="empty-state">Chưa có dữ liệu bán chạy — bảng xếp hạng sẽ hiện khi cửa hàng có đơn hàng.</p>
+    }
 </section>
 
 @* Đã xem gần đây (nhóm A) — partial tự ẩn khi không có gì. *@
@@ -170,14 +241,24 @@
     <partial name="_RecentlyViewed" model="daXem" />
 }
 
-@* Voucher thật từ seed — khối kết trang duy nhất, không lặp lại dải trust ở footer. *@
-<section class="voucher-band reveal">
-    <div>
-        <h2>Mã TECHZONE500</h2>
-        <p>Giảm 500.000đ cho đơn từ 5.000.000đ. Hết hạn 31/12/2026.</p>
-    </div>
-    <a class="btn btn-light" asp-controller="Products" asp-action="Index">Mua sắm ngay</a>
-</section>
+@* Voucher that tu DB — Phase 5: doc tu bang Vouchers (HomeController:
+   ViewBag.VoucherNoiBat); khong con voucher hieu luc thi an han band
+   (khong hien ma het han/het luot de khach ap dung that bai). *@
+@if (ViewBag.VoucherNoiBat is Voucher voucherNoiBat)
+{
+    var moTaVoucher = voucherNoiBat.FreeShip
+        ? $"Miễn phí vận chuyển cho đơn từ {voucherNoiBat.DieuKien:N0}đ."
+        : voucherNoiBat.LoaiGiam == "PhanTram"
+            ? $"Giảm {voucherNoiBat.GiaTri:N0}%{(voucherNoiBat.DieuKien > 0 ? $" cho đơn từ {voucherNoiBat.DieuKien:N0}đ" : "")}."
+            : $"Giảm {voucherNoiBat.GiaTri:N0}đ{(voucherNoiBat.DieuKien > 0 ? $" cho đơn từ {voucherNoiBat.DieuKien:N0}đ" : "")}.";
+    <section class="voucher-band reveal">
+        <div>
+            <h2>Mã @voucherNoiBat.Ma</h2>
+            <p>@moTaVoucher Hết hạn @voucherNoiBat.NgayHetHan.ToString("dd/MM/yyyy"). Còn @(voucherNoiBat.SoLuong - voucherNoiBat.DaDung) lượt.</p>
+        </div>
+        <a class="btn btn-light" asp-controller="Products" asp-action="Index">Mua sắm ngay</a>
+    </section>
+}
 
 @section Scripts {
     <script>

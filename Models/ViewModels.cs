@@ -20,6 +20,31 @@ public class ProductFilterViewModel
 
     public List<Product> KetQua { get; set; } = new();
     public int TongSo { get; set; }
+
+    /// <summary>
+    /// True = trang yêu cầu (trước khi clamp) vượt quá TongTrang. View dùng
+    /// cờ này để hiện thông báo phân biệt "trang không tồn tại, đã đưa về
+    /// trang cuối" thay vì câu "không tìm thấy sản phẩm" (Sprint 6 Module 3).
+    /// False khi không có kết quả nào (TongTrang = 0) hoặc trang hợp lệ.
+    /// </summary>
+    public bool TrangVuotGioiHan { get; set; }
+
+    /// <summary>
+    /// Số trang người dùng yêu cầu, ghi lại TRƯỚC khi clamp Trang về
+    /// trang cuối — để view in được "Trang N không tồn tại" với đúng N
+    /// (sau clamp, Trang đã là số trang cuối nên không còn N gốc).
+    /// </summary>
+    public int TrangYeuCau { get; set; } = 1;
+
+    /// <summary>
+    /// Giá hiệu dụng (1 đơn vị, biến thể mặc định) theo Id SP — CÙNG 1 giá
+    /// với sort + lọc GiaTu/GiaDen (xem EffectivePriceCalculator). Chỉ chứa
+    /// SP sau khi lọc (trước phân trang); test dùng để đối chiếu batch với
+    /// TinhGiaAsync. Giá HIỂN THỊ trên card không đọc dict này mà đọc
+    /// GiaBan — controller đã gán đè GiaKhuyenMai của SP trong KetQua về
+    /// giá này nên GiaBan trên card đã là giá hiệu dụng.
+    /// </summary>
+    public Dictionary<int, decimal> GiaHieuDung { get; set; } = new();
     public List<Category> DanhMuc { get; set; } = new();
     public List<Brand> ThuongHieu { get; set; } = new();
     public List<string> Chips { get; set; } = new();

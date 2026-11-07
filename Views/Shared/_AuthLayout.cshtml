@@ -1,0 +1,64 @@
+@* TechZone — Layout riêng cho trang xác thực (Sprint 6 Continuation, Phase 3).
+   Chỉ load design tokens (qua @import trong auth.css) + auth.css + theme.js
+   + auth.js: KHÔNG load site.css/features-*.css, KHÔNG webgl-bg.js,
+   KHÔNG header-menu.js, KHÔNG search/category-nav/footer đầy đủ của shop.
+   Header chỉ có branding TechZone (logo về Home) + nút chuyển sáng/tối;
+   footer tối giản. Cơ chế dark mode giống hệt _Layout/_AdminLayout:
+   script <head> đặt data-theme trước khi trang vẽ (localStorage
+   'techzone-theme', chưa có thì theo prefers-color-scheme), theme.js
+   bind nút #theme-toggle. Chỉ Login/Register dùng layout này
+   (Layout = "_AuthLayout"); Profile giữ nguyên _Layout. *@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+        /* Đặt theme TRƯỚC KHI trang vẽ (giống _Layout): localStorage
+           'techzone-theme', chưa có thì theo prefers-color-scheme. */
+        (function () {
+            var t = 'light';
+            try { t = localStorage.getItem('techzone-theme') || ''; } catch (e) { /* bỏ qua */ }
+            if (t !== 'dark' && t !== 'light') {
+                t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+        document.documentElement.classList.add('js');
+    </script>
+    <title>@ViewData["Title"] - TechZone</title>
+    <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" href="~/css/auth.css" />
+</head>
+<body class="auth-body">
+    <a class="skip-link" href="#auth-main">Bỏ qua tới nội dung chính</a>
+    <header class="auth-header">
+        <a class="auth-logo" asp-controller="Home" asp-action="Index">Tech<span>Zone</span></a>
+        <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
+    </header>
+
+    <main id="auth-main" class="auth-shell">
+        @if (TempData["Success"] is string ok)
+        {
+            <div class="alert alert-success" role="alert">@ok</div>
+        }
+        @if (TempData["Error"] is string err)
+        {
+            <div class="alert alert-error" role="alert">@err</div>
+        }
+        @RenderBody()
+    </main>
+
+    <footer class="auth-footer">
+        <p>© 2026 TechZone — <a asp-controller="Home" asp-action="Index">Về cửa hàng</a> • Hotline: 1900 1234</p>
+    </footer>
+
+    @* theme.js dùng chung với shop (chỉ bind #theme-toggle + localStorage,
+       không có hiệu ứng storefront). auth.js: show/hide password,
+       cảnh báo Caps Lock, trạng thái submit — progressive enhancement,
+       tắt JS thì form vẫn POST bình thường. *@
+    <script src="~/js/theme.js"></script>
+    <script src="~/js/auth.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -291,6 +291,13 @@ public class OrdersController : Controller
     /// </summary>
     private async Task<IActionResult> TraVeXacNhanLaiGia(CheckoutViewModel model, CartViewModel gioHang)
     {
+        // Sprint 6 Module 4 — lay anh gia CU truoc khi LuuAnhGiaCheckout
+        // ghi de (ca 2 duong phat hien gia doi deu qua day: (1) controller
+        // CoThayDoi, (2) service GiaDaThayDoi trong transaction — snapshot
+        // trong session luc nay van la anh luc GET vi service khong cham
+        // session). Tong cu tai tao tu anh (0 diem, giong tong form GET);
+        // tong moi = tong tinh lai tu DB ben duoi.
+        var anhGiaCu = DocAnhGiaCheckout();
         var ketQuaMoi = await ApDungUuDaiCheckoutAsync(gioHang, model.DiemDung);
         var boUuDaiChet = false;
         if (ketQuaMoi.LoiVoucher is not null)
@@ -306,6 +313,17 @@ public class OrdersController : Controller
         if (boUuDaiChet)
             ketQuaMoi = await ApDungUuDaiCheckoutAsync(gioHang, model.DiemDung);
         LuuAnhGiaCheckout(ketQuaMoi);
+        // Sprint 6 Module 4 — truyen tong cu/moi/chenh lech qua ViewBag de
+        // banner + tom tat hien ro so (view chi hien thi, khong doi logic).
+        // Khong co anh cu (vd POST truc tiep) thi khong co so cu — view
+        // giu cau chung nhu truoc.
+        if (anhGiaCu is not null)
+        {
+            var giaCu = CheckoutGiaHelper.TongCongTuAnh(anhGiaCu);
+            ViewBag.GiaCu = giaCu;
+            ViewBag.GiaMoi = ketQuaMoi.TongCong;
+            ViewBag.ChenhLech = ketQuaMoi.TongCong - giaCu;
+        }
         TempData["Error"] = "Giá đã thay đổi, vui lòng xác nhận lại.";
         ViewBag.GiaDaThayDoi = true;
         model.GioHang = gioHang;

@@ -46,6 +46,22 @@ public static class CheckoutGiaHelper
         ketQua.GiamGiaHang,
         ketQua.FreeShip);
 
+    /// <summary>
+    /// Tong khach da thay o form GET, tai tao tu anh gia (anh chup voi 0
+    /// diem — diem la field POST nen khong co trong anh). Cung cong thuc
+    /// KetQuaTongDon (SauGiam = max(0, TamTinh - cac khoan giam), PhiShip
+    /// 0 neu FreeShip / SauGiam &gt;= 2tr / TamTinh == 0, khong thi 30k)
+    /// de banner "tong cu -&gt; tong moi" so dung so khach da thay.
+    /// Sprint 6 Module 4.
+    /// </summary>
+    public static decimal TongCongTuAnh(AnhGiaCheckout cu)
+    {
+        var sauGiam = Math.Max(0,
+            cu.TamTinh - cu.GiamGiaVoucher - cu.GiamGiaCombo - cu.GiamGiaHang);
+        var phiShip = cu.FreeShip || sauGiam >= 2_000_000 || cu.TamTinh == 0 ? 0 : 30_000;
+        return sauGiam + phiShip;
+    }
+
     public static bool CoThayDoi(AnhGiaCheckout cu, KetQuaTongDon moi, int diemDungYeuCau)
     {
         if (moi.TamTinh != cu.TamTinh) return true;

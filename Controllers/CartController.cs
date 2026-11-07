@@ -12,12 +12,15 @@ public class CartController : Controller
     private readonly CartService _cart;
     private readonly AppDbContext _db;
     private readonly VoucherService _voucher;
+    private readonly LoyaltyService _loyalty;
 
-    public CartController(CartService cart, AppDbContext db, VoucherService voucher)
+    public CartController(CartService cart, AppDbContext db, VoucherService voucher,
+        LoyaltyService loyalty)
     {
         _cart = cart;
         _db = db;
         _voucher = voucher;
+        _loyalty = loyalty;
     }
 
     public async Task<IActionResult> Index()
@@ -31,6 +34,16 @@ public class CartController : Controller
             int.TryParse(HttpContext.Session.GetString("TechZone.ComboId"), out var comboId)
                 ? comboId : null);
         ViewBag.Hang = ketQua.Hang;
+        // Sprint 6 Module 4 — diem trong gio (chi hien thi, khong doi
+        // logic tinh): diem se tich = 1% TongCong, cung cong thuc
+        // LoyaltyService.GhiDiemMuaHangAsync (TongTien / 100.000, tron
+        // xuong); diem hien co chi khi da dang nhap.
+        ViewBag.DiemSeTich = (int)(vm.TongCong / 100_000m);
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var userId = _db.Users.FirstOrDefault(u => u.UserName == User.Identity.Name)?.Id;
+            ViewBag.DiemHienTai = userId is null ? 0 : await _loyalty.TongDiemAsync(userId);
+        }
         return View(vm);
     }
 
@@ -127,11 +140,19 @@ public class CartController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    /// <summary>
+    /// Sprint 6 Module 4 — xoa co phan hoi (truoc day xoa im lang):
+    /// lay ten SP truoc khi xoa; SP khong con trong DB thi cau chung.
+    /// </summary>
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Remove(int productId, int? variantId)
+    public async Task<IActionResult> Remove(int productId, int? variantId)
     {
+        var product = await _db.Products.FindAsync(productId);
         _cart.Remove(productId, variantId);
+        TempData["Success"] = product is null
+            ? "Đã xóa sản phẩm khỏi giỏ hàng."
+            : $"Đã xóa {product.Ten} khỏi giỏ hàng.";
         return RedirectToAction(nameof(Index));
     }
 

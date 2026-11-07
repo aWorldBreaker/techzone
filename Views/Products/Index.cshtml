@@ -4,16 +4,16 @@
     // Sprint 6 Module 3 (M3-2): đếm filter đang bật để hiện badge trên nút
     // "Bộ lọc" mobile + tự mở panel khi đã có filter (người dùng cần thấy
     // trạng thái lọc thay vì tưởng chưa lọc gì).
+    // Đếm CHỈ điều kiện lọc, KHÔNG đếm sắp xếp (SapXep không phải filter);
+    // khoảng giá (GiaTu + GiaDen) đếm là 1 điều kiện.
     var activeFilterCount = 0;
     if (Model.CategoryId.HasValue) activeFilterCount++;
     if (Model.BrandId.HasValue) activeFilterCount++;
     if (!string.IsNullOrWhiteSpace(Model.Chip)) activeFilterCount++;
     if (!string.IsNullOrWhiteSpace(Model.Ram)) activeFilterCount++;
     if (!string.IsNullOrWhiteSpace(Model.DungLuong)) activeFilterCount++;
-    if (Model.GiaTu.HasValue) activeFilterCount++;
-    if (Model.GiaDen.HasValue) activeFilterCount++;
+    if (Model.GiaTu.HasValue || Model.GiaDen.HasValue) activeFilterCount++;
     if (!string.IsNullOrWhiteSpace(Model.TuKhoa)) activeFilterCount++;
-    if (Model.SapXep != "mac-dinh") activeFilterCount++;
 }
 
 <h1>Sản phẩm @if (Model.CategoryId.HasValue)
@@ -88,15 +88,48 @@
     <div class="filter-actions">
         <button type="submit" class="btn btn-primary">Lọc</button>
         <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
+        @* Nút Đóng — Sprint 6 Module 3: chỉ hiện ở mobile (≤768px, xem
+           site.css); bấm thì đóng panel + trả focus về nút "Bộ lọc"
+           (xem filter-toggle.js). Desktop panel luôn mở nên nút ẩn. *@
+        <button type="button" class="btn btn-secondary filter-close" id="filter-close">Đóng</button>
     </div>
 </form>
 
+@* 3 thông báo riêng, không dùng chung một câu:
+   (a) trang vượt giới hạn — controller clamp về trang cuối nên trang cuối
+       LUÔN có SP, nhánh này nằm ở khối else bên dưới (khi còn kết quả),
+       không phải ở đây; (b) lọc không khớp sản phẩm nào;
+   (c) rỗng thật (không có SP nào). *@
 @if (!Model.KetQua.Any())
 {
-    <p>Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+    @if (activeFilterCount > 0)
+    {
+        <p>Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+    }
+    else
+    {
+        <p>Chưa có sản phẩm nào. Vui lòng quay lại sau.</p>
+    }
 }
 else
 {
+    @if (Model.TrangVuotGioiHan)
+    {
+        <p class="alert alert-info" role="status">
+            Trang @Model.TrangYeuCau không tồn tại, đang hiển thị trang cuối (@Model.TongTrang/@Model.TongTrang).
+            <a asp-action="Index"
+               asp-route-Trang="@Model.TongTrang"
+               asp-route-CategoryId="@Model.CategoryId"
+               asp-route-BrandId="@Model.BrandId"
+               asp-route-Chip="@Model.Chip"
+               asp-route-Ram="@Model.Ram"
+               asp-route-DungLuong="@Model.DungLuong"
+               asp-route-GiaTu="@Model.GiaTu"
+               asp-route-GiaDen="@Model.GiaDen"
+               asp-route-SapXep="@Model.SapXep"
+               asp-route-TuKhoa="@Model.TuKhoa">Về trang cuối</a>
+        </p>
+    }
     <div class="product-grid">
         @foreach (var p in Model.KetQua)
         {
@@ -106,11 +139,26 @@ else
 
     @if (Model.TongTrang > 1)
     {
+        @* Phân trang — Sprint 6 Module 3: nút Trước/Sau + windowing
+           (trang 1 … ±2 quanh trang hiện tại … trang cuối, có dấu …),
+           không render toàn bộ nút; trang hiện tại có aria-current="page"
+           + class chip-active. Giữ nguyên: không render nav khi
+           TongTrang <= 1; mọi link giữ đủ filter + chiều sort. *@
+        var trangNav = Math.Min(Math.Max(1, Model.Trang), Model.TongTrang);
+        var cacTrang = new List<int> { 1 };
+        for (var i = Math.Max(2, trangNav - 2); i <= Math.Min(Model.TongTrang - 1, trangNav + 2); i++)
+        {
+            cacTrang.Add(i);
+        }
+        if (Model.TongTrang > 1)
+        {
+            cacTrang.Add(Model.TongTrang);
+        }
         <nav class="mt" aria-label="Phân trang">
-            @for (var i = 1; i <= Model.TongTrang; i++)
+            @if (trangNav > 1)
             {
                 <a class="chip" asp-action="Index"
-                   asp-route-Trang="@i"
+                   asp-route-Trang="@(trangNav - 1)"
                    asp-route-CategoryId="@Model.CategoryId"
                    asp-route-BrandId="@Model.BrandId"
                    asp-route-Chip="@Model.Chip"
@@ -119,7 +167,48 @@ else
                    asp-route-GiaTu="@Model.GiaTu"
                    asp-route-GiaDen="@Model.GiaDen"
                    asp-route-SapXep="@Model.SapXep"
-                   asp-route-TuKhoa="@Model.TuKhoa">@i</a>
+                   asp-route-TuKhoa="@Model.TuKhoa">‹ Trước</a>
+            }
+            else
+            {
+                <span class="chip chip-disabled" aria-disabled="true">‹ Trước</span>
+            }
+            @foreach (var soTrang in cacTrang)
+            {
+                @* Dấu … khi trang này không kề trang trước trong danh sách. *@
+                @if (soTrang > 1 && !cacTrang.Contains(soTrang - 1))
+                {
+                    <span class="pagination-ellipsis" aria-hidden="true">…</span>
+                }
+                <a class="chip @(soTrang == trangNav ? "chip-active" : "")" aria-current="@(soTrang == trangNav ? "page" : null)" asp-action="Index"
+                   asp-route-Trang="@soTrang"
+                   asp-route-CategoryId="@Model.CategoryId"
+                   asp-route-BrandId="@Model.BrandId"
+                   asp-route-Chip="@Model.Chip"
+                   asp-route-Ram="@Model.Ram"
+                   asp-route-DungLuong="@Model.DungLuong"
+                   asp-route-GiaTu="@Model.GiaTu"
+                   asp-route-GiaDen="@Model.GiaDen"
+                   asp-route-SapXep="@Model.SapXep"
+                   asp-route-TuKhoa="@Model.TuKhoa">@soTrang</a>
+            }
+            @if (trangNav < Model.TongTrang)
+            {
+                <a class="chip" asp-action="Index"
+                   asp-route-Trang="@(trangNav + 1)"
+                   asp-route-CategoryId="@Model.CategoryId"
+                   asp-route-BrandId="@Model.BrandId"
+                   asp-route-Chip="@Model.Chip"
+                   asp-route-Ram="@Model.Ram"
+                   asp-route-DungLuong="@Model.DungLuong"
+                   asp-route-GiaTu="@Model.GiaTu"
+                   asp-route-GiaDen="@Model.GiaDen"
+                   asp-route-SapXep="@Model.SapXep"
+                   asp-route-TuKhoa="@Model.TuKhoa">Sau ›</a>
+            }
+            else
+            {
+                <span class="chip chip-disabled" aria-disabled="true">Sau ›</span>
             }
         </nav>
     }

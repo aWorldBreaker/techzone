@@ -19,6 +19,10 @@
     var comboTongBo = ViewBag.ComboTongBo as decimal? ?? (Model.GiaBan + (combo?.GiaBan ?? 0m));
     var comboGiamGia = ViewBag.ComboGiamGia as decimal? ?? 0m;
     var model3d = ViewBag.Model3d as TechZone.Models.Product3dModel;
+    // Sprint 6 Module 4 — gia hien thi theo tung bien the (controller tinh
+    // bang TinhGiaAsync, xem ProductsController.Details); view chi doc
+    // de gan data-gia cho option, khong tu tinh gia.
+    var giaTheoVariant = ViewBag.GiaTheoVariant as Dictionary<int, TechZone.Services.GiaApDungResult>;
 }
 
 <nav aria-label="Breadcrumb">
@@ -58,14 +62,24 @@
         }
         else
         {
-            <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
+            @* Sprint 6 Module 4 — anh chinh co id de JS gallery doi duoc
+               (nhanh 3D da co id="product-image" san). *@
+            <img id="product-image" src="@Model.AnhDaiDien" alt="@Model.Ten" />
         }
         @if (Model.Images.Count > 1)
         {
-            <div class="chip-row">
-                @foreach (var img in Model.Images)
+            @* Sprint 6 Module 4 — thumbnail tuong tac: moi anh la 1 nut
+               (xem product-detail.js); anh dau tien la anh dang chon.
+               Khong JS van xem duoc anh dau tien (anh chinh mac dinh). *@
+            <div class="chip-row" role="group" aria-label="Ảnh sản phẩm">
+                @for (var i = 0; i < Model.Images.Count; i++)
                 {
-                    <img src="@img.Url" alt="@Model.Ten" class="thumb-sm" />
+                    var img = Model.Images.ElementAt(i);
+                    <button type="button" class="thumb-btn" data-full="@img.Url"
+                        aria-label="Ảnh @(i + 1) — @Model.Ten"
+                        aria-current="@(i == 0 ? "true" : null)">
+                        <img src="@img.Url" alt="@Model.Ten" class="thumb-sm" />
+                    </button>
                 }
             </div>
         }
@@ -103,7 +117,7 @@
                 <span class="badge">@tenKhuyenMai</span>
             }
         </p>
-        <p class="text-muted">Trả góp 0% • Bảo hành 24 tháng • Giao nhanh 2h • Đổi trả 30 ngày</p>
+        <p class="text-muted">Trả góp 0% (giả lập) • Bảo hành 24 tháng • Miễn phí ship đơn từ 2.000.000đ • Đổi trả online</p>
         <partial name="_InstallmentBadge" model="giaHienThi" />
 
         @if (Model.Variants.Any())
@@ -115,7 +129,14 @@
                     <select id="variantId" name="variantId" class="form-control">
                         @foreach (var v in Model.Variants)
                         {
-                            <option value="@v.Id">@v.TenBienThe@(v.GiaThem > 0 ? $" (+{v.GiaThem:N0}đ)" : "")</option>
+                            var giaVariant = giaTheoVariant is not null && giaTheoVariant.TryGetValue(v.Id, out var gv) ? gv : null;
+                            @* Sprint 6 Module 4 — gia tung bien the render san vao
+                               data-gia/data-gia-goc de JS cap nhat gia hien thi
+                               ngay khi doi select (khong reload, khong doi
+                               logic server khi them gio/thanh toan). *@
+                            <option value="@v.Id"
+                                data-gia="@(giaVariant?.DonGia.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))"
+                                data-gia-goc="@(giaVariant?.GiaGoc.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))">@v.TenBienThe@(v.GiaThem > 0 ? $" (+{v.GiaThem:N0}đ)" : "")</option>
                         }
                     </select>
                 </div>
@@ -160,6 +181,41 @@
     <section class="section combo-block">
         <h2>Mua kèm giá tốt</h2>
         <div class="combo-items">
+            @if (ViewBag.ComboMon is List<TechZone.Models.CartLineViewModel> comboMon)
+            {
+                @* Sprint 6 Module 4 — combo N mon: render du moi mon
+                   (mon chinh len dau, dau ＋ giua cac mon); gia tung mon
+                   la gia hieu dung (da ap Flash Sale), SoLuong > 1 thi
+                   hien "× N". Tong/giam lay tu TinhGiaComboAsync nhu cu. *@
+                @for (var i = 0; i < comboMon.Count; i++)
+                {
+                    var mon = comboMon[i];
+                    if (i > 0)
+                    {
+                        <span class="combo-plus" aria-hidden="true">＋</span>
+                    }
+                    <div class="combo-item">
+                        <img src="@mon.Product.AnhDaiDien" alt="@mon.Product.Ten" />
+                        <p>
+                            @if (mon.Product.Id == Model.Id)
+                            {
+                                @mon.Product.Ten
+                            }
+                            else
+                            {
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@mon.Product.Id">@mon.Product.Ten</a>
+                            }
+                            @if (mon.SoLuong > 1)
+                            {
+                                <span> × @mon.SoLuong</span>
+                            }
+                        </p>
+                        <p><strong>@mon.DonGia.ToString("N0")đ</strong></p>
+                    </div>
+                }
+            }
+            else
+            {
             <div class="combo-item">
                 <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
                 <p>@Model.Ten</p>
@@ -171,7 +227,12 @@
                 <p><a asp-controller="Products" asp-action="Details" asp-route-id="@combo.Id">@combo.Ten</a></p>
                 <p><strong>@comboGiaKem.ToString("N0")đ</strong></p>
             </div>
+            }
         </div>
+        @if (ViewBag.ComboMon is List<TechZone.Models.CartLineViewModel> comboMonDem)
+        {
+            <p class="text-muted">Combo gồm @comboMonDem.Count sản phẩm</p>
+        }
         <p class="combo-total">Tổng combo: <strong>@comboTongBo.ToString("N0")đ</strong>
         @if (ViewBag.ComboId is not null && ViewBag.ComboGiamGia is decimal giamCombo && giamCombo > 0)
         {
@@ -319,12 +380,13 @@
 
 <partial name="_RecentlyViewed" model="recentlyViewed" />
 
-@* Sprint 5 Mang 2: chi nap thu vien model-viewer + product-3d.js khi trang
-   co viewer (model3d is not null) — trang khong co model (VD iPhone Id 2)
-   khong tai thua ~955KB thu vien. *@
-@if (model3d is not null)
-{
-    @section Scripts {
+@* Sprint 6 Module 4 — product-detail.js (gallery + gia variant) nap tren
+   moi trang Details; model-viewer + product-3d.js chi khi co viewer 3D
+   (Sprint 5 Mang 2: trang khong co model khong tai thua ~955KB). *@
+@section Scripts {
+    <script src="~/js/product-detail.js"></script>
+    @if (model3d is not null)
+    {
         <script type="module" src="~/js/model-viewer.min.js"></script>
         <script src="~/js/product-3d.js"></script>
     }

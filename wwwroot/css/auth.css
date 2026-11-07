@@ -1,0 +1,141 @@
+/* TechZone — CSS riêng cho trang xác thực (Sprint 6 Continuation, Phase 3).
+   Layout _AuthLayout CHỈ load file này (+ design-tokens.css qua @import
+   bên dưới): không load site.css / features-*.css của shop.
+   Vì vậy file này tự chứa các utility DÙNG CHUNG mà form auth cần
+   (giá trị copy y nguyên từ site.css — nguồn chuẩn vẫn là file đó;
+   nếu đổi giá trị ở shop thì đồng bộ lại đây): base body/headings,
+   .btn/.btn-block, .form-group/.form-control, .alert*, .text-*,
+   .mt, :focus-visible, .skip-link.
+   Mọi rule chỉ dùng token var(--color-*) / var(--space-*) — dark mode
+   theo html[data-theme="dark"] trong design-tokens.css. */
+
+@import url('design-tokens.css');
+
+/* ---------- Base (copy từ site.css) ---------- */
+* { box-sizing: border-box; }
+html { font-size: 16px; }
+body {
+  margin: 0; background: var(--color-background); color: var(--color-foreground);
+  font-family: var(--font-sans); line-height: 1.5;
+  display: flex; flex-direction: column; min-height: 100vh;
+}
+h1, h2, h3, h4 { font-family: var(--font-sans); line-height: 1.25; margin: 0 0 var(--space-md); }
+a { color: var(--color-primary-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+button, input, select, textarea { font: inherit; }
+input, select, textarea { background: var(--color-card); color: var(--color-foreground); }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
+
+/* Skip link — chỉ hiện khi focus bàn phím (copy từ site.css). */
+.skip-link { position: absolute; left: var(--space-md); top: -100px; z-index: 10; background: var(--color-primary); color: var(--color-on-primary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius); font-weight: 600; transition: top 200ms ease; }
+.skip-link:focus { top: var(--space-sm); color: var(--color-on-primary); text-decoration: none; }
+
+/* ---------- Header branding tối giản ---------- */
+.auth-header {
+  display: flex; align-items: center; justify-content: space-between;
+  max-width: 480px; width: 100%; margin: 0 auto;
+  padding: var(--space-lg) var(--space-md) 0;
+}
+.auth-logo { font-family: var(--font-sans); font-size: 1.75rem; font-weight: 700; color: var(--color-foreground); }
+.auth-logo span { color: var(--color-primary-text); }
+.auth-logo:hover { text-decoration: none; }
+.theme-toggle {
+  background: var(--color-card); color: var(--color-foreground);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+  min-width: 44px; min-height: 44px; padding: var(--space-sm);
+  font-size: 1.1rem; line-height: 1;
+}
+.theme-toggle:hover { background: var(--color-muted); }
+
+/* ---------- Khung giữa trang + hộp form ---------- */
+.auth-shell {
+  flex: 1 0 auto; width: 100%;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  padding: var(--space-lg) var(--space-md) var(--space-2xl);
+}
+.auth-box {
+  width: 100%; max-width: 480px; margin: 0 auto;
+  background: var(--color-card);
+  border: 1px solid var(--color-border); border-radius: var(--radius);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+}
+.auth-box h1 { margin-bottom: var(--space-sm); }
+.auth-subtitle { color: var(--color-muted-foreground); margin: 0 0 var(--space-lg); }
+.auth-switch { text-align: center; }
+.auth-switch a, .auth-footer a { text-decoration: underline; }
+
+/* ---------- Form (giá trị copy từ site.css) ---------- */
+.form-group { margin-bottom: var(--space-md); }
+.form-group label { display: block; font-weight: 600; margin-bottom: var(--space-xs); }
+.form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 1rem; background: var(--color-card); }
+.form-control:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px var(--color-primary-ring); }
+/* Field có lỗi validation: viền đỏ rõ (kèm aria-invalid="true" ở view). */
+.form-control[aria-invalid="true"] { border-color: var(--color-destructive); }
+.form-control[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--color-primary-ring); }
+.form-check { display: flex; align-items: center; gap: var(--space-sm); }
+.form-check input { width: 18px; height: 18px; accent-color: var(--color-primary); flex-shrink: 0; }
+.form-check label { font-weight: 400; margin-bottom: 0; }
+
+/* Ô mật khẩu + nút hiện/ẩn: nút nằm trong ô, bên phải; input chừa chỗ
+   cho nút để chữ không chui dưới nút. Không JS thì nút không tồn tại
+   (nút do auth.js chèn) và input vẫn là ô password thường. */
+.password-field { position: relative; }
+.password-field .form-control { padding-right: 64px; }
+.password-toggle {
+  position: absolute; right: var(--space-sm); top: 50%;
+  transform: translateY(-50%);
+  background: transparent; border: 1px solid transparent; border-radius: var(--radius);
+  color: var(--color-primary-text); font-weight: 600; font-size: .9rem;
+  min-height: 36px; padding: var(--space-xs) var(--space-sm);
+}
+.password-toggle:hover { background: var(--color-muted); }
+
+/* Cảnh báo Caps Lock: mặc định ẩn (thuộc tính hidden ở view);
+   auth.js chỉ bỏ/đặt lại hidden theo getModifierState('CapsLock'). */
+.capslock-warning {
+  margin: var(--space-sm) 0 0; font-size: .9rem; font-weight: 600;
+  color: var(--color-warning-fg);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius); padding: var(--space-sm) var(--space-md);
+}
+
+/* ---------- Nút + trạng thái ---------- */
+.btn { display: inline-block; padding: 12px 24px; border-radius: var(--radius); font-weight: 600; border: 2px solid transparent; text-align: center; transition: all 200ms ease; }
+.btn:hover { text-decoration: none; }
+.btn-block { width: 100%; }
+/* Nút submit auth: đủ 44px cao (chuẩn chạm mobile), trạng thái disabled
+   rõ ràng khi đang xử lý (auth.js disable + đổi nhãn "Đang xử lý…"). */
+.auth-submit { min-height: 44px; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .65; cursor: not-allowed; }
+
+/* ---------- Thông báo / chữ phụ (copy từ site.css) ---------- */
+.alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: var(--space-md); }
+.alert-success { background: var(--color-success-bg); color: var(--color-success-fg); border: 1px solid var(--color-success-border); }
+.alert-error { background: var(--color-error-bg); color: var(--color-error-fg); border: 1px solid var(--color-error-border); }
+.auth-shell > .alert { width: 100%; max-width: 480px; }
+.text-danger { color: var(--color-destructive); }
+.text-muted { color: var(--color-muted-foreground); }
+.mt { margin-top: var(--space-lg); }
+
+/* ---------- Footer tối giản ---------- */
+.auth-footer { border-top: 1px solid var(--color-border); padding: var(--space-md); text-align: center; }
+.auth-footer p { color: var(--color-muted-foreground); font-size: .9rem; margin: 0; }
+
+/* ---------- Mobile 320/390: không tràn ---------- */
+@media (max-width: 480px) {
+  .auth-box { padding: var(--space-lg) var(--space-md); }
+  .auth-header { padding-top: var(--space-md); }
+  .auth-shell { padding-left: var(--space-md); padding-right: var(--space-md); }
+}
+@media (max-width: 360px) {
+  .auth-box { padding: var(--space-md); }
+  .auth-logo { font-size: 1.5rem; }
+}
+
+/* Tôn trọng prefers-reduced-motion: bỏ transition của skip-link. */
+@media (prefers-reduced-motion: reduce) {
+  .skip-link, .btn { transition: none; }
+}

@@ -55,6 +55,25 @@ public class ReturnsController : Controller
         _doiTra = doiTra;
     }
 
+    /// <summary>
+    /// VeTrangSauTacVu (giong AdminController): form tu trang TongQuan gui
+    /// kem hidden tuTrang=TongQuan thi quay lai Admin/TongQuan; trang cu
+    /// goi thi ve dung action mac dinh nhu truoc.
+    /// </summary>
+    private IActionResult VeTrangSauTacVu(string actionMacDinh)
+    {
+        if (Request.HasFormContentType)
+        {
+            try
+            {
+                if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
+                    return RedirectToAction("TongQuan", "Admin");
+            }
+            catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
+        }
+        return RedirectToAction(actionMacDinh);
+    }
+
     private string? LayUserIdHienTai()
     {
         if (User.Identity?.IsAuthenticated != true) return null;
@@ -360,19 +379,19 @@ public class ReturnsController : Controller
             if (!ketQua.ThanhCong)
             {
                 TempData["Error"] = ketQua.Loi ?? "Không cập nhật được yêu cầu đổi trả.";
-                return RedirectToAction(nameof(AdminIndex));
+                return VeTrangSauTacVu(nameof(AdminIndex));
             }
             TempData["Success"] = ketQua.DaXuLyTruocDo
                 ? $"Yêu cầu #{id} đã xử lý trước đó."
                 : ketQua.SoTienHoan > 0
                     ? $"Đã cập nhật trạng thái yêu cầu #{id}: {trangThaiMoi}. Đã ghi hoàn tiền {ketQua.SoTienHoan:N0}đ."
                     : $"Đã cập nhật trạng thái yêu cầu #{id}: {trangThaiMoi}.";
-            return RedirectToAction(nameof(AdminIndex));
+            return VeTrangSauTacVu(nameof(AdminIndex));
         }
         // Nhanh bao hanh: chi doi trang thai, khong hoan tac (bao hanh la sua chua, khong phai tra hang).
         await _db.SaveChangesAsync();
         TempData["Success"] = $"Đã cập nhật trạng thái yêu cầu #{id}: {trangThaiMoi}.";
-        return RedirectToAction(nameof(AdminIndex));
+        return VeTrangSauTacVu(nameof(AdminIndex));
     }
 
     // --- Tra cuu bao hanh theo ma don ---

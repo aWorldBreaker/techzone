@@ -59,14 +59,19 @@
 > hồi quy full 98 passed / 0 failed / 4 skipped (hiệu dụng — 3 fail do
 > `/tmp` đầy, chạy lại 3/3 PASS), tràn 0px cả 24 tổ hợp, không-JS PASS,
 > xem `TEST-REPORT.md` §27).
-> **Phase 5 — Landing XONG 2026-11-07, chưa commit** (hero + voucher đọc từ DB, tồn kho trên card theo ngưỡng TonKho ≤ 10 có sẵn, cam kết giữ/gỡ/làm mềm theo căn cứ code, "Trả góp 0% (giả lập)" mọi chỗ, polish: pill hero, gradient + viền, chip chữ cái, hover zoom 1.06, countdown tabular, voucher viền đứt; runner **259/259**, E2E Phase 5 **18/18**, axe Home 8 lượt 0 critical (0 violation mới), hồi quy full 98 passed / 0 failed / 4 skipped, tràn 0px cả 72 tổ hợp, before/after 17 ảnh/bên; xem `TEST-REPORT.md` §28). **Sprint 6 Continuation xong cả 5 phase.**
+> **Phase 5 — Landing XONG 2026-11-07, commit local `c2b926e` + push GitHub `60dfab9b` (181 paths, ci.yml + favicon còn nguyên, 4/4 blob khớp) + space sync XONG** (hero + voucher đọc từ DB, tồn kho trên card theo ngưỡng TonKho ≤ 10 có sẵn, cam kết giữ/gỡ/làm mềm theo căn cứ code, "Trả góp 0% (giả lập)" mọi chỗ, polish: pill hero, gradient + viền, chip chữ cái, hover zoom 1.06, countdown tabular, voucher viền đứt; runner **259/259**, E2E Phase 5 **18/18**, axe Home 8 lượt 0 critical (0 violation mới), hồi quy full 98 passed / 0 failed / 4 skipped, tràn 0px cả 72 tổ hợp, before/after 17 ảnh/bên; xem `TEST-REPORT.md` §28). **Sprint 6 Continuation xong cả 5 phase, đã commit + push + sync space (TEST-REPORT §29). CI run #3 cho `60dfab9b` PASS 259/259.**
 > Chi tiết
 > Sprint 6: `docs/UI-AUDIT.md`, `docs/UI-ROADMAP.md`.
 > Space TechZone (artifact `techzone`): đã đồng bộ 11 thay đổi Module 1+3
 > ngày 2026-11-06 (build thành công, builder probe VERIFIED 11/11; xem
 > `TEST-REPORT.md` §14) và Module 4–7 + M4-3 + M4-3a/b ngày 2026-11-07
 > (build thành công, builder probe VERIFIED 11/11 + mục đo Compare 390
-> 0px; xem `TEST-REPORT.md` §22).
+> 0px; xem `TEST-REPORT.md` §22), và Sprint 6 Continuation Phase 1–5
+> ngày 2026-11-07 (build thành công; 6 mục VERIFIED/VERIFIED phần lớn,
+> 3 VERIFIED một phần, 2 NOT_RUN trực tiếp — kiểm chứng code/bundle thay
+> thế; audit cuối pass, 0 console error, tràn mobile 0px; dữ liệu durable
+> kiểm chứng độc lập qua action: 13 SP / 4 voucher / 1 banner / 3 flash
+> slot / 0 review / 0 đơn; xem `TEST-REPORT.md` §29).
 
 ## Chạy
 

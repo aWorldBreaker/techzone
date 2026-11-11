@@ -179,3 +179,33 @@ public class DashboardViewModel
     public Dictionary<string, int> DonTheoTrangThai { get; set; } = new();
     public int KhachMoiThang { get; set; }
 }
+
+/// <summary>
+/// Trang Admin tong hop: gom toan bo du lieu cac trang Admin rieng le
+/// de hien trong 1 trang duy nhat, chuyen section bang tab JS.
+/// Du lieu lay dung query/logic cua tung action goc (xem AdminController.TongQuan).
+/// </summary>
+public class TongQuanViewModel
+{
+    public DashboardViewModel Dashboard { get; set; } = new();
+    public List<Product> Products { get; set; } = new();
+    /// <summary>10 don gan nhat (Dashboard chi lay 8).</summary>
+    public List<Order> DonGanDay { get; set; } = new();
+    public Dictionary<string, int> DonTheoTrangThai { get; set; } = new();
+    public List<(ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)> KhachHang { get; set; } = new();
+    public List<Voucher> Vouchers { get; set; } = new();
+    public List<Combo> Combos { get; set; } = new();
+    public List<FlashSaleSlot> FlashSaleSlots { get; set; } = new();
+    public List<Banner> Banners { get; set; } = new();
+    public List<Review> ReviewsChoDuyet { get; set; } = new();
+    public List<Review> ReviewsDaDuyetGanDay { get; set; } = new();
+    public List<ProductQuestion> CauHoiChuaTraLoi { get; set; } = new();
+    /// <summary>San pham sap theo ten (trang Kho).</summary>
+    public List<Product> SanPhamKho { get; set; } = new();
+    public List<StockIn> NhapKhoGanDay { get; set; } = new();
+    public List<Notification> ThongBaoGanDay { get; set; } = new();
+    /// <summary>Users tru admin — danh sach nguoi nhan thong bao.</summary>
+    public List<ApplicationUser> NguoiNhanThongBao { get; set; } = new();
+    public List<ReturnRequest> DoiTraChoDuyet { get; set; } = new();
+    public List<WarrantyClaim> BaoHanhChoDuyet { get; set; } = new();
+}

@@ -25,7 +25,107 @@ public class AdminController : Controller
         _orders = orders;
     }
 
-    public async Task<IActionResult> Dashboard()
+    public async Task<IActionResult> Dashboard() =>
+        View(await TaiDuLieuDashboardAsync());
+
+    /// <summary>
+    /// Helper VeTrangSauTacVu: form tu trang TongQuan gui kem hidden
+    /// tuTrang=TongQuan thi quay lai TongQuan; trang cu goi (khong co
+    /// tuTrang) thi ve dung action mac dinh nhu truoc — hanh vi cu
+    /// giu nguyen 100%. Request.Form chi doc khi co form content-type
+    /// (test goi truc tiep khong co form thi khong nem loi).
+    /// </summary>
+    private IActionResult VeTrangSauTacVu(string actionMacDinh)
+    {
+        if (Request.HasFormContentType)
+        {
+            try
+            {
+                if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
+                    return RedirectToAction(nameof(TongQuan));
+            }
+            catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
+        }
+        return RedirectToAction(actionMacDinh);
+    }
+
+    /// <summary>VeTrangSauTacVu kem route values (vd OrderDetails can id).</summary>
+    private IActionResult VeTrangSauTacVu(string actionMacDinh, object routeValues)
+    {
+        if (Request.HasFormContentType)
+        {
+            try
+            {
+                if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
+                    return RedirectToAction(nameof(TongQuan));
+            }
+            catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
+        }
+        return RedirectToAction(actionMacDinh, routeValues);
+    }
+
+    /// <summary>
+    /// Trang tong hop: 12 section trong 1 trang. Load dung query/logic
+    /// cua tung action goc; Dashboard + KhachHang dung helper chung.
+    /// </summary>
+    public async Task<IActionResult> TongQuan()
+    {
+        var dashboard = await TaiDuLieuDashboardAsync();
+        var vm = new TongQuanViewModel
+        {
+            Dashboard = dashboard,
+            Products = await _db.Products
+                .Include(p => p.Category).Include(p => p.Brand)
+                .OrderByDescending(p => p.NgayTao).ToListAsync(),
+            DonGanDay = await _db.Orders
+                .Include(o => o.ChiTiet)
+                .OrderByDescending(o => o.NgayDat).Take(10).ToListAsync(),
+            DonTheoTrangThai = dashboard.DonTheoTrangThai,
+            KhachHang = await TaiDuLieuKhachHangAsync(),
+            Vouchers = await _db.Vouchers.OrderByDescending(v => v.NgayHetHan).ToListAsync(),
+            Combos = await _db.Combos
+                .Include(c => c.Items).ThenInclude(i => i.Product)
+                .OrderByDescending(c => c.Id).ToListAsync(),
+            FlashSaleSlots = await _db.FlashSaleSlots
+                .Include(s => s.Items).ThenInclude(i => i.Product)
+                .OrderBy(s => s.GioBatDau).ToListAsync(),
+            Banners = await _db.Banners.OrderBy(b => b.ThuTu).ToListAsync(),
+            ReviewsChoDuyet = await _db.Reviews
+                .Include(r => r.Product).Include(r => r.User)
+                .Where(r => !r.IsApproved)
+                .OrderBy(r => r.NgayDanhGia).ToListAsync(),
+            ReviewsDaDuyetGanDay = await _db.Reviews
+                .Include(r => r.Product).Include(r => r.User)
+                .Where(r => r.IsApproved)
+                .OrderByDescending(r => r.NgayDanhGia).Take(10).ToListAsync(),
+            CauHoiChuaTraLoi = await _db.ProductQuestions
+                .Include(q => q.Product).Include(q => q.User)
+                .Where(q => q.TraLoi == null)
+                .OrderBy(q => q.NgayHoi).ToListAsync(),
+            SanPhamKho = await _db.Products.OrderBy(p => p.Ten).ToListAsync(),
+            NhapKhoGanDay = await _db.StockIns
+                .Include(s => s.Product)
+                .OrderByDescending(s => s.NgayNhap).Take(10).ToListAsync(),
+            ThongBaoGanDay = await _db.Notifications
+                .Include(n => n.User)
+                .OrderByDescending(n => n.NgayTao).Take(20).ToListAsync(),
+            NguoiNhanThongBao = await _db.Users
+                .Where(u => u.Email != "admin@techzone.vn")
+                .OrderBy(u => u.HoTen).ToListAsync(),
+            DoiTraChoDuyet = await _db.ReturnRequests
+                .Include(r => r.Product).Include(r => r.Order).Include(r => r.User)
+                .Where(r => r.TrangThai == "Chờ duyệt")
+                .OrderByDescending(r => r.NgayTao).ToListAsync(),
+            BaoHanhChoDuyet = await _db.WarrantyClaims
+                .Include(w => w.Product).Include(w => w.Order).Include(w => w.User)
+                .Where(w => w.TrangThai == "Chờ duyệt")
+                .OrderByDescending(w => w.NgayTao).ToListAsync(),
+        };
+        return View(vm);
+    }
+
+    /// <summary>Logic load Dashboard goc, tach ra de Dashboard() + TongQuan() dung chung.</summary>
+    private async Task<DashboardViewModel> TaiDuLieuDashboardAsync()
     {
         var thangNay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
 
@@ -57,7 +157,7 @@ public class AdminController : Controller
         var khachMoiThang = await _db.Users.CountAsync(u =>
             u.NgayTao >= thangNay && u.Email != "admin@techzone.vn");
 
-        var vm = new DashboardViewModel
+        return new DashboardViewModel
         {
             DoanhThuThang = donThang.Sum(o => o.TongTien),
             DonMoi = await _db.Orders.CountAsync(o => o.TrangThai == OrderStatus.ChoXacNhan),
@@ -74,7 +174,6 @@ public class AdminController : Controller
             DonTheoTrangThai = donTheoTrangThai,
             KhachMoiThang = khachMoiThang
         };
-        return View(vm);
     }
 
     // --- San pham ---
@@ -338,12 +437,12 @@ public class AdminController : Controller
         if (!ketQua.ThanhCong)
         {
             TempData["Error"] = ketQua.Loi ?? "Không đổi được trạng thái đơn.";
-            return RedirectToAction(nameof(OrderDetails), new { id });
+            return VeTrangSauTacVu(nameof(OrderDetails), new { id });
         }
         TempData["Success"] = ketQua.DaOTrangThaiDich
             ? $"Đơn #{id} đã ở trạng thái: {trangThaiMoi}."
             : $"Đơn #{id} đã chuyển sang: {trangThaiMoi}.";
-        return RedirectToAction(nameof(OrderDetails), new { id });
+        return VeTrangSauTacVu(nameof(OrderDetails), new { id });
     }
 
     // --- Voucher ---
@@ -362,7 +461,7 @@ public class AdminController : Controller
                 .SelectMany(v => v.Errors).Select(e => e.ErrorMessage)
                 .FirstOrDefault(e => !string.IsNullOrWhiteSpace(e));
             TempData["Error"] = loiModel ?? "Thông tin voucher chưa hợp lệ.";
-            return RedirectToAction(nameof(Vouchers));
+            return VeTrangSauTacVu(nameof(Vouchers));
         }
         // Validation nghiep vu server-side (AdminValidation, test duoc truc
         // tiep): chan so am, % > 100, ngay het han qua khu, SoLuong <= 0...
@@ -370,20 +469,20 @@ public class AdminController : Controller
         if (loi is not null)
         {
             TempData["Error"] = loi;
-            return RedirectToAction(nameof(Vouchers));
+            return VeTrangSauTacVu(nameof(Vouchers));
         }
         model.Ma = model.Ma.Trim().ToUpper();
         if (await _db.Vouchers.AnyAsync(v => v.Ma == model.Ma))
         {
             TempData["Error"] = $"Mã {model.Ma} đã tồn tại.";
-            return RedirectToAction(nameof(Vouchers));
+            return VeTrangSauTacVu(nameof(Vouchers));
         }
         // Voucher moi chua ai dung — khong tin DaDung client gui len.
         model.DaDung = 0;
         _db.Vouchers.Add(model);
         await _db.SaveChangesAsync();
         TempData["Success"] = $"Đã thêm voucher {model.Ma}.";
-        return RedirectToAction(nameof(Vouchers));
+        return VeTrangSauTacVu(nameof(Vouchers));
     }
 
     [HttpPost]
@@ -518,7 +617,7 @@ public class AdminController : Controller
         TempData["Success"] = combo.IsActive
             ? $"Đã bật combo {combo.Ten}."
             : $"Đã tắt combo {combo.Ten}.";
-        return RedirectToAction(nameof(Combos));
+        return VeTrangSauTacVu(nameof(Combos));
     }
 
     [HttpPost]
@@ -606,7 +705,7 @@ public class AdminController : Controller
         if (soLuong <= 0)
         {
             TempData["Error"] = "Số lượng nhập phải lớn hơn 0.";
-            return RedirectToAction(nameof(Kho));
+            return VeTrangSauTacVu(nameof(Kho));
         }
         var product = await _db.Products.FindAsync(productId);
         if (product is null) return NotFound();
@@ -620,11 +719,15 @@ public class AdminController : Controller
         product.TonKho += soLuong;
         await _db.SaveChangesAsync();
         TempData["Success"] = $"Đã nhập {soLuong} chiếc {product.Ten} vào kho.";
-        return RedirectToAction(nameof(Kho));
+        return VeTrangSauTacVu(nameof(Kho));
     }
 
     // --- Khach hang (nhom D) ---
-    public async Task<IActionResult> KhachHang()
+    public async Task<IActionResult> KhachHang() =>
+        View("Customers", await TaiDuLieuKhachHangAsync());
+
+    /// <summary>Logic load KhachHang goc, tach ra de KhachHang() + TongQuan() dung chung.</summary>
+    private async Task<List<(ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)>> TaiDuLieuKhachHangAsync()
     {
         var users = await _db.Users
             .Where(u => u.Email != "admin@techzone.vn")
@@ -661,7 +764,7 @@ public class AdminController : Controller
             var d = diem.TryGetValue(u.Id, out var dm) ? dm : 0;
             list.Add((u, tong, hang, d));
         }
-        return View("Customers", list);
+        return list;
     }
 
     // --- Duyet danh gia + tra loi cau hoi (nhom D) ---
@@ -690,7 +793,7 @@ public class AdminController : Controller
         review.IsApproved = true;
         await _db.SaveChangesAsync();
         TempData["Success"] = "Đã duyệt đánh giá.";
-        return RedirectToAction(nameof(Reviews));
+        return VeTrangSauTacVu(nameof(Reviews));
     }
 
     [HttpPost]
@@ -702,7 +805,7 @@ public class AdminController : Controller
         review.IsApproved = false;
         await _db.SaveChangesAsync();
         TempData["Success"] = "Đã ẩn đánh giá.";
-        return RedirectToAction(nameof(Reviews));
+        return VeTrangSauTacVu(nameof(Reviews));
     }
 
     [HttpPost]
@@ -712,7 +815,7 @@ public class AdminController : Controller
         if (string.IsNullOrWhiteSpace(traLoi))
         {
             TempData["Error"] = "Câu trả lời không được để trống.";
-            return RedirectToAction(nameof(Reviews));
+            return VeTrangSauTacVu(nameof(Reviews));
         }
         var question = await _db.ProductQuestions.FindAsync(questionId);
         if (question is null) return NotFound();
@@ -721,7 +824,7 @@ public class AdminController : Controller
         question.NgayTraLoi = DateTime.Now;
         await _db.SaveChangesAsync();
         TempData["Success"] = "Đã trả lời câu hỏi.";
-        return RedirectToAction(nameof(Reviews));
+        return VeTrangSauTacVu(nameof(Reviews));
     }
 
     // --- Banner (nhom D) ---
@@ -765,7 +868,7 @@ public class AdminController : Controller
         banner.IsActive = !banner.IsActive;
         await _db.SaveChangesAsync();
         TempData["Success"] = banner.IsActive ? "Đã bật banner." : "Đã tắt banner.";
-        return RedirectToAction(nameof(Banners));
+        return VeTrangSauTacVu(nameof(Banners));
     }
 
     [HttpPost]
@@ -796,7 +899,7 @@ public class AdminController : Controller
         if (gioBatDau < 0 || gioKetThuc > 24 || gioBatDau >= gioKetThuc)
         {
             TempData["Error"] = "Giờ không hợp lệ: cần 0 ≤ giờ bắt đầu < giờ kết thúc ≤ 24.";
-            return RedirectToAction(nameof(FlashSaleSlots));
+            return VeTrangSauTacVu(nameof(FlashSaleSlots));
         }
         // Chong lan [start, end) voi slot active hien co thi tu choi.
         var trung = await _db.FlashSaleSlots.AnyAsync(s => s.IsActive
@@ -804,7 +907,7 @@ public class AdminController : Controller
         if (trung)
         {
             TempData["Error"] = "Khung giờ này trùng với một khung Flash Sale đang bật.";
-            return RedirectToAction(nameof(FlashSaleSlots));
+            return VeTrangSauTacVu(nameof(FlashSaleSlots));
         }
         _db.FlashSaleSlots.Add(new FlashSaleSlot
         {
@@ -814,7 +917,7 @@ public class AdminController : Controller
         });
         await _db.SaveChangesAsync();
         TempData["Success"] = $"Đã thêm khung Flash Sale {gioBatDau}h – {gioKetThuc}h.";
-        return RedirectToAction(nameof(FlashSaleSlots));
+        return VeTrangSauTacVu(nameof(FlashSaleSlots));
     }
 
     [HttpPost]
@@ -879,12 +982,12 @@ public class AdminController : Controller
         if (string.IsNullOrWhiteSpace(tieuDe))
         {
             TempData["Error"] = "Tiêu đề thông báo không được để trống.";
-            return RedirectToAction(nameof(ThongBao));
+            return VeTrangSauTacVu(nameof(ThongBao));
         }
         if (string.IsNullOrWhiteSpace(userId))
         {
             TempData["Error"] = "Chưa chọn người nhận thông báo.";
-            return RedirectToAction(nameof(ThongBao));
+            return VeTrangSauTacVu(nameof(ThongBao));
         }
         if (userId == "all")
         {
@@ -917,6 +1020,6 @@ public class AdminController : Controller
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Đã gửi thông báo tới {user.HoTen}.";
         }
-        return RedirectToAction(nameof(ThongBao));
+        return VeTrangSauTacVu(nameof(ThongBao));
     }
 }

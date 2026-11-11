@@ -14,6 +14,7 @@
     string NhomActive(string ctrl, string act) => (ctrl, act) switch
     {
         ("Admin", "Dashboard") => "Dashboard",
+        ("Admin", "TongQuan") => "TongQuan",
         ("Admin", "Products") => "Products",
         ("Admin", "ProductForm") => "Products",
         ("Admin", "Orders") => "Orders",
@@ -40,6 +41,7 @@
     string TenMuc(string nhom) => nhom switch
     {
         "Dashboard" => "Dashboard",
+        "TongQuan" => "Trang tổng hợp",
         "Products" => "Sản phẩm",
         "Orders" => "Đơn hàng",
         "KhachHang" => "Khách hàng",
@@ -93,6 +95,7 @@
             <nav aria-label="Quản trị">
                 <div class="admin-nav-group">Tổng quan</div>
                 <a class="@ActiveClass("Dashboard")" asp-controller="Admin" asp-action="Dashboard" aria-current="@(active == "Dashboard" ? "page" : null)">📊 Dashboard</a>
+                <a class="@ActiveClass("TongQuan")" asp-controller="Admin" asp-action="TongQuan" aria-current="@(active == "TongQuan" ? "page" : null)">🧩 Trang tổng hợp</a>
                 <div class="admin-nav-group">Bán hàng</div>
                 <a class="@ActiveClassExact("Admin", "Products")" asp-controller="Admin" asp-action="Products" aria-current="@(controller == "Admin" && action == "Products" ? "page" : null)">📦 Sản phẩm</a>
                 <a class="admin-nav-sub @ActiveClassExact("Admin", "ProductForm")" asp-controller="Admin" asp-action="ProductForm" aria-current="@(controller == "Admin" && action == "ProductForm" ? "page" : null)">＋ Thêm sản phẩm</a>

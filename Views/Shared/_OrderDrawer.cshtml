@@ -1,0 +1,16 @@
+@* Dot 3 (B4): Drawer xem nhanh don — partial dung chung moi trang Admin
+   (render trong _AdminLayout, ngay truoc </body>). role="dialog" +
+   aria-modal="true" (xem admin.js: focus trap + Esc + tra focus).
+   Noi dung do JS nap tu action OrderDetails() da co, bo <form> de chi
+   doc; link chan drawer mo trang day du de doi trang thai. *@
+<div class="order-drawer-overlay" id="order-drawer-overlay" hidden></div>
+<aside class="order-drawer" id="order-drawer" role="dialog" aria-modal="true" aria-labelledby="order-drawer-title" hidden>
+    <div class="order-drawer-head">
+        <h2 id="order-drawer-title">Đơn hàng</h2>
+        <button type="button" id="order-drawer-close" class="btn btn-secondary btn-sm" aria-label="Đóng xem nhanh đơn">✕ Đóng</button>
+    </div>
+    <div class="order-drawer-body" id="order-drawer-body"></div>
+    <div class="order-drawer-foot">
+        <p><a id="order-drawer-full" href="#">Mở trang đầy đủ để đổi trạng thái →</a></p>
+    </div>
+</aside>

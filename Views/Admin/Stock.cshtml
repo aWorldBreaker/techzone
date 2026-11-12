@@ -5,14 +5,17 @@
 }
 <h1>Quản lý kho</h1>
 
+@* Dot 3 (B3): xuat CSV kho (ten / ton / da ban / gia ban). *@
+<p><a class="btn btn-secondary" asp-action="XuatCsvKho">⬇ Xuất CSV kho (@Model.Count sản phẩm)</a></p>
+
 <div class="table-wrap"><table class="table">
-    <thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Đã bán</th><th>Nhập thêm</th></tr></thead>
+    <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>
     <tbody>
         @foreach (var p in Model)
         {
             <tr>
-                <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
-                <td class="@(p.TonKho < 5 ? "low-stock" : "")">@p.TonKho</td>
+                <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
+                <td class="@(p.TonKho == 0 ? "low-stock" : p.TonKho <= 10 ? "low-stock-soft" : "")">@p.TonKho@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
                 <td>@p.LuotBan</td>
                 <td>
                     <form asp-action="NhapKho" method="post" class="stock-form">
@@ -36,7 +39,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Ngày nhập</th><th>Sản phẩm</th><th>Số lượng</th><th>Ghi chú</th></tr></thead>
+            <thead><tr><th scope="col">Ngày nhập</th><th scope="col">Sản phẩm</th><th scope="col">Số lượng</th><th scope="col">Ghi chú</th></tr></thead>
             <tbody>
                 @foreach (var s in nhapGanDay)
                 {

@@ -19,7 +19,10 @@
             bars.forEach(function (bar, i) {
                 var col = bar.parentElement;
                 var label = col ? col.querySelector('.chart-label') : null;
-                var avail = col ? col.clientHeight - (label ? label.offsetHeight : 0) : 0;
+                // Dot 2 (A4): tru ca nhan gia tri (.chart-value) tren cot —
+                // neu khong cot se doi len tren, tran khung chart.
+                var value = col ? col.querySelector('.chart-value') : null;
+                var avail = col ? col.clientHeight - (label ? label.offsetHeight : 0) - (value ? value.offsetHeight : 0) : 0;
                 if (avail <= 0) return;
                 // Cot 0 thi cao 0; cot khac 0 toi thieu 3px de van nhin thay.
                 var h = Math.round((values[i] / max) * avail);

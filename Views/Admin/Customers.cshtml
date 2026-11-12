@@ -1,17 +1,30 @@
 @model List<(TechZone.Models.ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)>
 @{
     ViewData["Title"] = "Admin — Khách hàng";
+    var tuKhoa = (string?)ViewBag.TuKhoa;
 }
 <h1>Khách hàng</h1>
 
+@* Dot 2 (B1): tim kiem + phan trang server 10/trang. Tong chi tieu van
+   tinh in-memory nhu cu — chi loc tren ket qua da co (ten/email/SDT). *@
+<form method="get" asp-action="KhachHang" class="admin-search" role="search">
+    <input type="search" name="tuKhoa" class="form-control" placeholder="Tìm theo tên, email hoặc SĐT…" value="@tuKhoa" aria-label="Tìm khách hàng theo tên, email hoặc số điện thoại" />
+    <button type="submit" class="btn btn-primary">Tìm</button>
+    @if (tuKhoa is not null)
+    {
+        <a class="btn btn-secondary" asp-action="KhachHang">Xóa lọc</a>
+    }
+</form>
+<p class="admin-result-count text-muted" aria-live="polite">@ViewBag.TongMuc kết quả@(tuKhoa is not null ? $" cho “{tuKhoa}”" : "")</p>
+
 @if (!Model.Any())
 {
-    <p class="text-muted">Chưa có khách hàng nào.</p>
+    <p class="admin-empty" role="status">🔍 Không tìm thấy khách hàng nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử từ khóa khác hoặc <a asp-action="KhachHang">xóa bộ lọc</a>.</p>
 }
 else
 {
     <div class="table-wrap"><table class="table">
-        <thead><tr><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Tổng chi tiêu</th><th>Hạng</th><th>Điểm</th></tr></thead>
+        <thead><tr><th scope="col">Họ tên</th><th scope="col">Email</th><th scope="col">Số điện thoại</th><th scope="col">Tổng chi tiêu</th><th scope="col">Hạng</th><th scope="col">Điểm</th></tr></thead>
         <tbody>
             @foreach (var k in Model)
             {
@@ -20,12 +33,27 @@ else
                     <td>@k.User.Email</td>
                     <td>@k.User.SoDienThoai</td>
                     <td>@k.TongChiTieu.ToString("N0")đ</td>
-                    <td><span class="badge">@k.Hang</span></td>
+                    <td><partial name="_TrangThaiBadge" model="k.Hang" /></td>
                     <td>@k.Diem điểm</td>
                 </tr>
             }
         </tbody>
     </table></div>
+}
+
+@if ((int)ViewBag.TongTrang > 1)
+{
+    <nav class="pagination" aria-label="Phân trang">
+        @if ((int)ViewBag.TrangHienTai > 1)
+        {
+            <a asp-action="KhachHang" asp-route-tuKhoa="@tuKhoa" asp-route-page="@((int)ViewBag.TrangHienTai - 1)">← Trang trước</a>
+        }
+        <span class="page-current">Trang @ViewBag.TrangHienTai / @ViewBag.TongTrang</span>
+        @if ((int)ViewBag.TrangHienTai < (int)ViewBag.TongTrang)
+        {
+            <a asp-action="KhachHang" asp-route-tuKhoa="@tuKhoa" asp-route-page="@((int)ViewBag.TrangHienTai + 1)">Trang sau →</a>
+        }
+    </nav>
 }
 
 <p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

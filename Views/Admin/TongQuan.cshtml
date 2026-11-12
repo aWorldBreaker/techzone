@@ -3,38 +3,74 @@
     ViewData["Title"] = "Trang tổng hợp";
     var dash = Model.Dashboard;
     string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DaXacNhan, TechZone.Models.OrderStatus.DangDongGoi, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
+    // A3 (Dot 1): delta doanh thu tuan — giong Dashboard.cshtml (chi hien
+    // khi co moc tuan truoc; TiLeDoiTuan null khi tuan truoc = 0).
+    string? deltaTuanText = null;
+    string deltaTuanClass = "";
+    if (dash.TiLeDoiTuan.HasValue)
+    {
+        var t = dash.TiLeDoiTuan.Value;
+        deltaTuanClass = t > 0 ? "stat-delta--len" : t < 0 ? "stat-delta--xuong" : "stat-delta--bang";
+        deltaTuanText = $"{(t > 0 ? "▲" : t < 0 ? "▼" : "＝")} {Math.Abs(t * 100):N1}% so với 7 ngày trước";
+    }
+    // Dot 2 (B5): delta thang — giong Dashboard.cshtml.
+    string? deltaThangText = null;
+    string deltaThangClass = "";
+    if (dash.TiLeDoiThang.HasValue)
+    {
+        var t = dash.TiLeDoiThang.Value;
+        deltaThangClass = t > 0 ? "stat-delta--len" : t < 0 ? "stat-delta--xuong" : "stat-delta--bang";
+        deltaThangText = $"{(t > 0 ? "▲" : t < 0 ? "▼" : "＝")} {Math.Abs(t * 100):N1}% so với tháng trước";
+    }
+    // Dot 2 (A4): rut gon gia tri cho truc Y + nhan gia tri tren cot.
+    var viVn = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    Func<decimal, string> rutGonTien = v => v >= 1_000_000 ? (v / 1_000_000).ToString("0.#", viVn) + "tr" : v >= 1_000 ? (v / 1_000).ToString("0.#", viVn) + "k" : v.ToString("N0", viVn);
+    var max30Ngay = dash.DoanhThu30Ngay.Any() ? dash.DoanhThu30Ngay.Max(d => d.DoanhThu) : 0;
 }
 <h1>Trang tổng hợp</h1>
 <p class="text-muted">Toàn bộ quản trị trong một trang — chọn tab để chuyển mục, không cần load trang mới. Mọi thao tác nhanh đều quay lại trang này.</p>
 
+@* Dot 3 (C1): tablist dung chuan WAI-ARIA — moi tab co id +
+   aria-controls toi panel + roving tabindex (chi tab dang chon = 0,
+   xem admin.js); panel co aria-labelledby + tabindex="0" de focus duoc
+   khi doi tab. *@
 <nav class="tongquan-tabs" role="tablist" aria-label="Các mục quản trị">
-    <button type="button" class="tongquan-tab is-active" role="tab" aria-selected="true" data-tongquan-tab="dashboard">📊 Dashboard</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="products">📦 Sản phẩm (@Model.Products.Count)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="orders">🧾 Đơn hàng (@dash.TongDon)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="customers">👥 Khách hàng (@Model.KhachHang.Count)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="vouchers">🎟️ Voucher (@Model.Vouchers.Count)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="combos">🎁 Combo (@Model.Combos.Count)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="flashsale">⚡ Flash Sale (@Model.FlashSaleSlots.Count)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="banners">🖼️ Banner (@Model.Banners.Count)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="reviews">⭐ Đánh giá &amp; hỏi đáp (@Model.ReviewsChoDuyet.Count chờ duyệt)</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="stock">🏬 Kho</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="notifications">🔔 Thông báo</button>
-    <button type="button" class="tongquan-tab" role="tab" aria-selected="false" data-tongquan-tab="returns">↩️ Đổi trả / Bảo hành (@(Model.DoiTraChoDuyet.Count + Model.BaoHanhChoDuyet.Count) chờ duyệt)</button>
+    <button type="button" id="tq-tab-dashboard" class="tongquan-tab is-active" role="tab" aria-selected="true" aria-controls="tq-dashboard" tabindex="0" data-tongquan-tab="dashboard">📊 Dashboard</button>
+    <button type="button" id="tq-tab-products" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-products" tabindex="-1" data-tongquan-tab="products">📦 Sản phẩm (@Model.Products.Count)</button>
+    <button type="button" id="tq-tab-orders" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-orders" tabindex="-1" data-tongquan-tab="orders">🧾 Đơn hàng (@dash.TongDon)</button>
+    <button type="button" id="tq-tab-customers" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-customers" tabindex="-1" data-tongquan-tab="customers">👥 Khách hàng (@Model.KhachHang.Count)</button>
+    <button type="button" id="tq-tab-vouchers" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-vouchers" tabindex="-1" data-tongquan-tab="vouchers">🎟️ Voucher (@Model.Vouchers.Count)</button>
+    <button type="button" id="tq-tab-combos" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-combos" tabindex="-1" data-tongquan-tab="combos">🎁 Combo (@Model.Combos.Count)</button>
+    <button type="button" id="tq-tab-flashsale" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-flashsale" tabindex="-1" data-tongquan-tab="flashsale">⚡ Flash Sale (@Model.FlashSaleSlots.Count)</button>
+    <button type="button" id="tq-tab-banners" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-banners" tabindex="-1" data-tongquan-tab="banners">🖼️ Banner (@Model.Banners.Count)</button>
+    <button type="button" id="tq-tab-reviews" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-reviews" tabindex="-1" data-tongquan-tab="reviews">⭐ Đánh giá &amp; hỏi đáp (@Model.ReviewsChoDuyet.Count chờ duyệt)</button>
+    <button type="button" id="tq-tab-stock" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-stock" tabindex="-1" data-tongquan-tab="stock">🏬 Kho</button>
+    <button type="button" id="tq-tab-notifications" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-notifications" tabindex="-1" data-tongquan-tab="notifications">🔔 Thông báo</button>
+    <button type="button" id="tq-tab-returns" class="tongquan-tab" role="tab" aria-selected="false" aria-controls="tq-returns" tabindex="-1" data-tongquan-tab="returns">↩️ Đổi trả / Bảo hành (@(Model.DoiTraChoDuyet.Count + Model.BaoHanhChoDuyet.Count) chờ duyệt)</button>
 </nav>
 
 @* ---------- 1. Dashboard ---------- *@
-<section class="tongquan-panel is-active" id="tq-dashboard" data-tongquan-panel="dashboard" role="tabpanel" aria-label="Dashboard">
+<section class="tongquan-panel is-active" id="tq-dashboard" data-tongquan-panel="dashboard" role="tabpanel" aria-labelledby="tq-tab-dashboard" tabindex="0" aria-label="Dashboard">
     <div class="section-head">
         <h2>Dashboard</h2>
         <a asp-action="Dashboard">Xem đầy đủ →</a>
     </div>
     <div class="stat-grid">
-        <div class="stat-card"><div class="value">@dash.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div></div>
-        <div class="stat-card"><div class="value">@dash.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
-        <div class="stat-card"><div class="value">@dash.TongDon</div><div class="label">Tổng số đơn</div></div>
-        <div class="stat-card"><div class="value">@dash.TongSanPham</div><div class="label">Sản phẩm</div></div>
-        <div class="stat-card"><div class="value">@dash.DoanhThuTuan.ToString("N0")đ</div><div class="label">Doanh thu 7 ngày gần nhất</div></div>
-        <div class="stat-card"><div class="value">@dash.KhachMoiThang</div><div class="label">Khách mới trong tháng</div></div>
+        <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💰</div><div class="value">@dash.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div>@if (deltaThangText is not null) { <div class="stat-delta @deltaThangClass">@deltaThangText</div> }</div>
+        <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🕐</div><div class="value">@dash.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
+        <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🧾</div><div class="value">@dash.TongDon</div><div class="label">Tổng số đơn</div></div>
+        <div class="stat-card stat-card--kho"><div class="stat-icon" aria-hidden="true">📦</div><div class="value">@dash.TongSanPham</div><div class="label">Sản phẩm</div></div>
+        <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">📈</div><div class="value">@dash.DoanhThuTuan.ToString("N0")đ</div><div class="label">Doanh thu 7 ngày gần nhất</div>@if (deltaTuanText is not null) { <div class="stat-delta @deltaTuanClass">@deltaTuanText</div> }</div>
+        <div class="stat-card stat-card--khach"><div class="stat-icon" aria-hidden="true">👥</div><div class="value">@dash.KhachMoiThang</div><div class="label">Khách mới trong tháng</div></div>
+        <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">⏳</div><div class="value">@dash.DonChoXuLy</div><div class="label">Đơn chờ xử lý</div></div>
+        <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">🚫</div><div class="value">@dash.DonDaHuy</div><div class="label">Đơn đã hủy</div></div>
+        @* Dot 2 (B5): 6 chi so moi — giong Dashboard.cshtml. *@
+        <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💵</div><div class="value">@dash.DoanhThuHomNay.ToString("N0")đ</div><div class="label">Doanh thu hôm nay</div></div>
+        <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🧾</div><div class="value">@dash.GiaTriDonTrungBinh.ToString("N0")đ</div><div class="label">Giá trị đơn trung bình (tháng này)</div></div>
+        <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">📉</div><div class="value">@((dash.TiLeHuy * 100).ToString("N1"))%</div><div class="label">Tỷ lệ hủy (@dash.DonDaHuy / @dash.TongDon đơn)</div></div>
+        <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">↩️</div><div class="value">@dash.DoiTraChoDuyet</div><div class="label">Đổi trả chờ duyệt</div></div>
+        <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">📭</div><div class="value">@dash.SanPhamHetHang</div><div class="label">Sản phẩm hết hàng (tồn = 0)</div></div>
+        <div class="stat-card stat-card--kho"><div class="stat-icon" aria-hidden="true">📦</div><div class="value">@dash.GiaTriTonKho.ToString("N0")đ</div><div class="label">Giá trị tồn kho (theo giá bán)</div></div>
     </div>
 
     <h3>Doanh thu 30 ngày gần nhất</h3>
@@ -44,15 +80,33 @@
     }
     else
     {
-        <div class="chart" role="img" tabindex="0" aria-label="Biểu đồ cột doanh thu 30 ngày gần nhất">
-            @foreach (var d in dash.DoanhThu30Ngay)
-            {
-                <div class="chart-col">
-                    <div class="chart-bar" data-value="@d.DoanhThu.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="@d.Ngay: @d.DoanhThu.ToString("N0")đ"></div>
-                    <span class="chart-label">@d.Ngay</span>
-                </div>
-            }
+        @* Dot 2 (A4): chart doc duoc — giong Dashboard.cshtml. *@
+        <div class="chart-wrap">
+            <div class="chart-yaxis" aria-hidden="true">
+                <span>@rutGonTien(max30Ngay)</span><span>@rutGonTien(max30Ngay * 3 / 4)</span><span>@rutGonTien(max30Ngay / 2)</span><span>@rutGonTien(max30Ngay / 4)</span><span>0</span>
+            </div>
+            <div class="chart" role="img" tabindex="0" aria-label="Biểu đồ cột doanh thu 30 ngày gần nhất. Cao nhất @max30Ngay.ToString("N0")đ.">
+                @foreach (var d in dash.DoanhThu30Ngay)
+                {
+                    <div class="chart-col @(d.DoanhThu == max30Ngay && max30Ngay > 0 ? "chart-col--max" : "")">
+                        @if (d.DoanhThu > 0) { <span class="chart-value">@rutGonTien(d.DoanhThu)</span> }
+                        <div class="chart-bar" data-value="@d.DoanhThu.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="@d.Ngay: @d.DoanhThu.ToString("N0")đ"></div>
+                        <span class="chart-label">@d.Ngay</span>
+                    </div>
+                }
+            </div>
         </div>
+        @* Dot 3 (C3): bang 30 ngay kem chart — giong Dashboard.cshtml. *@
+        <div class="table-wrap chart-data-table"><table class="table">
+            <caption>Doanh thu từng ngày (30 ngày gần nhất)</caption>
+            <thead><tr><th scope="col">Ngày</th><th scope="col">Doanh thu</th></tr></thead>
+            <tbody>
+                @foreach (var d in dash.DoanhThu30Ngay)
+                {
+                    <tr><td>@d.Ngay</td><td>@d.DoanhThu.ToString("N0")đ</td></tr>
+                }
+            </tbody>
+        </table></div>
     }
 
     <h3 class="mt">Đơn theo trạng thái</h3>
@@ -63,11 +117,11 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Trạng thái</th><th>Số đơn</th></tr></thead>
+            <thead><tr><th scope="col">Trạng thái</th><th scope="col">Số đơn</th></tr></thead>
             <tbody>
                 @foreach (var kv in Model.DonTheoTrangThai.OrderByDescending(kv => kv.Value))
                 {
-                    <tr><td>@kv.Key</td><td>@kv.Value</td></tr>
+                    <tr><td><partial name="_TrangThaiBadge" model="kv.Key" /></td><td>@kv.Value</td></tr>
                 }
             </tbody>
         </table></div>
@@ -81,12 +135,12 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Sản phẩm</th><th>Đã bán</th><th>Tồn kho</th><th>Giá bán</th></tr></thead>
+            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Đã bán</th><th scope="col">Tồn kho</th><th scope="col">Giá bán</th></tr></thead>
             <tbody>
                 @foreach (var p in dash.TopBanChay)
                 {
                     <tr>
-                        <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
+                        <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
                         <td>@p.LuotBan</td>
                         <td>@p.TonKho</td>
                         <td>@p.GiaBan.ToString("N0")đ</td>
@@ -104,11 +158,21 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Sản phẩm</th><th>Tồn kho</th></tr></thead>
+            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Nhập nhanh</th></tr></thead>
             <tbody>
                 @foreach (var p in dash.SapHetHang)
                 {
-                    <tr><td>@p.Ten</td><td><strong>@p.TonKho</strong></td></tr>
+                    <tr><td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" />@p.Ten</span></td><td class="@(p.TonKho == 0 ? "low-stock" : "low-stock-soft")"><strong>@p.TonKho</strong>@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
+                    <td>
+                        @* Dot 2 (B6): nhap kho nhanh tai day — tai dung POST
+                           NhapKho cu (tuTrang=TongQuan de quay lai day). *@
+                        <form asp-action="NhapKho" method="post" class="stock-form">
+                            <input type="hidden" name="productId" value="@p.Id" />
+                            <input type="hidden" name="tuTrang" value="TongQuan" />
+                            <input type="number" name="soLuong" class="form-control input-narrow" min="1" value="10" required aria-label="Số lượng nhập cho @p.Ten" />
+                            <button type="submit" class="btn btn-primary btn-sm">Nhập kho</button>
+                        </form>
+                    </td></tr>
                 }
             </tbody>
         </table></div>
@@ -122,7 +186,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+            <thead><tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th><th scope="col">Tổng tiền</th><th scope="col">Trạng thái</th></tr></thead>
             <tbody>
                 @foreach (var o in Model.DonGanDay)
                 {
@@ -130,7 +194,7 @@
                         <td><a asp-action="OrderDetails" asp-route-id="@o.Id">#@o.Id</a></td>
                         <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
                         <td>@o.ThanhToan.ToString("N0")đ</td>
-                        <td>@o.TrangThai</td>
+                        <td><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
                     </tr>
                 }
             </tbody>
@@ -139,7 +203,7 @@
 </section>
 
 @* ---------- 2. Sản phẩm ---------- *@
-<section class="tongquan-panel" id="tq-products" data-tongquan-panel="products" role="tabpanel" aria-label="Sản phẩm" hidden>
+<section class="tongquan-panel" id="tq-products" data-tongquan-panel="products" role="tabpanel" aria-labelledby="tq-tab-products" tabindex="0" aria-label="Sản phẩm">
     <div class="section-head">
         <h2>Sản phẩm (@Model.Products.Count)</h2>
         <a asp-action="Products">Xem đầy đủ →</a>
@@ -162,21 +226,22 @@
     }
     else
     {
-        <div class="table-wrap"><table class="table">
-            <thead><tr><th>Sản phẩm</th><th>Danh mục</th><th>Hãng</th><th>Giá bán</th><th>Tồn kho</th><th>Đã bán</th></tr></thead>
+        @* Dot 3 (C5): bang chuyen dang card o <=480px — giong Products.cshtml. *@
+        <div class="table-wrap"><table class="table table--card-mobile">
+            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Danh mục</th><th scope="col">Hãng</th><th scope="col">Giá bán</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th></tr></thead>
             <tbody>
                 @foreach (var p in Model.Products)
                 {
                     <tr data-sort-ten="@p.Ten" data-sort-gia="@p.GiaBan.ToString(System.Globalization.CultureInfo.InvariantCulture)" data-sort-ton="@p.TonKho">
-                        <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
-                        <td>@p.Category.Ten</td>
-                        <td>@p.Brand.Ten</td>
-                        <td>
+                        <td data-label="Sản phẩm"><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
+                        <td data-label="Danh mục">@p.Category.Ten</td>
+                        <td data-label="Hãng">@p.Brand.Ten</td>
+                        <td data-label="Giá bán">
                             @p.GiaBan.ToString("N0")đ
                             @if (p.GiaKhuyenMai.HasValue) { <s class="text-muted">@p.Gia.ToString("N0")đ</s> }
                         </td>
-                        <td>@p.TonKho</td>
-                        <td>@p.LuotBan</td>
+                        <td data-label="Tồn kho">@p.TonKho</td>
+                        <td data-label="Đã bán">@p.LuotBan</td>
                     </tr>
                 }
             </tbody>
@@ -186,7 +251,7 @@
 </section>
 
 @* ---------- 3. Đơn hàng ---------- *@
-<section class="tongquan-panel" id="tq-orders" data-tongquan-panel="orders" role="tabpanel" aria-label="Đơn hàng" hidden>
+<section class="tongquan-panel" id="tq-orders" data-tongquan-panel="orders" role="tabpanel" aria-labelledby="tq-tab-orders" tabindex="0" aria-label="Đơn hàng">
     <div class="section-head">
         <h2>Đơn hàng — 10 đơn gần nhất</h2>
         <a asp-action="Orders">Xem đầy đủ →</a>
@@ -201,24 +266,29 @@
             <option value="tong-asc">Tổng tiền tăng dần</option>
         </select>
     </div>
+    @* Dot 3 (B3): xuat CSV don — giong trang Orders cu. *@
+    <p><a class="btn btn-secondary btn-sm" asp-action="XuatCsvDonHang">⬇ Xuất CSV đơn</a></p>
     @if (!Model.DonGanDay.Any())
     {
         <p class="text-muted">Chưa có đơn hàng nào.</p>
     }
     else
     {
-        <div class="table-wrap"><table class="table">
-            <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Giao đến</th><th>Tổng tiền</th><th>Trạng thái</th><th>Đổi trạng thái</th></tr></thead>
+        @* Dot 3 (C5): bang chuyen dang card o <=480px — giong Orders.cshtml. *@
+        <div class="table-wrap"><table class="table table--card-mobile">
+            <thead><tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th><th scope="col">Giao đến</th><th scope="col">Tổng tiền</th><th scope="col">Trạng thái</th><th scope="col">Đổi trạng thái</th></tr></thead>
             <tbody>
                 @foreach (var o in Model.DonGanDay)
                 {
                     <tr data-sort-ngay="@o.NgayDat.Ticks" data-sort-tong="@o.ThanhToan.ToString(System.Globalization.CultureInfo.InvariantCulture)">
-                        <td><a asp-action="OrderDetails" asp-route-id="@o.Id">#@o.Id</a></td>
-                        <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>@o.DiaChiGiao</td>
-                        <td>@o.ThanhToan.ToString("N0")đ</td>
-                        <td>@o.TrangThai</td>
-                        <td>
+                        <td data-label="Mã đơn"><a asp-action="OrderDetails" asp-route-id="@o.Id">#@o.Id</a>
+                            @* Dot 3 (B4): xem nhanh mo drawer (read-only). *@
+                            <button type="button" class="btn btn-secondary btn-sm" data-order-drawer="@o.Id" data-order-url="@Url.Action("OrderDetails", new { id = o.Id })">Xem nhanh</button></td>
+                        <td data-label="Ngày đặt">@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td data-label="Giao đến">@o.DiaChiGiao</td>
+                        <td data-label="Tổng tiền">@o.ThanhToan.ToString("N0")đ</td>
+                        <td data-label="Trạng thái"><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
+                        <td data-label="Đổi trạng thái">
                             <form asp-action="DoiTrangThai" method="post" class="admin-duyet">
                                 <input type="hidden" name="id" value="@o.Id" />
                                 <input type="hidden" name="tuTrang" value="TongQuan" />
@@ -239,7 +309,7 @@
 </section>
 
 @* ---------- 4. Khách hàng ---------- *@
-<section class="tongquan-panel" id="tq-customers" data-tongquan-panel="customers" role="tabpanel" aria-label="Khách hàng" hidden>
+<section class="tongquan-panel" id="tq-customers" data-tongquan-panel="customers" role="tabpanel" aria-labelledby="tq-tab-customers" tabindex="0" aria-label="Khách hàng">
     <div class="section-head">
         <h2>Khách hàng (@Model.KhachHang.Count)</h2>
         <a asp-action="KhachHang">Xem đầy đủ →</a>
@@ -252,7 +322,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Tổng chi tiêu</th><th>Hạng</th><th>Điểm</th></tr></thead>
+            <thead><tr><th scope="col">Họ tên</th><th scope="col">Email</th><th scope="col">Số điện thoại</th><th scope="col">Tổng chi tiêu</th><th scope="col">Hạng</th><th scope="col">Điểm</th></tr></thead>
             <tbody>
                 @foreach (var k in Model.KhachHang)
                 {
@@ -261,7 +331,7 @@
                         <td>@k.User.Email</td>
                         <td>@k.User.SoDienThoai</td>
                         <td>@k.TongChiTieu.ToString("N0")đ</td>
-                        <td><span class="badge">@k.Hang</span></td>
+                        <td><partial name="_TrangThaiBadge" model="k.Hang" /></td>
                         <td>@k.Diem điểm</td>
                     </tr>
                 }
@@ -271,7 +341,7 @@
 </section>
 
 @* ---------- 5. Voucher ---------- *@
-<section class="tongquan-panel" id="tq-vouchers" data-tongquan-panel="vouchers" role="tabpanel" aria-label="Voucher" hidden>
+<section class="tongquan-panel" id="tq-vouchers" data-tongquan-panel="vouchers" role="tabpanel" aria-labelledby="tq-tab-vouchers" tabindex="0" aria-label="Voucher">
     <div class="section-head">
         <h2>Voucher (@Model.Vouchers.Count)</h2>
         <a asp-action="Vouchers">Xem đầy đủ →</a>
@@ -284,7 +354,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Mã</th><th>Loại</th><th>Giá trị</th><th>Đơn tối thiểu</th><th>Hết hạn</th><th>Đã dùng / Số lượng</th></tr></thead>
+            <thead><tr><th scope="col">Mã</th><th scope="col">Loại</th><th scope="col">Giá trị</th><th scope="col">Đơn tối thiểu</th><th scope="col">Hết hạn</th><th scope="col">Đã dùng / Số lượng</th></tr></thead>
             <tbody>
                 @foreach (var v in Model.Vouchers)
                 {
@@ -301,41 +371,56 @@
         </table></div>
     }
     <h3 class="mt">Thêm voucher mới</h3>
+    @* Dot 3 (A7): form nhom thanh card 2 cot — giong Vouchers.cshtml. *@
     <form asp-action="ThemVoucher" method="post">
         <input type="hidden" name="tuTrang" value="TongQuan" />
-        <div class="form-group">
-            <label for="tq-Ma">Mã (vd: TECHZONE500)</label>
-            <input id="tq-Ma" name="Ma" class="form-control" required maxlength="50" />
-        </div>
-        <div class="form-group">
-            <label for="tq-LoaiGiam">Loại giảm</label>
-            <select id="tq-LoaiGiam" name="LoaiGiam" class="form-control">
-                <option value="Tien">Giảm số tiền cố định</option>
-                <option value="PhanTram">Giảm theo %</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="tq-GiaTri">Giá trị (đ hoặc %)</label>
-            <input id="tq-GiaTri" name="GiaTri" class="form-control" type="number" min="0" step="1000" required />
-        </div>
-        <div class="form-group">
-            <label for="tq-DieuKien">Đơn tối thiểu (đ)</label>
-            <input id="tq-DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1000" value="0" />
-        </div>
-        <div class="form-group">
-            <label for="tq-NgayHetHan">Ngày hết hạn</label>
-            <input id="tq-NgayHetHan" name="NgayHetHan" class="form-control" type="date" required />
-        </div>
-        <div class="form-group">
-            <label for="tq-SoLuong">Số lượng mã</label>
-            <input id="tq-SoLuong" name="SoLuong" class="form-control" type="number" min="1" value="100" required />
+        <div class="admin-form-grid">
+            <fieldset class="admin-form-card">
+                <legend>Mã voucher</legend>
+                <div class="form-group">
+                    <label for="tq-Ma">Mã (vd: TECHZONE500)</label>
+                    <input id="tq-Ma" name="Ma" class="form-control" required maxlength="50" />
+                </div>
+            </fieldset>
+            <fieldset class="admin-form-card">
+                <legend>Giá trị</legend>
+                <div class="form-group">
+                    <label for="tq-LoaiGiam">Loại giảm</label>
+                    <select id="tq-LoaiGiam" name="LoaiGiam" class="form-control">
+                        <option value="Tien">Giảm số tiền cố định</option>
+                        <option value="PhanTram">Giảm theo %</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tq-GiaTri">Giá trị (đ hoặc %)</label>
+                    <input id="tq-GiaTri" name="GiaTri" class="form-control" type="number" min="0" step="1000" required />
+                </div>
+            </fieldset>
+            <fieldset class="admin-form-card">
+                <legend>Điều kiện</legend>
+                <div class="form-group">
+                    <label for="tq-DieuKien">Đơn tối thiểu (đ)</label>
+                    <input id="tq-DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1000" value="0" />
+                </div>
+                <div class="form-group">
+                    <label for="tq-SoLuong">Số lượng mã</label>
+                    <input id="tq-SoLuong" name="SoLuong" class="form-control" type="number" min="1" value="100" required />
+                </div>
+            </fieldset>
+            <fieldset class="admin-form-card">
+                <legend>Thời gian</legend>
+                <div class="form-group">
+                    <label for="tq-NgayHetHan">Ngày hết hạn</label>
+                    <input id="tq-NgayHetHan" name="NgayHetHan" class="form-control" type="date" required />
+                </div>
+            </fieldset>
         </div>
         <button type="submit" class="btn btn-primary">Thêm voucher</button>
     </form>
 </section>
 
 @* ---------- 6. Combo ---------- *@
-<section class="tongquan-panel" id="tq-combos" data-tongquan-panel="combos" role="tabpanel" aria-label="Combo" hidden>
+<section class="tongquan-panel" id="tq-combos" data-tongquan-panel="combos" role="tabpanel" aria-labelledby="tq-tab-combos" tabindex="0" aria-label="Combo">
     <div class="section-head">
         <h2>Combo (@Model.Combos.Count)</h2>
         <a asp-action="Combos">Xem đầy đủ →</a>
@@ -348,7 +433,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Tên combo</th><th>% giảm</th><th>Hiệu lực</th><th>Đã bán / Giới hạn</th><th>Trạng thái</th><th>Món trong combo</th><th></th></tr></thead>
+            <thead><tr><th scope="col">Tên combo</th><th scope="col">% giảm</th><th scope="col">Hiệu lực</th><th scope="col">Đã bán / Giới hạn</th><th scope="col">Trạng thái</th><th scope="col">Món trong combo</th><th scope="col"><span class="visually-hidden">Thao tac</span></th></tr></thead>
             <tbody>
                 @foreach (var c in Model.Combos)
                 {
@@ -357,12 +442,12 @@
                         <td>@c.PhanTramGiam.ToString("0.##")%</td>
                         <td>@c.BatDau.ToString("dd/MM/yyyy") – @c.KetThuc.ToString("dd/MM/yyyy")</td>
                         <td>@c.DaBan / @(c.GioiHanSL?.ToString() ?? "∞")</td>
-                        <td>@(c.IsActive ? "Đang bật" : "Đã tắt")</td>
+                        <td><partial name="_TrangThaiBadge" model="@(c.IsActive ? "Đang bật" : "Đã tắt")" /></td>
                         <td>
                             <ul>
                                 @foreach (var item in c.Items)
                                 {
-                                    <li>@item.Product.Ten × @item.SoLuong</li>
+                                    <li><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />@item.Product.Ten × @item.SoLuong</span></li>
                                 }
                             </ul>
                         </td>
@@ -382,11 +467,14 @@
 </section>
 
 @* ---------- 7. Flash Sale ---------- *@
-<section class="tongquan-panel" id="tq-flashsale" data-tongquan-panel="flashsale" role="tabpanel" aria-label="Flash Sale" hidden>
+<section class="tongquan-panel" id="tq-flashsale" data-tongquan-panel="flashsale" role="tabpanel" aria-labelledby="tq-tab-flashsale" tabindex="0" aria-label="Flash Sale">
     <div class="section-head">
         <h2>Flash Sale (@Model.FlashSaleSlots.Count khung)</h2>
         <a asp-action="FlashSaleSlots">Xem đầy đủ →</a>
     </div>
+    @* Dot 2 (B7): o loc cho tab Flash Sale (truoc day chua co) — dung san
+       admin.js filter (loc theo ten SP / gia sale trong cac bang khung). *@
+    <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-flashsale" placeholder="Lọc theo tên sản phẩm trong khung…" aria-label="Lọc Flash Sale theo tên sản phẩm" />
     @if (!Model.FlashSaleSlots.Any())
     {
         <p class="text-muted">Chưa có khung Flash Sale nào.</p>
@@ -395,7 +483,16 @@
     {
         @foreach (var s in Model.FlashSaleSlots)
         {
-            <h3 class="mt">Khung @s.Ten @(s.IsActive ? "" : "(đang tắt)")</h3>
+            <div class="section-head">
+                <h3 class="mt">Khung @s.Ten @(s.IsActive ? "" : "(đang tắt)")</h3>
+                @* Dot 2 (B6): bat/tat slot — POST BatTatSlot moi, chi doi co
+                   IsActive (gia sale van do PriceCalculationService tinh). *@
+                <form asp-action="BatTatSlot" method="post" class="inline-form">
+                    <input type="hidden" name="id" value="@s.Id" />
+                    <input type="hidden" name="tuTrang" value="TongQuan" />
+                    <button type="submit" class="btn btn-secondary btn-sm">@(s.IsActive ? "Tắt khung" : "Bật khung")</button>
+                </form>
+            </div>
             @if (!s.Items.Any())
             {
                 <p class="text-muted">Chưa có sản phẩm nào trong khung này.</p>
@@ -403,12 +500,12 @@
             else
             {
                 <div class="table-wrap"><table class="table">
-                    <thead><tr><th>Sản phẩm</th><th>Giá sale</th></tr></thead>
+                    <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Giá sale</th></tr></thead>
                     <tbody>
                         @foreach (var item in s.Items)
                         {
                             <tr>
-                                <td>@item.Product.Ten</td>
+                                <td><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />@item.Product.Ten</span></td>
                                 <td>@item.GiaSale.ToString("N0")đ</td>
                             </tr>
                         }
@@ -433,7 +530,7 @@
 </section>
 
 @* ---------- 8. Banner ---------- *@
-<section class="tongquan-panel" id="tq-banners" data-tongquan-panel="banners" role="tabpanel" aria-label="Banner" hidden>
+<section class="tongquan-panel" id="tq-banners" data-tongquan-panel="banners" role="tabpanel" aria-labelledby="tq-tab-banners" tabindex="0" aria-label="Banner">
     <div class="section-head">
         <h2>Banner (@Model.Banners.Count)</h2>
         <a asp-action="Banners">Xem đầy đủ →</a>
@@ -446,7 +543,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Link</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead>
+            <thead><tr><th scope="col">Ảnh</th><th scope="col">Tiêu đề</th><th scope="col">Link</th><th scope="col">Thứ tự</th><th scope="col">Trạng thái</th><th scope="col"><span class="visually-hidden">Thao tac</span></th></tr></thead>
             <tbody>
                 @foreach (var b in Model.Banners)
                 {
@@ -455,8 +552,10 @@
                         <td><strong>@b.TieuDe</strong></td>
                         <td>@(string.IsNullOrEmpty(b.LinkUrl) ? "—" : b.LinkUrl)</td>
                         <td>@b.ThuTu</td>
-                        <td>@(b.IsActive ? "Đang bật" : "Đang tắt")</td>
+                        <td><partial name="_TrangThaiBadge" model="@(b.IsActive ? "Đang bật" : "Đang tắt")" /></td>
                         <td>
+                            @* Dot 3 (B8): sua banner — giong trang Banners cu. *@
+                            <a asp-action="SuaBanner" asp-route-id="@b.Id" class="btn btn-secondary btn-sm">Sửa</a>
                             <form asp-action="DoiTrangThaiBanner" method="post" class="inline-form">
                                 <input type="hidden" name="id" value="@b.Id" />
                                 <input type="hidden" name="tuTrang" value="TongQuan" />
@@ -471,7 +570,7 @@
 </section>
 
 @* ---------- 9. Đánh giá & hỏi đáp ---------- *@
-<section class="tongquan-panel" id="tq-reviews" data-tongquan-panel="reviews" role="tabpanel" aria-label="Đánh giá và hỏi đáp" hidden>
+<section class="tongquan-panel" id="tq-reviews" data-tongquan-panel="reviews" role="tabpanel" aria-labelledby="tq-tab-reviews" tabindex="0" aria-label="Đánh giá và hỏi đáp">
     <div class="section-head">
         <h2>Đánh giá &amp; hỏi đáp</h2>
         <a asp-action="Reviews">Xem đầy đủ →</a>
@@ -550,12 +649,14 @@
 </section>
 
 @* ---------- 10. Kho ---------- *@
-<section class="tongquan-panel" id="tq-stock" data-tongquan-panel="stock" role="tabpanel" aria-label="Kho" hidden>
+<section class="tongquan-panel" id="tq-stock" data-tongquan-panel="stock" role="tabpanel" aria-labelledby="tq-tab-stock" tabindex="0" aria-label="Kho">
     <div class="section-head">
         <h2>Kho (@Model.SanPhamKho.Count sản phẩm)</h2>
         <a asp-action="Kho">Xem đầy đủ →</a>
     </div>
     <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-stock" placeholder="Lọc theo tên sản phẩm…" aria-label="Lọc kho theo tên sản phẩm" />
+    @* Dot 3 (B3): xuat CSV kho — giong trang Kho cu. *@
+    <p><a class="btn btn-secondary btn-sm" asp-action="XuatCsvKho">⬇ Xuất CSV kho</a></p>
     @if (!Model.SanPhamKho.Any())
     {
         <p class="text-muted">Chưa có sản phẩm nào trong kho.</p>
@@ -563,13 +664,13 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Sản phẩm</th><th>Tồn kho</th><th>Đã bán</th><th>Nhập thêm</th></tr></thead>
+            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>
             <tbody>
                 @foreach (var p in Model.SanPhamKho)
                 {
                     <tr>
-                        <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
-                        <td class="@(p.TonKho < 5 ? "low-stock" : "")">@p.TonKho</td>
+                        <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
+                        <td class="@(p.TonKho == 0 ? "low-stock" : p.TonKho <= 10 ? "low-stock-soft" : "")">@p.TonKho@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
                         <td>@p.LuotBan</td>
                         <td>
                             <form asp-action="NhapKho" method="post" class="stock-form">
@@ -593,7 +694,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Ngày nhập</th><th>Sản phẩm</th><th>Số lượng</th><th>Ghi chú</th></tr></thead>
+            <thead><tr><th scope="col">Ngày nhập</th><th scope="col">Sản phẩm</th><th scope="col">Số lượng</th><th scope="col">Ghi chú</th></tr></thead>
             <tbody>
                 @foreach (var s in Model.NhapKhoGanDay)
                 {
@@ -610,30 +711,41 @@
 </section>
 
 @* ---------- 11. Thông báo ---------- *@
-<section class="tongquan-panel" id="tq-notifications" data-tongquan-panel="notifications" role="tabpanel" aria-label="Thông báo" hidden>
+<section class="tongquan-panel" id="tq-notifications" data-tongquan-panel="notifications" role="tabpanel" aria-labelledby="tq-tab-notifications" tabindex="0" aria-label="Thông báo">
     <div class="section-head">
         <h2>Thông báo</h2>
         <a asp-action="ThongBao">Xem đầy đủ →</a>
     </div>
+    @* Dot 2 (B7): o loc cho tab Thong bao (truoc day chua co). *@
+    <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-notifications" placeholder="Lọc theo tiêu đề / người nhận…" aria-label="Lọc thông báo theo tiêu đề hoặc người nhận" />
+    @* Dot 3 (A7): form nhom thanh card 2 cot — giong Notifications.cshtml. *@
     <form asp-action="GuiThongBao" method="post">
         <input type="hidden" name="tuTrang" value="TongQuan" />
-        <div class="form-group">
-            <label for="tq-UserId">Gửi tới</label>
-            <select id="tq-UserId" name="userId" class="form-control" required>
-                <option value="all">Tất cả khách hàng</option>
-                @foreach (var u in Model.NguoiNhanThongBao)
-                {
-                    <option value="@u.Id">@u.HoTen (@u.Email)</option>
-                }
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="tq-TieuDe">Tiêu đề</label>
-            <input id="tq-TieuDe" name="tieuDe" class="form-control" required maxlength="200" />
-        </div>
-        <div class="form-group">
-            <label for="tq-NoiDung">Nội dung</label>
-            <textarea id="tq-NoiDung" name="noiDung" class="form-control" rows="4" maxlength="1000"></textarea>
+        <div class="admin-form-grid">
+            <fieldset class="admin-form-card">
+                <legend>Người nhận</legend>
+                <div class="form-group">
+                    <label for="tq-UserId">Gửi tới</label>
+                    <select id="tq-UserId" name="userId" class="form-control" required>
+                        <option value="all">Tất cả khách hàng</option>
+                        @foreach (var u in Model.NguoiNhanThongBao)
+                        {
+                            <option value="@u.Id">@u.HoTen (@u.Email)</option>
+                        }
+                    </select>
+                </div>
+            </fieldset>
+            <fieldset class="admin-form-card">
+                <legend>Nội dung</legend>
+                <div class="form-group">
+                    <label for="tq-TieuDe">Tiêu đề</label>
+                    <input id="tq-TieuDe" name="tieuDe" class="form-control" required maxlength="200" />
+                </div>
+                <div class="form-group">
+                    <label for="tq-NoiDung">Nội dung</label>
+                    <textarea id="tq-NoiDung" name="noiDung" class="form-control" rows="4" maxlength="1000"></textarea>
+                </div>
+            </fieldset>
         </div>
         <button type="submit" class="btn btn-primary">Gửi thông báo</button>
     </form>
@@ -645,7 +757,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Ngày gửi</th><th>Người nhận</th><th>Tiêu đề</th><th>Nội dung</th><th>Đã đọc</th></tr></thead>
+            <thead><tr><th scope="col">Ngày gửi</th><th scope="col">Người nhận</th><th scope="col">Tiêu đề</th><th scope="col">Nội dung</th><th scope="col">Đã đọc</th></tr></thead>
             <tbody>
                 @foreach (var n in Model.ThongBaoGanDay)
                 {
@@ -654,7 +766,7 @@
                         <td>@(n.User?.HoTen ?? n.User?.Email ?? n.UserId)</td>
                         <td><strong>@n.TieuDe</strong></td>
                         <td>@n.NoiDung</td>
-                        <td>@(n.DaDoc ? "Rồi" : "Chưa")</td>
+                        <td><partial name="_TrangThaiBadge" model="@(n.DaDoc ? "Rồi" : "Chưa")" /></td>
                     </tr>
                 }
             </tbody>
@@ -663,11 +775,14 @@
 </section>
 
 @* ---------- 12. Đổi trả / Bảo hành ---------- *@
-<section class="tongquan-panel" id="tq-returns" data-tongquan-panel="returns" role="tabpanel" aria-label="Đổi trả và bảo hành" hidden>
+<section class="tongquan-panel" id="tq-returns" data-tongquan-panel="returns" role="tabpanel" aria-labelledby="tq-tab-returns" tabindex="0" aria-label="Đổi trả và bảo hành">
     <div class="section-head">
         <h2>Đổi trả / Bảo hành</h2>
         <a asp-controller="Returns" asp-action="AdminIndex">Xem đầy đủ →</a>
     </div>
+    @* Dot 2 (B7): o loc cho tab Doi tra (truoc day chua co) — loc ca 2 bang
+       doi tra + bao hanh trong panel (admin.js loc moi tbody tr). *@
+    <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-returns" placeholder="Lọc theo khách / sản phẩm / lý do…" aria-label="Lọc đổi trả và bảo hành" />
     <h3>Đổi trả chờ duyệt (@Model.DoiTraChoDuyet.Count)</h3>
     @if (!Model.DoiTraChoDuyet.Any())
     {
@@ -676,7 +791,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Mã</th><th>Khách</th><th>Đơn</th><th>Sản phẩm</th><th>Lý do</th><th>Ngày tạo</th><th>Duyệt</th></tr></thead>
+            <thead><tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Lý do</th><th scope="col">Ngày tạo</th><th scope="col">Duyệt</th></tr></thead>
             <tbody>
                 @foreach (var r in Model.DoiTraChoDuyet)
                 {
@@ -713,7 +828,7 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Mã</th><th>Khách</th><th>Đơn</th><th>Sản phẩm</th><th>Mô tả lỗi</th><th>Ngày tạo</th><th>Duyệt</th></tr></thead>
+            <thead><tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Mô tả lỗi</th><th scope="col">Ngày tạo</th><th scope="col">Duyệt</th></tr></thead>
             <tbody>
                 @foreach (var w in Model.BaoHanhChoDuyet)
                 {

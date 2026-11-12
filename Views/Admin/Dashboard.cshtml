@@ -1,16 +1,51 @@
 @model TechZone.Models.DashboardViewModel
 @{
     ViewData["Title"] = "Admin — Dashboard";
+    // A3 (Dot 1): delta doanh thu tuan — chi hien khi co moc tuan truoc
+    // (TiLeDoiTuan null khi tuan truoc = 0, tranh chia cho 0).
+    string? deltaTuanText = null;
+    string deltaTuanClass = "";
+    if (Model.TiLeDoiTuan.HasValue)
+    {
+        var t = Model.TiLeDoiTuan.Value;
+        deltaTuanClass = t > 0 ? "stat-delta--len" : t < 0 ? "stat-delta--xuong" : "stat-delta--bang";
+        deltaTuanText = $"{(t > 0 ? "▲" : t < 0 ? "▼" : "＝")} {Math.Abs(t * 100):N1}% so với 7 ngày trước";
+    }
+    // Dot 2 (B5): delta doanh thu thang — chi hien khi co moc thang truoc
+    // (TiLeDoiThang null khi thang truoc = 0, tranh chia cho 0).
+    string? deltaThangText = null;
+    string deltaThangClass = "";
+    if (Model.TiLeDoiThang.HasValue)
+    {
+        var t = Model.TiLeDoiThang.Value;
+        deltaThangClass = t > 0 ? "stat-delta--len" : t < 0 ? "stat-delta--xuong" : "stat-delta--bang";
+        deltaThangText = $"{(t > 0 ? "▲" : t < 0 ? "▼" : "＝")} {Math.Abs(t * 100):N1}% so với tháng trước";
+    }
+    // Dot 2 (A4): rut gon gia tri cho truc Y + nhan gia tri tren cot
+    // (13.680.000 -> "13,7tr"; 500.000 -> "500k"; < 1.000 -> so day du).
+    var viVn = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    Func<decimal, string> rutGonTien = v => v >= 1_000_000 ? (v / 1_000_000).ToString("0.#", viVn) + "tr" : v >= 1_000 ? (v / 1_000).ToString("0.#", viVn) + "k" : v.ToString("N0", viVn);
+    var max30Ngay = Model.DoanhThu30Ngay.Any() ? Model.DoanhThu30Ngay.Max(d => d.DoanhThu) : 0;
 }
 <h1>Dashboard</h1>
 
 <div class="stat-grid">
-    <div class="stat-card"><div class="value">@Model.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div></div>
-    <div class="stat-card"><div class="value">@Model.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
-    <div class="stat-card"><div class="value">@Model.TongDon</div><div class="label">Tổng số đơn</div></div>
-    <div class="stat-card"><div class="value">@Model.TongSanPham</div><div class="label">Sản phẩm</div></div>
-    <div class="stat-card"><div class="value">@Model.DoanhThuTuan.ToString("N0")đ</div><div class="label">Doanh thu 7 ngày gần nhất</div></div>
-    <div class="stat-card"><div class="value">@Model.KhachMoiThang</div><div class="label">Khách mới trong tháng</div></div>
+    <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💰</div><div class="value">@Model.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div>@if (deltaThangText is not null) { <div class="stat-delta @deltaThangClass">@deltaThangText</div> }</div>
+    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🕐</div><div class="value">@Model.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
+    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🧾</div><div class="value">@Model.TongDon</div><div class="label">Tổng số đơn</div></div>
+    <div class="stat-card stat-card--kho"><div class="stat-icon" aria-hidden="true">📦</div><div class="value">@Model.TongSanPham</div><div class="label">Sản phẩm</div></div>
+    <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">📈</div><div class="value">@Model.DoanhThuTuan.ToString("N0")đ</div><div class="label">Doanh thu 7 ngày gần nhất</div>@if (deltaTuanText is not null) { <div class="stat-delta @deltaTuanClass">@deltaTuanText</div> }</div>
+    <div class="stat-card stat-card--khach"><div class="stat-icon" aria-hidden="true">👥</div><div class="value">@Model.KhachMoiThang</div><div class="label">Khách mới trong tháng</div></div>
+    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">⏳</div><div class="value">@Model.DonChoXuLy</div><div class="label">Đơn chờ xử lý</div></div>
+    <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">🚫</div><div class="value">@Model.DonDaHuy</div><div class="label">Đơn đã hủy</div></div>
+    @* Dot 2 (B5): 6 chi so moi — chi doc, tinh tu field/query da co hoac
+       Count/Sum chi doc. Gia tri ton kho ghi ro theo GIA BAN. *@
+    <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💵</div><div class="value">@Model.DoanhThuHomNay.ToString("N0")đ</div><div class="label">Doanh thu hôm nay</div></div>
+    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🧾</div><div class="value">@Model.GiaTriDonTrungBinh.ToString("N0")đ</div><div class="label">Giá trị đơn trung bình (tháng này)</div></div>
+    <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">📉</div><div class="value">@((Model.TiLeHuy * 100).ToString("N1"))%</div><div class="label">Tỷ lệ hủy (@Model.DonDaHuy / @Model.TongDon đơn)</div></div>
+    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">↩️</div><div class="value">@Model.DoiTraChoDuyet</div><div class="label">Đổi trả chờ duyệt</div></div>
+    <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">📭</div><div class="value">@Model.SanPhamHetHang</div><div class="label">Sản phẩm hết hàng (tồn = 0)</div></div>
+    <div class="stat-card stat-card--kho"><div class="stat-icon" aria-hidden="true">📦</div><div class="value">@Model.GiaTriTonKho.ToString("N0")đ</div><div class="label">Giá trị tồn kho (theo giá bán)</div></div>
 </div>
 
 <section>
@@ -24,15 +59,38 @@
     }
     else
     {
-    <div class="chart" role="img" aria-label="Biểu đồ cột doanh thu 30 ngày gần nhất">
-        @foreach (var d in Model.DoanhThu30Ngay)
-        {
-            <div class="chart-col">
-                <div class="chart-bar" data-value="@d.DoanhThu.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="@d.Ngay: @d.DoanhThu.ToString("N0")đ"></div>
-                <span class="chart-label">@d.Ngay</span>
-            </div>
-        }
+    @* Dot 2 (A4): chart doc duoc — truc Y + vach luoi (CSS) + gia tri rut
+       gon tren cot + cot max to mau accent + nhan X luoc o mobile (CSS) +
+       tabindex de ban phim/touch doc duoc (title van giu). Tat JS thi cot
+       cao 0 nhu cu nhung gia tri + truc Y van hien (render phia server). *@
+    <div class="chart-wrap">
+        <div class="chart-yaxis" aria-hidden="true">
+            <span>@rutGonTien(max30Ngay)</span><span>@rutGonTien(max30Ngay * 3 / 4)</span><span>@rutGonTien(max30Ngay / 2)</span><span>@rutGonTien(max30Ngay / 4)</span><span>0</span>
+        </div>
+        <div class="chart" role="img" tabindex="0" aria-label="Biểu đồ cột doanh thu 30 ngày gần nhất. Cao nhất @max30Ngay.ToString("N0")đ.">
+            @foreach (var d in Model.DoanhThu30Ngay)
+            {
+                <div class="chart-col @(d.DoanhThu == max30Ngay && max30Ngay > 0 ? "chart-col--max" : "")">
+                    @if (d.DoanhThu > 0) { <span class="chart-value">@rutGonTien(d.DoanhThu)</span> }
+                    <div class="chart-bar" data-value="@d.DoanhThu.ToString(System.Globalization.CultureInfo.InvariantCulture)" title="@d.Ngay: @d.DoanhThu.ToString("N0")đ"></div>
+                    <span class="chart-label">@d.Ngay</span>
+                </div>
+            }
+        </div>
     </div>
+    @* Dot 3 (C3): bang 30 ngay kem chart — so lieu day du cua
+       DoanhThu30Ngay (da co san), cho screen reader + doc so chinh xac
+       khi tat JS (chart chi hien cot). *@
+    <div class="table-wrap chart-data-table"><table class="table">
+        <caption>Doanh thu từng ngày (30 ngày gần nhất)</caption>
+        <thead><tr><th scope="col">Ngày</th><th scope="col">Doanh thu</th></tr></thead>
+        <tbody>
+            @foreach (var d in Model.DoanhThu30Ngay)
+            {
+                <tr><td>@d.Ngay</td><td>@d.DoanhThu.ToString("N0")đ</td></tr>
+            }
+        </tbody>
+    </table></div>
     }
 </section>
 
@@ -45,11 +103,11 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Trạng thái</th><th>Số đơn</th></tr></thead>
+            <thead><tr><th scope="col">Trạng thái</th><th scope="col">Số đơn</th></tr></thead>
             <tbody>
                 @foreach (var kv in Model.DonTheoTrangThai.OrderByDescending(kv => kv.Value))
                 {
-                    <tr><td>@kv.Key</td><td>@kv.Value</td></tr>
+                    <tr><td><partial name="_TrangThaiBadge" model="kv.Key" /></td><td>@kv.Value</td></tr>
                 }
             </tbody>
         </table></div>
@@ -59,7 +117,7 @@
 <section>
     <h2>Doanh thu 7 ngày gần nhất</h2>
     <div class="table-wrap"><table class="table">
-        <thead><tr><th>Ngày</th><th>Doanh thu</th></tr></thead>
+        <thead><tr><th scope="col">Ngày</th><th scope="col">Doanh thu</th></tr></thead>
         <tbody>
             @foreach (var d in Model.DoanhThu7Ngay)
             {
@@ -72,12 +130,12 @@
 <section class="mt">
     <h2>Top bán chạy</h2>
     <div class="table-wrap"><table class="table">
-        <thead><tr><th>Sản phẩm</th><th>Đã bán</th><th>Tồn kho</th><th>Giá bán</th></tr></thead>
+        <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Đã bán</th><th scope="col">Tồn kho</th><th scope="col">Giá bán</th></tr></thead>
         <tbody>
             @foreach (var p in Model.TopBanChay)
             {
                 <tr>
-                    <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
+                    <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
                     <td>@p.LuotBan</td>
                     <td>@p.TonKho</td>
                     <td>@p.GiaBan.ToString("N0")đ</td>
@@ -96,11 +154,21 @@
     else
     {
         <div class="table-wrap"><table class="table">
-            <thead><tr><th>Sản phẩm</th><th>Tồn kho</th></tr></thead>
+            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Nhập nhanh</th></tr></thead>
             <tbody>
                 @foreach (var p in Model.SapHetHang)
                 {
-                    <tr><td>@p.Ten</td><td><strong>@p.TonKho</strong></td></tr>
+                    <tr><td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" />@p.Ten</span></td><td class="@(p.TonKho == 0 ? "low-stock" : "low-stock-soft")"><strong>@p.TonKho</strong>@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
+                    <td>
+                        @* Dot 2 (B6): nhap kho nhanh tai day — tai dung POST
+                           NhapKho cu (tuTrang=Dashboard de quay lai day). *@
+                        <form asp-action="NhapKho" method="post" class="stock-form">
+                            <input type="hidden" name="productId" value="@p.Id" />
+                            <input type="hidden" name="tuTrang" value="Dashboard" />
+                            <input type="number" name="soLuong" class="form-control input-narrow" min="1" value="10" required aria-label="Số lượng nhập cho @p.Ten" />
+                            <button type="submit" class="btn btn-primary btn-sm">Nhập kho</button>
+                        </form>
+                    </td></tr>
                 }
             </tbody>
         </table></div>
@@ -113,7 +181,7 @@
         <a asp-action="Orders">Xem tất cả đơn →</a>
     </div>
     <div class="table-wrap"><table class="table">
-        <thead><tr><th>Mã đơn</th><th>Ngày đặt</th><th>Tổng tiền</th><th>Trạng thái</th></tr></thead>
+        <thead><tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th><th scope="col">Tổng tiền</th><th scope="col">Trạng thái</th></tr></thead>
         <tbody>
             @foreach (var o in Model.DonGanDay)
             {
@@ -121,7 +189,7 @@
                     <td><a asp-action="OrderDetails" asp-route-id="@o.Id">#@o.Id</a></td>
                     <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@o.ThanhToan.ToString("N0")đ</td>
-                    <td>@o.TrangThai</td>
+                    <td><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
                 </tr>
             }
         </tbody>

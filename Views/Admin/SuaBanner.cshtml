@@ -1,0 +1,40 @@
+@model TechZone.Models.Banner
+@{
+    ViewData["Title"] = "Admin — Sửa banner";
+}
+<h1>Sửa banner — @Model.TieuDe</h1>
+
+@* Dot 3 (B8): sua banner — chi doi noi dung hien thi (tieu de / anh /
+   link / thu tu); IsActive doi bang nut Bat/Tat o trang danh sach. *@
+<form asp-action="SuaBanner" method="post">
+    <input type="hidden" name="id" value="@Model.Id" />
+    <div class="admin-form-grid">
+        <fieldset class="admin-form-card">
+            <legend>Nội dung</legend>
+            <div class="form-group">
+                <label for="TieuDe">Tiêu đề</label>
+                <input id="TieuDe" name="tieuDe" class="form-control" required maxlength="200" value="@Model.TieuDe" />
+            </div>
+            <div class="form-group">
+                <label for="LinkUrl">Link đích (không bắt buộc)</label>
+                <input id="LinkUrl" name="linkUrl" class="form-control" maxlength="500" value="@Model.LinkUrl" />
+            </div>
+        </fieldset>
+        <fieldset class="admin-form-card">
+            <legend>Hiển thị</legend>
+            <div class="form-group">
+                <label for="AnhUrl">Ảnh (đường dẫn /images/... hoặc link http)</label>
+                <input id="AnhUrl" name="anhUrl" class="form-control" required maxlength="500" value="@Model.AnhUrl" />
+            </div>
+            <div class="form-group">
+                <label for="ThuTu">Thứ tự</label>
+                <input id="ThuTu" name="thuTu" class="form-control input-narrow" type="number" min="0" value="@Model.ThuTu" required />
+            </div>
+            <p class="text-muted">Trạng thái hiện tại: <strong>@(Model.IsActive ? "Đang bật" : "Đang tắt")</strong> (đổi bằng nút Bật/Tắt ở trang danh sách).</p>
+        </fieldset>
+    </div>
+    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+    <a asp-action="Banners" class="btn btn-secondary">Về danh sách banner</a>
+</form>
+
+<p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

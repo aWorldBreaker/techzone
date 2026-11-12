@@ -14,7 +14,15 @@ else
     @foreach (var s in Model)
     {
         <section class="mt">
-            <h2>Khung @s.Ten @(s.IsActive ? "" : "(đang tắt)")</h2>
+            <div class="section-head">
+                <h2>Khung @s.Ten @(s.IsActive ? "" : "(đang tắt)")</h2>
+                @* Dot 2 (B6): bat/tat slot — POST BatTatSlot moi, chi doi co
+                   IsActive (gia sale van do PriceCalculationService tinh). *@
+                <form asp-action="BatTatSlot" method="post" class="inline-form">
+                    <input type="hidden" name="id" value="@s.Id" />
+                    <button type="submit" class="btn btn-secondary btn-sm">@(s.IsActive ? "Tắt khung" : "Bật khung")</button>
+                </form>
+            </div>
             @if (!s.Items.Any())
             {
                 <p class="text-muted">Chưa có sản phẩm nào trong khung này.</p>
@@ -22,17 +30,17 @@ else
             else
             {
                 <div class="table-wrap"><table class="table">
-                    <thead><tr><th>Sản phẩm</th><th>Giá sale</th><th></th></tr></thead>
+                    <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Giá sale</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr></thead>
                     <tbody>
                         @foreach (var item in s.Items)
                         {
                             <tr>
-                                <td>@item.Product.Ten</td>
+                                <td><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />@item.Product.Ten</span></td>
                                 <td>@item.GiaSale.ToString("N0")đ</td>
                                 <td>
                                     <form asp-action="XoaSlotItem" method="post" class="inline-form">
                                         <input type="hidden" name="id" value="@item.Id" />
-                                        <button type="submit" class="link-button" onclick="return confirm('Xóa @item.Product.Ten khỏi khung @s.Ten?');">Xóa</button>
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa @item.Product.Ten khỏi khung @s.Ten?');">Xóa</button>
                                     </form>
                                 </td>
                             </tr>

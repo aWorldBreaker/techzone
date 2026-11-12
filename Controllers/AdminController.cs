@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -30,10 +31,11 @@ public class AdminController : Controller
 
     /// <summary>
     /// Helper VeTrangSauTacVu: form tu trang TongQuan gui kem hidden
-    /// tuTrang=TongQuan thi quay lai TongQuan; trang cu goi (khong co
-    /// tuTrang) thi ve dung action mac dinh nhu truoc — hanh vi cu
-    /// giu nguyen 100%. Request.Form chi doc khi co form content-type
-    /// (test goi truc tiep khong co form thi khong nem loi).
+    /// tuTrang=TongQuan thi quay lai TongQuan; form tu Dashboard (nhap kho
+    /// nhanh, Dot 2 B6) gui tuTrang=Dashboard thi quay lai Dashboard;
+    /// trang cu goi (khong co tuTrang) thi ve dung action mac dinh nhu
+    /// truoc — hanh vi cu giu nguyen 100%. Request.Form chi doc khi co form
+    /// content-type (test goi truc tiep khong co form thi khong nem loi).
     /// </summary>
     private IActionResult VeTrangSauTacVu(string actionMacDinh)
     {
@@ -43,6 +45,8 @@ public class AdminController : Controller
             {
                 if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
                     return RedirectToAction(nameof(TongQuan));
+                if (Request.Form.TryGetValue("tuTrang", out var t2) && t2 == "Dashboard")
+                    return RedirectToAction(nameof(Dashboard));
             }
             catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
         }
@@ -58,6 +62,8 @@ public class AdminController : Controller
             {
                 if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
                     return RedirectToAction(nameof(TongQuan));
+                if (Request.Form.TryGetValue("tuTrang", out var t2) && t2 == "Dashboard")
+                    return RedirectToAction(nameof(Dashboard));
             }
             catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
         }
@@ -75,7 +81,7 @@ public class AdminController : Controller
         {
             Dashboard = dashboard,
             Products = await _db.Products
-                .Include(p => p.Category).Include(p => p.Brand)
+                .Include(p => p.Category).Include(p => p.Brand).Include(p => p.Images)
                 .OrderByDescending(p => p.NgayTao).ToListAsync(),
             DonGanDay = await _db.Orders
                 .Include(o => o.ChiTiet)
@@ -84,10 +90,10 @@ public class AdminController : Controller
             KhachHang = await TaiDuLieuKhachHangAsync(),
             Vouchers = await _db.Vouchers.OrderByDescending(v => v.NgayHetHan).ToListAsync(),
             Combos = await _db.Combos
-                .Include(c => c.Items).ThenInclude(i => i.Product)
+                .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
                 .OrderByDescending(c => c.Id).ToListAsync(),
             FlashSaleSlots = await _db.FlashSaleSlots
-                .Include(s => s.Items).ThenInclude(i => i.Product)
+                .Include(s => s.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
                 .OrderBy(s => s.GioBatDau).ToListAsync(),
             Banners = await _db.Banners.OrderBy(b => b.ThuTu).ToListAsync(),
             ReviewsChoDuyet = await _db.Reviews
@@ -102,7 +108,7 @@ public class AdminController : Controller
                 .Include(q => q.Product).Include(q => q.User)
                 .Where(q => q.TraLoi == null)
                 .OrderBy(q => q.NgayHoi).ToListAsync(),
-            SanPhamKho = await _db.Products.OrderBy(p => p.Ten).ToListAsync(),
+            SanPhamKho = await _db.Products.Include(p => p.Images).OrderBy(p => p.Ten).ToListAsync(),
             NhapKhoGanDay = await _db.StockIns
                 .Include(s => s.Product)
                 .OrderByDescending(s => s.NgayNhap).Take(10).ToListAsync(),
@@ -157,39 +163,109 @@ public class AdminController : Controller
         var khachMoiThang = await _db.Users.CountAsync(u =>
             u.NgayTao >= thangNay && u.Email != "admin@techzone.vn");
 
+        // Dot 1 Admin-enhance (A3): chi so moi chi doc, tinh tu 2 tap da load
+        // o tren (DoanhThu30Ngay + DonTheoTrangThai) — khong them query.
+        // Tuan truoc = 7 muc ngay truoc 7 ngay gan nhat (ngay -14..-8).
+        var doanhThuTuan = doanhThu7Ngay.Sum(d => d.DoanhThu);
+        var doanhThuTuanTruoc = doanhThu30Ngay.TakeLast(14).Take(7).Sum(d => d.DoanhThu);
+        int DemTrangThai(string tt) => donTheoTrangThai.TryGetValue(tt, out var n) ? n : 0;
+
+        // Dot 2 (B5): doanh thu thang truoc (don khong huy, thang truoc) —
+        // query moi chi doc, Sum o client nhu vong 30 ngay (SQLite khong
+        // dich duoc Sum tren decimal).
+        var thangTruoc = thangNay.AddMonths(-1);
+        var doanhThuThangTruoc = (await _db.Orders
+            .Where(o => o.NgayDat >= thangTruoc && o.NgayDat < thangNay && o.TrangThai != OrderStatus.DaHuy)
+            .Select(o => o.TongTien)
+            .ToListAsync()).Sum();
+        // Dot 2 (B5): chi so moi chi doc — het hang + doi tra cho duyet la
+        // Count moi chi doc; gia tri ton kho tinh theo GIA BAN tu projection
+        // chi doc (GiaKhuyenMai ?? Gia) * TonKho, khong phai gia von.
+        var tongDon = await _db.Orders.CountAsync();
+        var doiTraChoDuyet = await _db.ReturnRequests.CountAsync(r => r.TrangThai == "Chờ duyệt");
+        var sanPhamHetHang = await _db.Products.CountAsync(p => p.TonKho == 0);
+        var giaTriTonKho = (await _db.Products
+            .Select(p => new { p.Gia, p.GiaKhuyenMai, p.TonKho })
+            .ToListAsync()).Sum(p => (p.GiaKhuyenMai ?? p.Gia) * p.TonKho);
+
         return new DashboardViewModel
         {
             DoanhThuThang = donThang.Sum(o => o.TongTien),
             DonMoi = await _db.Orders.CountAsync(o => o.TrangThai == OrderStatus.ChoXacNhan),
-            TongDon = await _db.Orders.CountAsync(),
+            TongDon = tongDon,
             TongSanPham = await _db.Products.CountAsync(),
-            TopBanChay = await _db.Products.OrderByDescending(p => p.LuotBan).Take(5).ToListAsync(),
-            SapHetHang = await _db.Products.Where(p => p.TonKho <= 10).OrderBy(p => p.TonKho).Take(5).ToListAsync(),
+            TopBanChay = await _db.Products.Include(p => p.Images).OrderByDescending(p => p.LuotBan).Take(5).ToListAsync(),
+            SapHetHang = await _db.Products.Include(p => p.Images).Where(p => p.TonKho <= 10).OrderBy(p => p.TonKho).Take(5).ToListAsync(),
             DonGanDay = await _db.Orders
                 .Include(o => o.ChiTiet)
                 .OrderByDescending(o => o.NgayDat).Take(8).ToListAsync(),
             DoanhThu7Ngay = doanhThu7Ngay,
             DoanhThu30Ngay = doanhThu30Ngay,
-            DoanhThuTuan = doanhThu7Ngay.Sum(d => d.DoanhThu),
+            DoanhThuTuan = doanhThuTuan,
             DonTheoTrangThai = donTheoTrangThai,
-            KhachMoiThang = khachMoiThang
+            KhachMoiThang = khachMoiThang,
+            DoanhThuTuanTruoc = doanhThuTuanTruoc,
+            TiLeDoiTuan = doanhThuTuanTruoc == 0 ? null : (doanhThuTuan - doanhThuTuanTruoc) / doanhThuTuanTruoc,
+            DonChoXuLy = DemTrangThai(OrderStatus.ChoXacNhan) + DemTrangThai(OrderStatus.DaXacNhan) + DemTrangThai(OrderStatus.DangDongGoi),
+            DonDaHuy = DemTrangThai(OrderStatus.DaHuy),
+            // Dot 2 (B5): doanh thu hom nay = muc cuoi cua bang 30 ngay (da
+            // co san, khong them query); gia tri don TB tu donThang da load.
+            DoanhThuHomNay = doanhThu30Ngay.Count > 0 ? doanhThu30Ngay[^1].DoanhThu : 0,
+            GiaTriDonTrungBinh = donThang.Count > 0 ? donThang.Sum(o => o.TongTien) / donThang.Count : 0,
+            TiLeHuy = tongDon > 0 ? (decimal)DemTrangThai(OrderStatus.DaHuy) / tongDon : 0,
+            DoiTraChoDuyet = doiTraChoDuyet,
+            SanPhamHetHang = sanPhamHetHang,
+            GiaTriTonKho = giaTriTonKho,
+            DoanhThuThangTruoc = doanhThuThangTruoc,
+            TiLeDoiThang = doanhThuThangTruoc == 0 ? null : (donThang.Sum(o => o.TongTien) - doanhThuThangTruoc) / doanhThuThangTruoc
         };
     }
 
     // --- San pham ---
-    public async Task<IActionResult> Products(int page = 1)
+    /// <summary>
+    /// Dot 2 (B1): tim kiem + sap xep server. tuKhoa khop ten SP (substring,
+    /// khong phan biet hoa/thuong) hoac ma SP (= Id, khi tuKhoa la so);
+    /// sort chi doi OrderBy, khong doi du lieu. Phan trang 10/trang nhu cu.
+    /// </summary>
+    public async Task<IActionResult> Products(string? tuKhoa, string? sort, int page = 1)
     {
         if (page < 1) page = 1;
-        var tong = await _db.Products.CountAsync();
+        tuKhoa = string.IsNullOrWhiteSpace(tuKhoa) ? null : tuKhoa.Trim();
+        var query = _db.Products
+            .Include(p => p.Category).Include(p => p.Brand).Include(p => p.Images)
+            .AsQueryable();
+        if (tuKhoa is not null)
+        {
+            // Ma SP = Id: "15" vua khop ten chua "15" vua khop dung ma #15.
+            if (int.TryParse(tuKhoa, out var maSp))
+                query = query.Where(p => p.Id == maSp || p.Ten.Contains(tuKhoa));
+            else
+                query = query.Where(p => p.Ten.Contains(tuKhoa));
+        }
+        // GiaBan = GiaKhuyenMai ?? Gia (NotMapped) — EF dich ?? thanh
+        // COALESCE tren SQLite nhung SQLite khong ORDER BY duoc decimal
+        // (tien le Sprint 6) nen cast sang double truoc khi sap xep.
+        query = sort switch
+        {
+            "ten-asc" => query.OrderBy(p => p.Ten),
+            "ten-desc" => query.OrderByDescending(p => p.Ten),
+            "gia-asc" => query.OrderBy(p => (double)(p.GiaKhuyenMai ?? p.Gia)).ThenBy(p => p.Id),
+            "gia-desc" => query.OrderByDescending(p => (double)(p.GiaKhuyenMai ?? p.Gia)).ThenBy(p => p.Id),
+            "ton-asc" => query.OrderBy(p => p.TonKho).ThenBy(p => p.Id),
+            "ton-desc" => query.OrderByDescending(p => p.TonKho).ThenBy(p => p.Id),
+            "ban-chay" => query.OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+            _ => query.OrderByDescending(p => p.NgayTao).ThenBy(p => p.Id),
+        };
+        var tong = await query.CountAsync();
         var tongTrang = Math.Max(1, (int)Math.Ceiling(tong / (double)SoMucMoiTrang));
         if (page > tongTrang) page = tongTrang;
-        var list = await _db.Products
-            .Include(p => p.Category).Include(p => p.Brand)
-            .OrderByDescending(p => p.NgayTao)
+        var list = await query
             .Skip((page - 1) * SoMucMoiTrang).Take(SoMucMoiTrang).ToListAsync();
         ViewBag.TrangHienTai = page;
         ViewBag.TongTrang = tongTrang;
         ViewBag.TongMuc = tong;
+        ViewBag.TuKhoa = tuKhoa;
+        ViewBag.Sort = sort;
         return View(list);
     }
 
@@ -331,20 +407,115 @@ public class AdminController : Controller
     }
 
     // --- Don hang ---
-    public async Task<IActionResult> Orders(string? trangThai, int page = 1)
+    /// <summary>
+    /// Dot 3 (B3): xuat CSV don hang — projection chi doc cua query
+    /// Orders() (loc trangThai/tuKhoa giong he trang cu, khong ghi DB).
+    /// Cot: ma don / ngay dat / khach (ten truoc dau phay dau tien cua
+    /// DiaChiGiao — dinh dang "{Ho ten}, {SDT}, {dia chi}") / trang thai
+    /// / tong khach tra (TongTien + PhiShip = ThanhToan o view). So tien
+    /// ghi so tran (khong dau phay ngan cach) de CSV dung cot. BOM UTF-8
+    /// de Excel mo dung tieng Viet.
+    /// </summary>
+    public async Task<IActionResult> XuatCsvDonHang(string? trangThai, string? tuKhoa)
+    {
+        var query = _db.Orders.AsQueryable();
+        if (!string.IsNullOrEmpty(trangThai))
+            query = query.Where(o => o.TrangThai == trangThai);
+        tuKhoa = string.IsNullOrWhiteSpace(tuKhoa) ? null : tuKhoa.Trim();
+        if (tuKhoa is not null)
+        {
+            if (int.TryParse(tuKhoa, out var maDon))
+                query = query.Where(o => o.Id == maDon || o.DiaChiGiao.Contains(tuKhoa));
+            else
+                query = query.Where(o => o.DiaChiGiao.Contains(tuKhoa));
+        }
+        var list = await query.OrderByDescending(o => o.NgayDat).ThenBy(o => o.Id)
+            .Select(o => new { o.Id, o.NgayDat, o.DiaChiGiao, o.TrangThai, o.TongTien, o.PhiShip })
+            .ToListAsync();
+        var sb = new StringBuilder();
+        sb.AppendLine("Mã đơn,Ngày đặt,Khách hàng,Trạng thái,Tổng tiền (đ)");
+        foreach (var o in list)
+        {
+            var khach = (o.DiaChiGiao ?? string.Empty).Split(new[] { ", " }, 2, StringSplitOptions.None)[0];
+            sb.AppendLine(string.Join(",",
+                Csv(o.Id.ToString()),
+                Csv(o.NgayDat.ToString("yyyy-MM-dd HH:mm")),
+                Csv(khach),
+                Csv(o.TrangThai),
+                Csv((o.TongTien + o.PhiShip).ToString("0", System.Globalization.CultureInfo.InvariantCulture))));
+        }
+        return TraFileCsv(sb.ToString(), "don-hang");
+    }
+
+    /// <summary>
+    /// Dot 3 (B3): xuat CSV kho — projection chi doc (ten / ton / da ban
+    /// / gia ban = GiaKhuyenMai ?? Gia). Khong ghi DB.
+    /// </summary>
+    public async Task<IActionResult> XuatCsvKho()
+    {
+        var list = await _db.Products.OrderBy(p => p.Ten)
+            .Select(p => new { p.Ten, p.TonKho, p.LuotBan, GiaBan = p.GiaKhuyenMai ?? p.Gia })
+            .ToListAsync();
+        var sb = new StringBuilder();
+        sb.AppendLine("Sản phẩm,Tồn kho,Đã bán,Giá bán (đ)");
+        foreach (var p in list)
+        {
+            sb.AppendLine(string.Join(",",
+                Csv(p.Ten),
+                Csv(p.TonKho.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                Csv(p.LuotBan.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                Csv(p.GiaBan.ToString("0", System.Globalization.CultureInfo.InvariantCulture))));
+        }
+        return TraFileCsv(sb.ToString(), "kho");
+    }
+
+    /// <summary>Dot 3 (B3): tra CSV kem BOM UTF-8 + header attachment.</summary>
+    private FileContentResult TraFileCsv(string noiDung, string ten)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetPreamble()
+            .Concat(System.Text.Encoding.UTF8.GetBytes(noiDung)).ToArray();
+        return File(bytes, "text/csv; charset=utf-8", $"{ten}-{DateTime.Now:yyyyMMdd-HHmm}.csv");
+    }
+
+    /// <summary>Dot 3 (B3): escape 1 o CSV (quote khi co , " xuong dong).</summary>
+    private static string Csv(string s)
+    {
+        if (s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) < 0) return s;
+        return "\"" + s.Replace("\"", "\"\"") + "\"";
+    }
+    public async Task<IActionResult> Orders(string? trangThai, string? tuKhoa, string? sort, int page = 1)
     {
         var query = _db.Orders.Include(o => o.ChiTiet).AsQueryable();
         if (!string.IsNullOrEmpty(trangThai))
             query = query.Where(o => o.TrangThai == trangThai);
+        tuKhoa = string.IsNullOrWhiteSpace(tuKhoa) ? null : tuKhoa.Trim();
+        if (tuKhoa is not null)
+        {
+            if (int.TryParse(tuKhoa, out var maDon))
+                query = query.Where(o => o.Id == maDon || o.DiaChiGiao.Contains(tuKhoa));
+            else
+                query = query.Where(o => o.DiaChiGiao.Contains(tuKhoa));
+        }
+        query = sort switch
+        {
+            "cu-nhat" => query.OrderBy(o => o.NgayDat).ThenBy(o => o.Id),
+            // SQLite khong ORDER BY duoc decimal (tien le Sprint 6) nen
+            // cast TongTien sang double truoc khi sap xep.
+            "tong-desc" => query.OrderByDescending(o => (double)o.TongTien).ThenBy(o => o.Id),
+            "tong-asc" => query.OrderBy(o => (double)o.TongTien).ThenBy(o => o.Id),
+            _ => query.OrderByDescending(o => o.NgayDat).ThenBy(o => o.Id),
+        };
         if (page < 1) page = 1;
         var tong = await query.CountAsync();
         var tongTrang = Math.Max(1, (int)Math.Ceiling(tong / (double)SoMucMoiTrang));
         if (page > tongTrang) page = tongTrang;
         ViewBag.TrangThai = trangThai;
+        ViewBag.TuKhoa = tuKhoa;
+        ViewBag.Sort = sort;
         ViewBag.TrangHienTai = page;
         ViewBag.TongTrang = tongTrang;
         ViewBag.TongMuc = tong;
-        return View(await query.OrderByDescending(o => o.NgayDat)
+        return View(await query
             .Skip((page - 1) * SoMucMoiTrang).Take(SoMucMoiTrang).ToListAsync());
     }
 
@@ -446,8 +617,26 @@ public class AdminController : Controller
     }
 
     // --- Voucher ---
-    public async Task<IActionResult> Vouchers() =>
-        View(await _db.Vouchers.OrderByDescending(v => v.NgayHetHan).ToListAsync());
+    /// <summary>Dot 2 (B1): tim kiem theo ma voucher + phan trang 10/trang
+    /// (truoc day Vouchers khong co phan trang). Ma luu dang viet hoa nen
+    /// tuKhoa duoc viet hoa truoc khi khop.</summary>
+    public async Task<IActionResult> Vouchers(string? tuKhoa, int page = 1)
+    {
+        if (page < 1) page = 1;
+        tuKhoa = string.IsNullOrWhiteSpace(tuKhoa) ? null : tuKhoa.Trim().ToUpperInvariant();
+        var query = _db.Vouchers.AsQueryable();
+        if (tuKhoa is not null)
+            query = query.Where(v => v.Ma.Contains(tuKhoa));
+        var tong = await query.CountAsync();
+        var tongTrang = Math.Max(1, (int)Math.Ceiling(tong / (double)SoMucMoiTrang));
+        if (page > tongTrang) page = tongTrang;
+        ViewBag.TuKhoa = tuKhoa;
+        ViewBag.TrangHienTai = page;
+        ViewBag.TongTrang = tongTrang;
+        ViewBag.TongMuc = tong;
+        return View(await query.OrderByDescending(v => v.NgayHetHan)
+            .Skip((page - 1) * SoMucMoiTrang).Take(SoMucMoiTrang).ToListAsync());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -505,7 +694,7 @@ public class AdminController : Controller
     {
         ViewBag.Products = await _db.Products.OrderBy(p => p.Ten).ToListAsync();
         return View(await _db.Combos
-            .Include(c => c.Items).ThenInclude(i => i.Product)
+            .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
             .OrderByDescending(c => c.Id).ToListAsync());
     }
 
@@ -632,6 +821,25 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Combos));
     }
 
+    /// <summary>
+    /// Dot 3 (B8): form them/xoa mon nhung trong trang SuaCombo (gui kem
+    /// tuTrang=SuaCombo) thi quay lai SuaCombo thay vi ve danh sach;
+    /// form o trang Combos (khong co tuTrang) giu nguyen ve Combos.
+    /// </summary>
+    private IActionResult VeCombosHoacSuaCombo(int comboId)
+    {
+        if (Request.HasFormContentType)
+        {
+            try
+            {
+                if (Request.Form.TryGetValue("tuTrang", out var t) && t == "SuaCombo")
+                    return RedirectToAction(nameof(SuaCombo), new { id = comboId });
+            }
+            catch (InvalidOperationException) { /* khong co form hop le */ }
+        }
+        return RedirectToAction(nameof(Combos));
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ThemMonCombo(int comboId, int productId, int soLuong)
@@ -642,17 +850,17 @@ public class AdminController : Controller
         if (soLuong < 1 || await _db.Products.FindAsync(productId) is null)
         {
             TempData["Error"] = "Món thêm vào combo chưa hợp lệ.";
-            return RedirectToAction(nameof(Combos));
+            return VeCombosHoacSuaCombo(comboId);
         }
         if (combo.Items.Any(i => i.ProductId == productId))
         {
             TempData["Error"] = "Sản phẩm này đã có trong combo.";
-            return RedirectToAction(nameof(Combos));
+            return VeCombosHoacSuaCombo(comboId);
         }
         combo.Items.Add(new ComboItem { ComboId = comboId, ProductId = productId, SoLuong = soLuong });
         await _db.SaveChangesAsync();
         TempData["Success"] = "Đã thêm món vào combo.";
-        return RedirectToAction(nameof(Combos));
+        return VeCombosHoacSuaCombo(comboId);
     }
 
     [HttpPost]
@@ -667,12 +875,12 @@ public class AdminController : Controller
         if (item.Combo.Items.Count <= 1)
         {
             TempData["Error"] = "Combo phải có ít nhất 1 món — xóa cả combo thay vì xóa món cuối.";
-            return RedirectToAction(nameof(Combos));
+            return VeCombosHoacSuaCombo(item.Combo.Id);
         }
         _db.ComboItems.Remove(item);
         await _db.SaveChangesAsync();
         TempData["Success"] = "Đã xóa món khỏi combo.";
-        return RedirectToAction(nameof(Combos));
+        return VeCombosHoacSuaCombo(item.Combo.Id);
     }
 
     private static string? KiemTraCombo(string ten, decimal phanTramGiam,
@@ -695,7 +903,7 @@ public class AdminController : Controller
         ViewBag.NhapGanDay = await _db.StockIns
             .Include(s => s.Product)
             .OrderByDescending(s => s.NgayNhap).Take(10).ToListAsync();
-        return View("Stock", await _db.Products.OrderBy(p => p.Ten).ToListAsync());
+        return View("Stock", await _db.Products.Include(p => p.Images).OrderBy(p => p.Ten).ToListAsync());
     }
 
     [HttpPost]
@@ -723,8 +931,33 @@ public class AdminController : Controller
     }
 
     // --- Khach hang (nhom D) ---
-    public async Task<IActionResult> KhachHang() =>
-        View("Customers", await TaiDuLieuKhachHangAsync());
+    /// <summary>
+    /// Dot 2 (B1): tim kiem + phan trang server 10/trang. Tong chi tieu
+    /// van tinh in-memory nhu cu (TaiDuLieuKhachHangAsync) — chi them tim
+    /// (ten/email/SDT, khong phan biet hoa/thuong) + phan trang tren ket
+    /// qua da co, khong doi cach tinh.
+    /// </summary>
+    public async Task<IActionResult> KhachHang(string? tuKhoa = null, int page = 1)
+    {
+        if (page < 1) page = 1;
+        tuKhoa = string.IsNullOrWhiteSpace(tuKhoa) ? null : tuKhoa.Trim();
+        var list = await TaiDuLieuKhachHangAsync();
+        if (tuKhoa is not null)
+        {
+            list = list.Where(k =>
+                (k.User.HoTen ?? string.Empty).Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)
+                || (k.User.Email ?? string.Empty).Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)
+                || (k.User.SoDienThoai ?? string.Empty).Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+        var tong = list.Count;
+        var tongTrang = Math.Max(1, (int)Math.Ceiling(tong / (double)SoMucMoiTrang));
+        if (page > tongTrang) page = tongTrang;
+        ViewBag.TuKhoa = tuKhoa;
+        ViewBag.TrangHienTai = page;
+        ViewBag.TongTrang = tongTrang;
+        ViewBag.TongMuc = tong;
+        return View("Customers", list.Skip((page - 1) * SoMucMoiTrang).Take(SoMucMoiTrang).ToList());
+    }
 
     /// <summary>Logic load KhachHang goc, tach ra de KhachHang() + TongQuan() dung chung.</summary>
     private async Task<List<(ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)>> TaiDuLieuKhachHangAsync()
@@ -859,6 +1092,42 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Banners));
     }
 
+    /// <summary>
+    /// Dot 3 (B8): sua banner — chi doi noi dung hien thi (tieu de / anh /
+    /// link / thu tu). Khong doi IsActive (da co DoiTrangThaiBanner rieng).
+    /// Validation giong ThemBanner.
+    /// </summary>
+    public async Task<IActionResult> SuaBanner(int id)
+    {
+        var banner = await _db.Banners.FindAsync(id);
+        return banner is null ? NotFound() : View(banner);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SuaBanner(int id, string tieuDe, string anhUrl, string? linkUrl, int thuTu)
+    {
+        var banner = await _db.Banners.FindAsync(id);
+        if (banner is null) return NotFound();
+        if (string.IsNullOrWhiteSpace(tieuDe) || string.IsNullOrWhiteSpace(anhUrl))
+        {
+            TempData["Error"] = "Tiêu đề và ảnh banner không được để trống.";
+            return RedirectToAction(nameof(SuaBanner), new { id });
+        }
+        if (!anhUrl.StartsWith("/images/") && !anhUrl.StartsWith("http"))
+        {
+            TempData["Error"] = "Ảnh banner phải là đường dẫn /images/... hoặc link http(s).";
+            return RedirectToAction(nameof(SuaBanner), new { id });
+        }
+        banner.TieuDe = tieuDe.Trim();
+        banner.AnhUrl = anhUrl.Trim();
+        banner.LinkUrl = string.IsNullOrWhiteSpace(linkUrl) ? null : linkUrl.Trim();
+        banner.ThuTu = thuTu;
+        await _db.SaveChangesAsync();
+        TempData["Success"] = $"Đã cập nhật banner {banner.TieuDe}.";
+        return RedirectToAction(nameof(Banners));
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DoiTrangThaiBanner(int id)
@@ -888,7 +1157,7 @@ public class AdminController : Controller
     {
         ViewBag.Products = await _db.Products.OrderBy(p => p.Ten).ToListAsync();
         return View(await _db.FlashSaleSlots
-            .Include(s => s.Items).ThenInclude(i => i.Product)
+            .Include(s => s.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
             .OrderBy(s => s.GioBatDau).ToListAsync());
     }
 
@@ -950,6 +1219,26 @@ public class AdminController : Controller
         await _db.SaveChangesAsync();
         TempData["Success"] = "Đã thêm sản phẩm vào khung Flash Sale.";
         return RedirectToAction(nameof(FlashSaleSlots));
+    }
+
+    /// <summary>
+    /// Dot 2 (B6): bat/tat khung Flash Sale — chi doi co IsActive cua slot,
+    /// gia sale van do PriceCalculationService tinh lai (khong doi gia,
+    /// khong doi item trong slot). Slot tat thi ThemSlot khong tinh trung
+    /// gio nua (check trung chi xet slot active).
+    /// </summary>
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BatTatSlot(int id)
+    {
+        var slot = await _db.FlashSaleSlots.FindAsync(id);
+        if (slot is null) return NotFound();
+        slot.IsActive = !slot.IsActive;
+        await _db.SaveChangesAsync();
+        TempData["Success"] = slot.IsActive
+            ? $"Đã bật khung Flash Sale {slot.Ten}."
+            : $"Đã tắt khung Flash Sale {slot.Ten}.";
+        return VeTrangSauTacVu(nameof(FlashSaleSlots));
     }
 
     [HttpPost]

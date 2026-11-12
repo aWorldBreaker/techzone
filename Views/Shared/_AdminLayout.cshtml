@@ -121,7 +121,7 @@
             <header class="admin-topbar">
                 <button type="button" id="admin-menu-toggle" class="admin-menu-toggle" aria-expanded="false" aria-controls="admin-sidebar" aria-label="Mở menu quản trị"><span aria-hidden="true">☰</span></button>
                 <nav class="admin-breadcrumb" aria-label="Đường dẫn">
-                    <a asp-controller="Admin" asp-action="Dashboard">Trang quản trị</a>
+                    <a asp-controller="Admin" asp-action="Dashboard">Khu quản trị</a>
                     @if (active != "" && active != "Dashboard")
                     {
                         <span aria-hidden="true"> / </span>
@@ -145,6 +145,7 @@
                 <div class="admin-topbar-actions">
                     <a asp-controller="Home" asp-action="Index">Về cửa hàng</a>
                     <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
+                    <span class="admin-pill" title="Khu vực quản trị">ADMIN</span>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <span class="admin-user">Xin chào, @User.Identity.Name</span>
@@ -156,6 +157,7 @@
             </header>
 
             <main id="admin-main" class="admin-main">
+                <p class="admin-eyebrow">Khu quản trị</p>
                 @if (TempData["Success"] is string ok)
                 {
                     <div class="alert alert-success" role="alert">@ok</div>
@@ -172,6 +174,9 @@
             </footer>
         </div>
     </div>
+
+    @* Dot 3 (B4): drawer xem nhanh don — partial dung chung moi trang Admin. *@
+    <partial name="_OrderDrawer" />
 
     @* theme.js dùng chung với shop (chỉ bind #theme-toggle + localStorage,
        không có hiệu ứng storefront). admin.js chỉ toggle sidebar mobile. *@

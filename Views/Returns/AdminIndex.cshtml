@@ -33,7 +33,7 @@ else
 {
     <div class="table-wrap"><table class="table">
         <thead>
-            <tr><th>Mã</th><th>Khách</th><th>Đơn</th><th>Sản phẩm</th><th>Lý do</th><th>Ngày tạo</th><th>Trạng thái</th><th>Duyệt</th></tr>
+            <tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Lý do</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Duyệt</th></tr>
         </thead>
         <tbody>
             @foreach (var r in Model)
@@ -45,7 +45,7 @@ else
                     <td>@r.Product.Ten</td>
                     <td>@r.LyDo</td>
                     <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@r.TrangThai</td>
+                    <td><partial name="_TrangThaiBadge" model="r.TrangThai" /></td>
                     <td>
                         <a asp-action="Details" asp-route-id="@r.Id" asp-route-loai="doitra">Xem</a>
                         <form asp-action="Duyet" method="post" class="admin-duyet">
@@ -74,7 +74,7 @@ else
 {
     <div class="table-wrap"><table class="table">
         <thead>
-            <tr><th>Mã</th><th>Khách</th><th>Đơn</th><th>Sản phẩm</th><th>Mô tả lỗi</th><th>Ngày tạo</th><th>Trạng thái</th><th>Duyệt</th></tr>
+            <tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Mô tả lỗi</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Duyệt</th></tr>
         </thead>
         <tbody>
             @foreach (var w in baoHanh)
@@ -86,7 +86,7 @@ else
                     <td>@w.Product.Ten</td>
                     <td>@w.MoTaLoi</td>
                     <td>@w.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@w.TrangThai</td>
+                    <td><partial name="_TrangThaiBadge" model="w.TrangThai" /></td>
                     <td>
                         <a asp-action="Details" asp-route-id="@w.Id" asp-route-loai="baohanh">Xem</a>
                         <form asp-action="Duyet" method="post" class="admin-duyet">

@@ -1,0 +1,34 @@
+@* TechZone — Badge trang thai dung chung cho khu Admin (Dot 1, A2).
+   1 nguon map chuoi trang thai -> class badge; bang mau chuan ghi o header
+   wwwroot/css/admin.css. Dung: <partial name="_TrangThaiBadge" model="o.TrangThai" />
+   Chuoi la: khong doi text goc, chi them mau. Chuoi la -> pill xam mac dinh. *@
+@model string
+@{
+    var cls = Model switch
+    {
+        // Don hang
+        "Chờ xác nhận" => "badge-cho",
+        "Đã xác nhận" => "badge-xanh",
+        "Đang đóng gói" => "badge-giao",
+        "Đang giao" => "badge-giao",
+        "Đã giao" => "badge-xong",
+        "Đã hủy" => "badge-huy",
+        // Bat/tat (banner, combo, flash sale)
+        "Đang bật" => "badge-bat",
+        "Đang tắt" => "badge-tat",
+        "Đã tắt" => "badge-tat",
+        // Hang thanh vien
+        "Vàng" => "badge-vang",
+        "Bạch kim" => "badge-xanh",
+        // Duyet doi tra / bao hanh / danh gia
+        "Chờ duyệt" => "badge-cho",
+        "Đã duyệt" => "badge-xong",
+        "Từ chối" => "badge-huy",
+        "Hoàn thành" => "badge-xong",
+        // Thong bao da doc / chua doc
+        "Chưa" => "badge-cho",
+        "Rồi" => "badge-roi",
+        _ => ""
+    };
+}
+<span class="badge @cls">@Model</span>

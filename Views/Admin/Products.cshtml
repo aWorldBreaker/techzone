@@ -1,52 +1,82 @@
 @model List<TechZone.Models.Product>
 @{
     ViewData["Title"] = "Admin — Quản lý sản phẩm";
+    var tuKhoa = (string?)ViewBag.TuKhoa;
+    var sort = (string?)ViewBag.Sort;
 }
 <div class="section-head">
     <h1>Quản lý sản phẩm (@ViewBag.TongMuc)</h1>
     <a class="btn btn-primary" asp-action="ProductForm">+ Thêm sản phẩm</a>
 </div>
 
-<div class="table-wrap"><table class="table">
+@* Dot 2 (B1): tim kiem + sap xep server (GET, giu param qua phan trang). *@
+<form method="get" asp-action="Products" class="admin-search" role="search">
+    <input type="search" name="tuKhoa" class="form-control" placeholder="Tìm theo tên hoặc mã sản phẩm…" value="@tuKhoa" aria-label="Tìm sản phẩm theo tên hoặc mã" />
+    <select name="sort" class="form-control" aria-label="Sắp xếp sản phẩm">
+        <option value="">Sắp xếp: mới nhất</option>
+        <option value="ten-asc" selected="@(sort == "ten-asc")">Tên A → Z</option>
+        <option value="ten-desc" selected="@(sort == "ten-desc")">Tên Z → A</option>
+        <option value="gia-asc" selected="@(sort == "gia-asc")">Giá tăng dần</option>
+        <option value="gia-desc" selected="@(sort == "gia-desc")">Giá giảm dần</option>
+        <option value="ton-asc" selected="@(sort == "ton-asc")">Tồn kho tăng dần</option>
+        <option value="ton-desc" selected="@(sort == "ton-desc")">Tồn kho giảm dần</option>
+        <option value="ban-chay" selected="@(sort == "ban-chay")">Bán chạy nhất</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Tìm</button>
+    @if (tuKhoa is not null)
+    {
+        <a class="btn btn-secondary" asp-action="Products">Xóa lọc</a>
+    }
+</form>
+<p class="admin-result-count text-muted" aria-live="polite">@ViewBag.TongMuc kết quả@(tuKhoa is not null ? $" cho “{tuKhoa}”" : "")</p>
+
+@if (!Model.Any())
+{
+    <p class="admin-empty" role="status">🔍 Không tìm thấy sản phẩm nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử từ khóa khác hoặc <a asp-action="Products">xóa bộ lọc</a>.</p>
+}
+else
+{
+<div class="table-wrap"><table class="table table--card-mobile">
     <thead>
-        <tr><th>Sản phẩm</th><th>Danh mục</th><th>Hãng</th><th>Giá bán</th><th>Tồn kho</th><th>Đã bán</th><th><span class="visually-hidden">Thao tác</span></th></tr>
+        <tr><th scope="col">Sản phẩm</th><th scope="col">Danh mục</th><th scope="col">Hãng</th><th scope="col">Giá bán</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr>
     </thead>
     <tbody>
         @foreach (var p in Model)
         {
             <tr>
-                <td><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></td>
-                <td>@p.Category.Ten</td>
-                <td>@p.Brand.Ten</td>
-                <td>
+                <td data-label="Sản phẩm"><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
+                <td data-label="Danh mục">@p.Category.Ten</td>
+                <td data-label="Hãng">@p.Brand.Ten</td>
+                <td data-label="Giá bán">
                     @p.GiaBan.ToString("N0")đ
                     @if (p.GiaKhuyenMai.HasValue) { <s class="text-muted">@p.Gia.ToString("N0")đ</s> }
                 </td>
-                <td>@p.TonKho</td>
-                <td>@p.LuotBan</td>
-                <td>
-                    <a asp-action="ProductForm" asp-route-id="@p.Id">Sửa</a>
+                <td data-label="Tồn kho">@p.TonKho</td>
+                <td data-label="Đã bán">@p.LuotBan</td>
+                <td data-label="Thao tác">
+                    <a asp-action="ProductForm" asp-route-id="@p.Id" class="btn btn-secondary btn-sm">Sửa</a>
                     <form asp-action="XoaSanPham" method="post" class="inline-form">
                         <input type="hidden" name="id" value="@p.Id" />
-                        <button type="submit" class="link-button" onclick="return confirm('Xóa @p.Ten?');">Xóa</button>
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa @p.Ten?');">Xóa</button>
                     </form>
                 </td>
             </tr>
         }
     </tbody>
 </table></div>
+}
 
 @if ((int)ViewBag.TongTrang > 1)
 {
     <nav class="pagination" aria-label="Phân trang">
         @if ((int)ViewBag.TrangHienTai > 1)
         {
-            <a asp-action="Products" asp-route-page="@((int)ViewBag.TrangHienTai - 1)">← Trang trước</a>
+            <a asp-action="Products" asp-route-tuKhoa="@tuKhoa" asp-route-sort="@sort" asp-route-page="@((int)ViewBag.TrangHienTai - 1)">← Trang trước</a>
         }
         <span class="page-current">Trang @ViewBag.TrangHienTai / @ViewBag.TongTrang</span>
         @if ((int)ViewBag.TrangHienTai < (int)ViewBag.TongTrang)
         {
-            <a asp-action="Products" asp-route-page="@((int)ViewBag.TrangHienTai + 1)">Trang sau →</a>
+            <a asp-action="Products" asp-route-tuKhoa="@tuKhoa" asp-route-sort="@sort" asp-route-page="@((int)ViewBag.TrangHienTai + 1)">Trang sau →</a>
         }
     </nav>
 }

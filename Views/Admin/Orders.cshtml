@@ -2,38 +2,70 @@
 @{
     ViewData["Title"] = "Admin — Quản lý đơn hàng";
     var trangThai = (string?)ViewBag.TrangThai;
-    string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
+    var tuKhoa = (string?)ViewBag.TuKhoa;
+    var sort = (string?)ViewBag.Sort;
+    // Dot 2 (B2): du 6 trang thai (them "Đã xác nhận", "Đang đóng gói" —
+    // truoc day chip chi co 4/6).
+    string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DaXacNhan, TechZone.Models.OrderStatus.DangDongGoi, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
 }
 <h1>Quản lý đơn hàng</h1>
 
+@* Dot 2 (B2): chip nao dang loc thi .chip-active (nen primary, chu trang) —
+   truoc day chip nao nhin cung giong nhau. *@
 <div class="chip-row">
-    <a class="chip" asp-action="Orders">Tất cả</a>
+    <a class="chip @(trangThai is null ? "chip-active" : "")" asp-action="Orders">Tất cả</a>
     @foreach (var t in cacTrangThai)
     {
-        <a class="chip" asp-action="Orders" asp-route-trangThai="@t">@t</a>
+        <a class="chip @(t == trangThai ? "chip-active" : "")" asp-action="Orders" asp-route-trangThai="@t">@t</a>
     }
 </div>
 
+@* Dot 2 (B1): tim kiem server — 1 o tim ma don / ten khach / SDT / dia chi
+   (DiaChiGiao gom "Ho ten, SDT, dia chi"). *@
+<form method="get" asp-action="Orders" class="admin-search" role="search">
+    <input type="hidden" name="trangThai" value="@trangThai" />
+    <input type="search" name="tuKhoa" class="form-control" placeholder="Tìm theo mã đơn, tên khách, SĐT…" value="@tuKhoa" aria-label="Tìm đơn hàng theo mã đơn, tên khách hoặc số điện thoại" />
+    <select name="sort" class="form-control" aria-label="Sắp xếp đơn hàng">
+        <option value="">Sắp xếp: mới nhất</option>
+        <option value="cu-nhat" selected="@(sort == "cu-nhat")">Ngày đặt cũ nhất</option>
+        <option value="tong-desc" selected="@(sort == "tong-desc")">Tổng tiền giảm dần</option>
+        <option value="tong-asc" selected="@(sort == "tong-asc")">Tổng tiền tăng dần</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Tìm</button>
+    @if (tuKhoa is not null)
+    {
+        <a class="btn btn-secondary" asp-action="Orders" asp-route-trangThai="@trangThai">Xóa lọc</a>
+    }
+</form>
+<p class="admin-result-count text-muted" aria-live="polite">@ViewBag.TongMuc kết quả@(trangThai is not null ? $" — trạng thái “{trangThai}”" : "")@(tuKhoa is not null ? $" — tìm “{tuKhoa}”" : "")</p>
+@* Dot 3 (B3): xuat CSV — giu loc hien tai (trangThai/tuKhoa). *@
+<p><a class="btn btn-secondary" asp-action="XuatCsvDonHang" asp-route-trangThai="@trangThai" asp-route-tuKhoa="@tuKhoa">⬇ Xuất CSV (@ViewBag.TongMuc đơn)</a></p>
+
 @if (!Model.Any())
 {
-    <p>Không có đơn nào @(trangThai is not null ? $"ở trạng thái “{trangThai}”" : "") .</p>
+    <p class="admin-empty" role="status">🔍 Không có đơn nào@(trangThai is not null ? $" ở trạng thái “{trangThai}”" : "")@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử từ khóa khác hoặc <a asp-action="Orders">xem tất cả đơn</a>.</p>
 }
 else
 {
-    <div class="table-wrap"><table class="table">
+    @* Dot 3 (C5): bang chuyen dang card o <=480px (data-label lam nhan cot). *@
+    <div class="table-wrap"><table class="table table--card-mobile">
         <thead>
-            <tr><th>Mã đơn</th><th>Ngày đặt</th><th>Giao đến</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr>
+            <tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th><th scope="col">Giao đến</th><th scope="col">Tổng tiền</th><th scope="col">Trạng thái</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr>
         </thead>
         <tbody>
             @foreach (var o in Model)
             {
                 <tr>
-                    <td>#@o.Id</td>
-                    <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@o.DiaChiGiao</td>
-                    <td>@o.ThanhToan.ToString("N0")đ</td>
-                    <td>@o.TrangThai</td>
-                    <td><a asp-action="OrderDetails" asp-route-id="@o.Id">Xem / đổi trạng thái</a></td>
+                    <td data-label="Mã đơn">#@o.Id</td>
+                    <td data-label="Ngày đặt">@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td data-label="Giao đến">@o.DiaChiGiao</td>
+                    <td data-label="Tổng tiền">@o.ThanhToan.ToString("N0")đ</td>
+                    <td data-label="Trạng thái"><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
+                    <td data-label="Thao tác">
+                        @* Dot 3 (B4): xem nhanh mo drawer (read-only); link ben canh van toi trang day du. *@
+                        <button type="button" class="btn btn-secondary btn-sm" data-order-drawer="@o.Id" data-order-url="@Url.Action("OrderDetails", new { id = o.Id })">Xem nhanh</button>
+                        <a asp-action="OrderDetails" asp-route-id="@o.Id">Xem / đổi trạng thái</a>
+                    </td>
                 </tr>
             }
         </tbody>
@@ -43,12 +75,12 @@ else
         <nav class="pagination" aria-label="Phân trang">
             @if ((int)ViewBag.TrangHienTai > 1)
             {
-                <a asp-action="Orders" asp-route-trangThai="@trangThai" asp-route-page="@((int)ViewBag.TrangHienTai - 1)">← Trang trước</a>
+                <a asp-action="Orders" asp-route-trangThai="@trangThai" asp-route-tuKhoa="@tuKhoa" asp-route-sort="@sort" asp-route-page="@((int)ViewBag.TrangHienTai - 1)">← Trang trước</a>
             }
             <span class="page-current">Trang @ViewBag.TrangHienTai / @ViewBag.TongTrang</span>
             @if ((int)ViewBag.TrangHienTai < (int)ViewBag.TongTrang)
             {
-                <a asp-action="Orders" asp-route-trangThai="@trangThai" asp-route-page="@((int)ViewBag.TrangHienTai + 1)">Trang sau →</a>
+                <a asp-action="Orders" asp-route-trangThai="@trangThai" asp-route-tuKhoa="@tuKhoa" asp-route-sort="@sort" asp-route-page="@((int)ViewBag.TrangHienTai + 1)">Trang sau →</a>
             }
         </nav>
     }

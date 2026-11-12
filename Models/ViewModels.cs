@@ -178,6 +178,41 @@ public class DashboardViewModel
     /// <summary>So don theo tung trang thai.</summary>
     public Dictionary<string, int> DonTheoTrangThai { get; set; } = new();
     public int KhachMoiThang { get; set; }
+
+    // --- Mo rong Dot 1 Admin-enhance (2026-11-12, A3) — chi doc, tinh tu
+    // du lieu TaiDuLieuDashboardAsync da load (DoanhThu30Ngay +
+    // DonTheoTrangThai), khong them query, khong doi logic tien/kho. ---
+    /// <summary>Doanh thu 7 ngay truoc do (ngay -14..-8) — moc so delta tuan.</summary>
+    public decimal DoanhThuTuanTruoc { get; set; }
+    /// <summary>Ti le doi doanh thu tuan nay vs tuan truoc (vd 0.125 = +12,5%).
+    /// null khi tuan truoc = 0 (khong chia duoc cho 0 — view an delta).</summary>
+    public decimal? TiLeDoiTuan { get; set; }
+    /// <summary>Don dang cho xu ly: ChoXacNhan + DaXacNhan + DangDongGoi.</summary>
+    public int DonChoXuLy { get; set; }
+    /// <summary>Don da huy (tu DonTheoTrangThai).</summary>
+    public int DonDaHuy { get; set; }
+
+    // --- Mo rong Dot 2 Admin-enhance (2026-11-12, B5) — chi doc, tinh tu
+    // field/query da co hoac query moi chi doc (Count/Sum), khong doi logic
+    // tien/kho. "Gia tri ton kho" tinh theo GIA BAN (GiaKhuyenMai ?? Gia),
+    // khong phai gia von (shop khong co gia von). ---
+    /// <summary>Doanh thu hom nay (khong huy) — muc cuoi cua DoanhThu30Ngay.</summary>
+    public decimal DoanhThuHomNay { get; set; }
+    /// <summary>Gia tri don trung binh thang nay (don khong huy); 0 neu chua co don.</summary>
+    public decimal GiaTriDonTrungBinh { get; set; }
+    /// <summary>Ty le huy = DonDaHuy / TongDon (0..1); 0 neu chua co don.</summary>
+    public decimal TiLeHuy { get; set; }
+    /// <summary>So yeu cau doi tra dang "Chờ duyệt".</summary>
+    public int DoiTraChoDuyet { get; set; }
+    /// <summary>So san pham het hang (TonKho = 0).</summary>
+    public int SanPhamHetHang { get; set; }
+    /// <summary>Tong gia tri ton kho theo GIA BAN (khong phai gia von).</summary>
+    public decimal GiaTriTonKho { get; set; }
+    /// <summary>Doanh thu thang truoc (don khong huy) — moc so delta thang.</summary>
+    public decimal DoanhThuThangTruoc { get; set; }
+    /// <summary>Ti le doi doanh thu thang nay vs thang truoc.
+    /// null khi thang truoc = 0 (khong chia duoc cho 0 — view an delta).</summary>
+    public decimal? TiLeDoiThang { get; set; }
 }
 
 /// <summary>

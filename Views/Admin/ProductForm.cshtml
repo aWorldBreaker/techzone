@@ -7,84 +7,97 @@
 }
 <h1>@ViewData["Title"]</h1>
 
+@* Dot 3 (A7): form nhom thanh card 2 cot; giu nguyen field + validation. *@
 <form asp-action="ProductForm" method="post" enctype="multipart/form-data">
     <input type="hidden" asp-for="Id" />
     <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-    <div class="form-group">
-        <label asp-for="Ten">Tên sản phẩm</label>
-        <input asp-for="Ten" class="form-control" />
-        <span asp-validation-for="Ten" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="MoTa">Mô tả</label>
-        <textarea asp-for="MoTa" class="form-control" rows="3"></textarea>
-    </div>
-    <div class="form-group">
-        <label asp-for="Gia">Giá gốc (đ)</label>
-        <input asp-for="Gia" class="form-control" type="number" min="0" step="1000" />
-        <span asp-validation-for="Gia" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="GiaKhuyenMai">Giá khuyến mãi (đ, để trống nếu không giảm)</label>
-        <input asp-for="GiaKhuyenMai" class="form-control" type="number" min="0" step="1000" />
-        <span asp-validation-for="GiaKhuyenMai" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="CategoryId">Danh mục</label>
-        <select asp-for="CategoryId" class="form-control" asp-items="@(new SelectList(categories, "Id", "Ten"))"></select>
-    </div>
-    <div class="form-group">
-        <label asp-for="BrandId">Hãng</label>
-        <select asp-for="BrandId" class="form-control" asp-items="@(new SelectList(brands, "Id", "Ten"))"></select>
-    </div>
-    <div class="form-group">
-        <label asp-for="TonKho">Tồn kho</label>
-        <input asp-for="TonKho" class="form-control" type="number" min="0" />
-        <span asp-validation-for="TonKho" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label><input asp-for="LaNoiBat" /> Sản phẩm nổi bật (hiện ở trang chủ)</label>
-    </div>
-    <div class="form-group">
-        <label for="anhMoi">Ảnh sản phẩm mới (jpg, png, webp, svg — tối đa 5MB)</label>
-        <input type="file" id="anhMoi" name="anhMoi" class="form-control" accept=".jpg,.jpeg,.png,.webp,.svg" />
-        <p class="text-muted">Ảnh mới sẽ thay ảnh chính hiện tại. Để trống nếu giữ ảnh cũ.</p>
-    </div>
-
-    <h2>Thông số kỹ thuật</h2>
-    <p class="text-muted">Chỉ điền trường nào sản phẩm thật sự có. Ví dụ: đồng hồ không có chip/RAM, chuột không có pin.</p>
-    <div class="form-group">
-        <label asp-for="Specs.Chip">Chip</label>
-        <input asp-for="Specs.Chip" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.Ram">RAM</label>
-        <input asp-for="Specs.Ram" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.Rom">Bộ nhớ (ROM)</label>
-        <input asp-for="Specs.Rom" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.Pin">Pin</label>
-        <input asp-for="Specs.Pin" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.ManHinh">Màn hình</label>
-        <input asp-for="Specs.ManHinh" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.Camera">Camera</label>
-        <input asp-for="Specs.Camera" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.CardDoHoa">Card đồ họa</label>
-        <input asp-for="Specs.CardDoHoa" class="form-control" />
-    </div>
-    <div class="form-group">
-        <label asp-for="Specs.ThongSoKhac">Thông số khác</label>
-        <input asp-for="Specs.ThongSoKhac" class="form-control" />
+    <div class="admin-form-grid">
+        <fieldset class="admin-form-card">
+            <legend>Thông tin chung</legend>
+            <div class="form-group">
+                <label asp-for="Ten">Tên sản phẩm</label>
+                <input asp-for="Ten" class="form-control" />
+                <span asp-validation-for="Ten" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="MoTa">Mô tả</label>
+                <textarea asp-for="MoTa" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label asp-for="CategoryId">Danh mục</label>
+                <select asp-for="CategoryId" class="form-control" asp-items="@(new SelectList(categories, "Id", "Ten"))"></select>
+            </div>
+            <div class="form-group">
+                <label asp-for="BrandId">Hãng</label>
+                <select asp-for="BrandId" class="form-control" asp-items="@(new SelectList(brands, "Id", "Ten"))"></select>
+            </div>
+            <div class="form-group">
+                <label><input asp-for="LaNoiBat" /> Sản phẩm nổi bật (hiện ở trang chủ)</label>
+            </div>
+        </fieldset>
+        <fieldset class="admin-form-card">
+            <legend>Giá &amp; kho</legend>
+            <div class="form-group">
+                <label asp-for="Gia">Giá gốc (đ)</label>
+                <input asp-for="Gia" class="form-control" type="number" min="0" step="1000" />
+                <span asp-validation-for="Gia" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="GiaKhuyenMai">Giá khuyến mãi (đ, để trống nếu không giảm)</label>
+                <input asp-for="GiaKhuyenMai" class="form-control" type="number" min="0" step="1000" />
+                <span asp-validation-for="GiaKhuyenMai" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="TonKho">Tồn kho</label>
+                <input asp-for="TonKho" class="form-control" type="number" min="0" />
+                <span asp-validation-for="TonKho" class="text-danger"></span>
+            </div>
+        </fieldset>
+        <fieldset class="admin-form-card">
+            <legend>Ảnh</legend>
+            <div class="form-group">
+                <label for="anhMoi">Ảnh sản phẩm mới (jpg, png, webp, svg — tối đa 5MB)</label>
+                <input type="file" id="anhMoi" name="anhMoi" class="form-control" accept=".jpg,.jpeg,.png,.webp,.svg" />
+                <p class="text-muted">Ảnh mới sẽ thay ảnh chính hiện tại. Để trống nếu giữ ảnh cũ.</p>
+            </div>
+        </fieldset>
+        <fieldset class="admin-form-card">
+            <legend>Thông số kỹ thuật</legend>
+            <p class="text-muted">Chỉ điền trường nào sản phẩm thật sự có. Ví dụ: đồng hồ không có chip/RAM, chuột không có pin.</p>
+            <div class="form-group">
+                <label asp-for="Specs.Chip">Chip</label>
+                <input asp-for="Specs.Chip" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.Ram">RAM</label>
+                <input asp-for="Specs.Ram" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.Rom">Bộ nhớ (ROM)</label>
+                <input asp-for="Specs.Rom" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.Pin">Pin</label>
+                <input asp-for="Specs.Pin" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.ManHinh">Màn hình</label>
+                <input asp-for="Specs.ManHinh" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.Camera">Camera</label>
+                <input asp-for="Specs.Camera" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.CardDoHoa">Card đồ họa</label>
+                <input asp-for="Specs.CardDoHoa" class="form-control" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Specs.ThongSoKhac">Thông số khác</label>
+                <input asp-for="Specs.ThongSoKhac" class="form-control" />
+            </div>
+        </fieldset>
     </div>
 
     <button type="submit" class="btn btn-primary">Lưu sản phẩm</button>

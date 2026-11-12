@@ -11,7 +11,7 @@
 else
 {
     <div class="table-wrap"><table class="table">
-        <thead><tr><th>Ảnh</th><th>Tiêu đề</th><th>Link</th><th>Thứ tự</th><th>Trạng thái</th><th></th></tr></thead>
+        <thead><tr><th scope="col">Ảnh</th><th scope="col">Tiêu đề</th><th scope="col">Link</th><th scope="col">Thứ tự</th><th scope="col">Trạng thái</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr></thead>
         <tbody>
             @foreach (var b in Model)
             {
@@ -20,15 +20,17 @@ else
                     <td><strong>@b.TieuDe</strong></td>
                     <td>@(string.IsNullOrEmpty(b.LinkUrl) ? "—" : b.LinkUrl)</td>
                     <td>@b.ThuTu</td>
-                    <td>@(b.IsActive ? "Đang bật" : "Đang tắt")</td>
+                    <td><partial name="_TrangThaiBadge" model="@(b.IsActive ? "Đang bật" : "Đang tắt")" /></td>
                     <td>
+                        @* Dot 3 (B8): sua banner (POST SuaBanner). *@
+                        <a asp-action="SuaBanner" asp-route-id="@b.Id" class="btn btn-secondary btn-sm">Sửa</a>
                         <form asp-action="DoiTrangThaiBanner" method="post" class="inline-form">
                             <input type="hidden" name="id" value="@b.Id" />
                             <button type="submit" class="btn btn-secondary btn-sm">@(b.IsActive ? "Tắt" : "Bật")</button>
                         </form>
                         <form asp-action="XoaBanner" method="post" class="inline-form">
                             <input type="hidden" name="id" value="@b.Id" />
-                            <button type="submit" class="link-button" onclick="return confirm('Xóa banner @b.TieuDe?');">Xóa</button>
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa banner @b.TieuDe?');">Xóa</button>
                         </form>
                     </td>
                 </tr>
@@ -38,22 +40,31 @@ else
 }
 
 <h2 class="mt">Thêm banner mới</h2>
+@* Dot 3 (A7): form nhom thanh card 2 cot; giu nguyen field + validation. *@
 <form asp-action="ThemBanner" method="post">
-    <div class="form-group">
-        <label for="TieuDe">Tiêu đề</label>
-        <input id="TieuDe" name="tieuDe" class="form-control" required maxlength="200" />
-    </div>
-    <div class="form-group">
-        <label for="AnhUrl">Ảnh (đường dẫn /images/... hoặc link http)</label>
-        <input id="AnhUrl" name="anhUrl" class="form-control" required maxlength="500" placeholder="/images/banner-tet.jpg" />
-    </div>
-    <div class="form-group">
-        <label for="LinkUrl">Link đích (không bắt buộc)</label>
-        <input id="LinkUrl" name="linkUrl" class="form-control" maxlength="500" />
-    </div>
-    <div class="form-group">
-        <label for="ThuTu">Thứ tự</label>
-        <input id="ThuTu" name="thuTu" class="form-control input-narrow" type="number" min="0" value="0" required />
+    <div class="admin-form-grid">
+        <fieldset class="admin-form-card">
+            <legend>Nội dung</legend>
+            <div class="form-group">
+                <label for="TieuDe">Tiêu đề</label>
+                <input id="TieuDe" name="tieuDe" class="form-control" required maxlength="200" />
+            </div>
+            <div class="form-group">
+                <label for="LinkUrl">Link đích (không bắt buộc)</label>
+                <input id="LinkUrl" name="linkUrl" class="form-control" maxlength="500" />
+            </div>
+        </fieldset>
+        <fieldset class="admin-form-card">
+            <legend>Hiển thị</legend>
+            <div class="form-group">
+                <label for="AnhUrl">Ảnh (đường dẫn /images/... hoặc link http)</label>
+                <input id="AnhUrl" name="anhUrl" class="form-control" required maxlength="500" placeholder="/images/banner-tet.jpg" />
+            </div>
+            <div class="form-group">
+                <label for="ThuTu">Thứ tự</label>
+                <input id="ThuTu" name="thuTu" class="form-control input-narrow" type="number" min="0" value="0" required />
+            </div>
+        </fieldset>
     </div>
     <button type="submit" class="btn btn-primary">Thêm banner</button>
 </form>

@@ -1,51 +1,80 @@
 @model TechZone.Models.Combo
 @{
     ViewData["Title"] = "Admin — Sửa combo";
+    var products = (List<TechZone.Models.Product>)ViewBag.Products;
 }
 <h1>Sửa combo — @Model.Ten</h1>
 
-@if (TempData["Error"] is string loi)
-{
-    <p class="alert alert-danger">@loi</p>
-}
-
 <p>Đã bán: <strong>@Model.DaBan bộ</strong> (không hạ giới hạn xuống dưới số này).</p>
+
+@* Dot 3 (B8): them/xoa mon ngay o trang Sua — tai dung action ThemMonCombo /
+   XoaMonCombo da co (gui kem tuTrang=SuaCombo de quay lai day thay vi ve
+   danh sach; xem AdminController.VeCombosHoacSuaCombo). *@
+<h2>Món trong combo (@Model.Items.Count)</h2>
 <ul>
     @foreach (var item in Model.Items)
     {
-        <li>@item.Product.Ten × @item.SoLuong</li>
+        <li>
+            <span class="product-thumb-cell">@item.Product.Ten × @item.SoLuong</span>
+            <form asp-action="XoaMonCombo" method="post" class="inline-form">
+                <input type="hidden" name="id" value="@item.Id" />
+                <input type="hidden" name="tuTrang" value="SuaCombo" />
+                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa món này khỏi combo?');">Xóa món</button>
+            </form>
+        </li>
     }
 </ul>
-<p class="text-muted">Sửa món trong combo ở trang danh sách (thêm/xóa món).</p>
+<form asp-action="ThemMonCombo" method="post" class="inline-form">
+    <input type="hidden" name="comboId" value="@Model.Id" />
+    <input type="hidden" name="tuTrang" value="SuaCombo" />
+    <select name="productId" class="form-control" required aria-label="Sản phẩm thêm vào combo">
+        <option value="">— Thêm món —</option>
+        @foreach (var p in products)
+        {
+            <option value="@p.Id">@p.Ten (@p.GiaBan.ToString("N0")đ)</option>
+        }
+    </select>
+    <input type="number" name="soLuong" class="form-control" min="1" value="1" style="width: 70px" aria-label="Số lượng món thêm" />
+    <button type="submit" class="btn btn-secondary">Thêm món</button>
+</form>
 
+<h2 class="mt">Thông tin combo</h2>
 <form asp-action="SuaCombo" method="post">
     <input type="hidden" name="id" value="@Model.Id" />
-    <div class="form-group">
-        <label for="Ten">Tên combo</label>
-        <input id="Ten" name="ten" class="form-control" required maxlength="200" value="@Model.Ten" />
-    </div>
-    <div class="form-group">
-        <label for="MoTa">Mô tả</label>
-        <input id="MoTa" name="moTa" class="form-control" maxlength="2000" value="@Model.MoTa" />
-    </div>
-    <div class="form-group">
-        <label for="PhanTramGiam">% giảm trên tổng giá cả bộ (0 &lt; % &lt; 100)</label>
-        <input id="PhanTramGiam" name="phanTramGiam" class="form-control" type="number" min="0.01" max="99.99" step="0.01" value="@Model.PhanTramGiam" required />
-    </div>
-    <div class="form-group">
-        <label for="BatDau">Bắt đầu</label>
-        <input id="BatDau" name="batDau" class="form-control" type="date" value="@Model.BatDau.ToString("yyyy-MM-dd")" required />
-    </div>
-    <div class="form-group">
-        <label for="KetThuc">Kết thúc</label>
-        <input id="KetThuc" name="ketThuc" class="form-control" type="date" value="@Model.KetThuc.ToString("yyyy-MM-dd")" required />
-    </div>
-    <div class="form-group">
-        <label for="GioiHanSL">Giới hạn số bộ (để trống = không giới hạn)</label>
-        <input id="GioiHanSL" name="gioiHanSL" class="form-control" type="number" min="1" value="@Model.GioiHanSL" />
-    </div>
-    <div class="form-group">
-        <label><input type="checkbox" name="isActive" value="true" @(Model.IsActive ? "checked" : "") /> Đang bật</label>
+    <div class="admin-form-grid">
+        <fieldset class="admin-form-card">
+            <legend>Thông tin</legend>
+            <div class="form-group">
+                <label for="Ten">Tên combo</label>
+                <input id="Ten" name="ten" class="form-control" required maxlength="200" value="@Model.Ten" />
+            </div>
+            <div class="form-group">
+                <label for="MoTa">Mô tả</label>
+                <input id="MoTa" name="moTa" class="form-control" maxlength="2000" value="@Model.MoTa" />
+            </div>
+        </fieldset>
+        <fieldset class="admin-form-card">
+            <legend>Giảm giá &amp; thời gian</legend>
+            <div class="form-group">
+                <label for="PhanTramGiam">% giảm trên tổng giá cả bộ (0 &lt; % &lt; 100)</label>
+                <input id="PhanTramGiam" name="phanTramGiam" class="form-control" type="number" min="0.01" max="99.99" step="0.01" value="@Model.PhanTramGiam" required />
+            </div>
+            <div class="form-group">
+                <label for="BatDau">Bắt đầu</label>
+                <input id="BatDau" name="batDau" class="form-control" type="date" value="@Model.BatDau.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="form-group">
+                <label for="KetThuc">Kết thúc</label>
+                <input id="KetThuc" name="ketThuc" class="form-control" type="date" value="@Model.KetThuc.ToString("yyyy-MM-dd")" required />
+            </div>
+            <div class="form-group">
+                <label for="GioiHanSL">Giới hạn số bộ (để trống = không giới hạn)</label>
+                <input id="GioiHanSL" name="gioiHanSL" class="form-control" type="number" min="1" value="@Model.GioiHanSL" />
+            </div>
+            <div class="form-group">
+                <label><input type="checkbox" name="isActive" value="true" @(Model.IsActive ? "checked" : "") /> Đang bật</label>
+            </div>
+        </fieldset>
     </div>
     <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
     <a asp-action="Combos" class="btn btn-secondary">Về danh sách combo</a>

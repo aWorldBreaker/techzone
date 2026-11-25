@@ -1,0 +1,13 @@
+@model int
+@if (Model <= 0)
+{
+    <span class="stock-out">Hết hàng</span>
+}
+else if (Model <= 10)
+{
+    <span class="stock-low">Sắp hết · còn @Model</span>
+}
+else
+{
+    <span class="stock-ok">Còn @Model</span>
+}

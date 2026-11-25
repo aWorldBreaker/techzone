@@ -4,10 +4,12 @@
     var tuKhoa = (string?)ViewBag.TuKhoa;
     var sort = (string?)ViewBag.Sort;
 }
-<div class="section-head">
-    <h1>Quản lý sản phẩm (@ViewBag.TongMuc)</h1>
-    <a class="btn btn-primary" asp-action="ProductForm">+ Thêm sản phẩm</a>
-</div>
+<header class="market-heading">
+    <div class="section-head">
+        <h1>Quản lý sản phẩm</h1>
+        <a class="btn hero-buy" asp-action="ProductForm">Thêm sản phẩm</a>
+    </div>
+</header>
 
 @* Dot 2 (B1): tim kiem + sap xep server (GET, giu param qua phan trang). *@
 <form method="get" asp-action="Products" class="admin-search" role="search">
@@ -23,7 +25,7 @@
         <option value="ban-chay" selected="@(sort == "ban-chay")">Bán chạy nhất</option>
     </select>
     <button type="submit" class="btn btn-primary">Tìm</button>
-    @if (tuKhoa is not null)
+    @if (tuKhoa is not null || !string.IsNullOrEmpty(sort))
     {
         <a class="btn btn-secondary" asp-action="Products">Xóa lọc</a>
     }
@@ -32,33 +34,41 @@
 
 @if (!Model.Any())
 {
-    <p class="admin-empty" role="status">🔍 Không tìm thấy sản phẩm nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử từ khóa khác hoặc <a asp-action="Products">xóa bộ lọc</a>.</p>
+    <p class="admin-empty" role="status">Không tìm thấy sản phẩm nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : ""). <a asp-action="Products">Xem danh sách đầy đủ</a>.</p>
 }
 else
 {
-<div class="table-wrap"><table class="table table--card-mobile">
-    <thead>
-        <tr><th scope="col">Sản phẩm</th><th scope="col">Danh mục</th><th scope="col">Hãng</th><th scope="col">Giá bán</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr>
+<div class="table-wrap admin-record-list" tabindex="0" role="region" aria-label="Danh sách sản phẩm">
+<table class="table table--card-mobile" role="table" aria-label="Sản phẩm">
+    <thead role="rowgroup">
+        <tr role="row"><th scope="col" role="columnheader">Sản phẩm</th><th scope="col" role="columnheader">Danh mục</th><th scope="col" role="columnheader">Hãng</th><th scope="col" role="columnheader">Giá bán</th><th scope="col" role="columnheader">Tồn kho</th><th scope="col" role="columnheader">Đã bán</th><th scope="col" role="columnheader">Thao tác</th></tr>
     </thead>
-    <tbody>
+    <tbody role="rowgroup">
         @foreach (var p in Model)
         {
-            <tr>
-                <td data-label="Sản phẩm"><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
-                <td data-label="Danh mục">@p.Category.Ten</td>
-                <td data-label="Hãng">@p.Brand.Ten</td>
-                <td data-label="Giá bán">
-                    @p.GiaBan.ToString("N0")đ
+            <tr role="row">
+                <th scope="row" role="rowheader" class="admin-record-lead" data-label="Sản phẩm">
+                    <span class="product-thumb-cell">
+                        <img class="product-thumb" src="@p.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />
+                        <span><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a><small class="admin-record-code text-muted">Mã #@p.Id</small></span>
+                    </span>
+                </th>
+                <td role="cell" data-label="Danh mục">@p.Category.Ten</td>
+                <td role="cell" data-label="Hãng">@p.Brand.Ten</td>
+                <td role="cell" class="admin-record-wide" data-label="Giá bán">
+                    <strong class="admin-money">@p.GiaBan.ToString("N0")đ</strong>
                     @if (p.GiaKhuyenMai.HasValue) { <s class="text-muted">@p.Gia.ToString("N0")đ</s> }
                 </td>
-                <td data-label="Tồn kho">@p.TonKho</td>
-                <td data-label="Đã bán">@p.LuotBan</td>
-                <td data-label="Thao tác">
-                    <a asp-action="ProductForm" asp-route-id="@p.Id" class="btn btn-secondary btn-sm">Sửa</a>
-                    <form asp-action="XoaSanPham" method="post" class="inline-form">
-                        <input type="hidden" name="id" value="@p.Id" />
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa @p.Ten?');">Xóa</button>
-                    </form>
+                <td role="cell" data-label="Tồn kho"><span class="badge @(p.TonKho == 0 ? "badge-huy" : p.TonKho <= 10 ? "badge-cho" : "badge-xong")">@(p.TonKho == 0 ? "Hết hàng · 0" : $"Còn {p.TonKho}")</span></td>
+                <td role="cell" data-label="Đã bán">@p.LuotBan</td>
+                <td role="cell" class="admin-record-actions" data-label="Thao tác">
+                    <div class="admin-row-actions">
+                        <a asp-action="ProductForm" asp-route-id="@p.Id" class="btn btn-secondary btn-sm" aria-label="Sửa @p.Ten">Sửa</a>
+                        <form asp-action="XoaSanPham" method="post">
+                            <input type="hidden" name="id" value="@p.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm" aria-label="Xóa @p.Ten" data-confirm="Xóa @p.Ten?" onclick="return confirm(this.dataset.confirm);">Xóa</button>
+                        </form>
+                    </div>
                 </td>
             </tr>
         }

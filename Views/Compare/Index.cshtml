@@ -4,86 +4,127 @@
 }
 @{
     ViewData["Title"] = "So sánh sản phẩm";
+    var thongSo = new (string Ten, Func<Product, string?> Doc)[]
+    {
+        ("Chip", p => p.Specs?.Chip),
+        ("RAM", p => p.Specs?.Ram),
+        ("Bộ nhớ", p => p.Specs?.Rom),
+        ("Pin", p => p.Specs?.Pin),
+        ("Màn hình", p => p.Specs?.ManHinh),
+        ("Camera", p => p.Specs?.Camera),
+        ("Card đồ họa", p => p.Specs?.CardDoHoa)
+    };
+    var soCot = Model.Count + 1;
+    var day = Model.Count == 3;
 }
-<h1>So sánh sản phẩm</h1>
 
-@if (!Model.Any())
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Products" asp-action="Index">Ngành hàng</a>
+        <span aria-hidden="true">/</span><span aria-current="page">So sánh</span>
+    </nav>
+    <div class="section-head">
+        <h1>So sánh sản phẩm</h1>
+        <a class="btn hero-buy" asp-controller="Products" asp-action="Index">@(day ? "Xem ngành hàng" : "Thêm sản phẩm")</a>
+    </div>
+    @if (Model.Count > 0)
+    {
+        <p>Đang so sánh @Model.Count / 3 sản phẩm</p>
+    }
+</header>
+
+@if (Model.Count == 0)
 {
-    <p class="text-muted">Chưa có sản phẩm nào trong so sánh. Hãy bấm “＋ So sánh” ở thẻ sản phẩm hoặc trang chi tiết để thêm (tối đa 3 sản phẩm).</p>
-    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Xem sản phẩm</a>
+    <p class="empty-state">Chưa có sản phẩm nào. Bấm nút “So sánh” trên sản phẩm để thêm vào bảng, tối đa 3 sản phẩm.</p>
 }
 else
 {
-    <form asp-action="XoaHet" method="post" class="inline-form">
-        <button type="submit" class="btn btn-secondary btn-sm">Xóa hết so sánh</button>
-    </form>
-    @* Sprint 6 Module 3: bọc bảng trong .table-wrap (như 17 bảng Admin ở
-       Module 6) — bảng 3 SP rộng 426px, tràn 52px ở viewport 390 nếu để
-       trần; trong khung thì cuộn ngang trong bảng, trang không tràn. *@
-    <div class="table-wrap">
-    <table class="table compare-table mt">
-        <thead>
-            <tr>
-                <th></th>
-                @foreach (var p in Model)
-                {
-                    <th>
-                        <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">
-                            <img src="@p.AnhDaiDien" alt="@p.Ten" class="compare-thumb" />
-                        </a>
-                        <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a>
-                    </th>
-                }
-            </tr>
-        </thead>
-        <tbody>
-            <tr><th>Giá bán</th>@foreach (var p in Model) { <td><strong>@p.GiaBan.ToString("N0")đ</strong></td> }</tr>
-            <tr><th>Giá gốc</th>@foreach (var p in Model) { <td>@p.Gia.ToString("N0")đ</td> }</tr>
-            <tr><th>Chip</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Chip)</td> }</tr>
-            <tr><th>RAM</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Ram)</td> }</tr>
-            <tr><th>Bộ nhớ</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Rom)</td> }</tr>
-            <tr><th>Pin</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Pin)</td> }</tr>
-            <tr><th>Màn hình</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.ManHinh)</td> }</tr>
-            <tr><th>Camera</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.Camera)</td> }</tr>
-            <tr><th>Card đồ họa</th>@foreach (var p in Model) { <td>@Hien(p.Specs?.CardDoHoa)</td> }</tr>
-            <tr>
-                <th>Đánh giá</th>
-                @foreach (var p in Model)
-                {
-                    @* Follow-up M4-3: nhu _ProductCard — TB tu review da duyet
-                       (p.Reviews da loc IsApproved o controller), khong dung
-                       p.DanhGiaTB (seed cu). 0 review -> "Chưa có đánh giá".
-                       Chi hien thi, khong doi logic compare/review. LuotBan
-                       giu nguyen: bo dem tich luy (xem TEST-REPORT §19). *@
-                    var soDG = p.Reviews.Count;
-                    var tb = soDG > 0 ? Math.Round(p.Reviews.Average(r => r.Sao), 1) : 0;
-                    <td>@(soDG > 0 ? $"{tb:0.0} sao ({soDG} đánh giá)" : "Chưa có đánh giá")</td>
-                }
-            </tr>
-            <tr><th>Đã bán</th>@foreach (var p in Model) { <td>@p.LuotBan</td> }</tr>
-            <tr><th>Tồn kho</th>@foreach (var p in Model) { <td>@(p.TonKho > 0 ? p.TonKho.ToString() : "Hết hàng")</td> }</tr>
-            <tr><th>Bảo hành</th>@foreach (var p in Model) { <td>24 tháng</td> }</tr>
-            <tr>
-                <th></th>
-                @foreach (var p in Model)
-                {
-                    <td>
-                        <div class="compare-actions">
-                            <form asp-controller="Cart" asp-action="Add" method="post">
-                                <input type="hidden" name="productId" value="@p.Id" />
-                                <input type="hidden" name="soLuong" value="1" />
-                                <button type="submit" class="btn btn-primary btn-sm btn-block" @(p.TonKho == 0 ? "disabled" : "")>Thêm vào giỏ</button>
-                            </form>
-                            <form asp-action="Remove" method="post">
-                                <input type="hidden" name="productId" value="@p.Id" />
-                                <button type="submit" class="btn btn-secondary btn-sm btn-block">Bỏ so sánh</button>
-                            </form>
-                        </div>
-                    </td>
-                }
-            </tr>
-        </tbody>
-    </table>
-    </div>
-    <p class="mt"><a asp-controller="Products" asp-action="Index">← Tiếp tục mua sắm</a></p>
+    <section class="compare-board @(day ? "compare-board-full" : "")" aria-labelledby="compare-title">
+        <div class="section-head compare-toolbar">
+            <h2 id="compare-title">Bảng đối chiếu</h2>
+            <form asp-action="XoaHet" method="post">
+                <button type="submit" class="btn btn-secondary">Xóa hết so sánh</button>
+            </form>
+        </div>
+        @if (day)
+        {
+            <p class="compare-scroll-hint" id="compare-scroll-hint">Vuốt ngang để xem đủ sản phẩm. Cột tên thông số luôn hiển thị.</p>
+        }
+        <div class="compare-wrap" tabindex="0" role="region" aria-label="Bảng so sánh sản phẩm"
+             aria-describedby="@(day ? "compare-scroll-hint" : null)">
+            <table class="table compare-table" aria-labelledby="compare-title">
+                <thead>
+                    <tr>
+                        <th scope="col">Sản phẩm</th>
+                        @foreach (var p in Model)
+                        {
+                            <th scope="col">
+                                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="compare-product">
+                                    <img src="@p.AnhDaiDien" alt="" class="compare-thumb" width="96" height="96" />
+                                    @p.Ten
+                                </a>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="compare-group"><th scope="rowgroup" colspan="@soCot"><span>Giá và tình trạng</span></th></tr>
+                    <tr class="compare-price"><th scope="row">Giá bán</th>@foreach (var p in Model) { <td><strong class="price-amount">@p.GiaBan.ToString("N0")đ</strong></td> }</tr>
+                    <tr><th scope="row">Giá gốc</th>@foreach (var p in Model) { <td class="compare-money">@p.Gia.ToString("N0")đ</td> }</tr>
+                    <tr><th scope="row">Tồn kho</th>@foreach (var p in Model) { <td><partial name="_StockStatus" model="p.TonKho" /></td> }</tr>
+                    <tr>
+                        <th scope="row">Thao tác</th>
+                        @foreach (var p in Model)
+                        {
+                            <td>
+                                <div class="compare-actions">
+                                    <form asp-controller="Cart" asp-action="Add" method="post">
+                                        <input type="hidden" name="productId" value="@p.Id" />
+                                        <input type="hidden" name="soLuong" value="1" />
+                                        <button type="submit" class="btn btn-primary btn-block" disabled="@(p.TonKho <= 0)"
+                                                aria-label="@(p.TonKho <= 0 ? null : $"Thêm vào giỏ: {p.Ten}")">@(p.TonKho <= 0 ? "Hết hàng" : "Thêm vào giỏ")</button>
+                                    </form>
+                                    <form asp-action="Remove" method="post">
+                                        <input type="hidden" name="productId" value="@p.Id" />
+                                        <button type="submit" class="btn btn-secondary btn-block" aria-label="Bỏ so sánh: @p.Ten">Bỏ so sánh</button>
+                                    </form>
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                </tbody>
+                <tbody>
+                    <tr class="compare-group"><th scope="rowgroup" colspan="@soCot"><span>Cấu hình</span></th></tr>
+                    @foreach (var muc in thongSo)
+                    {
+                        <tr>
+                            <th scope="row">@muc.Ten</th>
+                            @foreach (var p in Model)
+                            {
+                                <td>@Hien(muc.Doc(p))</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+                <tbody>
+                    <tr class="compare-group"><th scope="rowgroup" colspan="@soCot"><span>Đánh giá và bảo hành</span></th></tr>
+                    <tr>
+                        <th scope="row">Đánh giá</th>
+                        @foreach (var p in Model)
+                        {
+                            var soDG = p.Reviews.Count;
+                            var tb = soDG > 0 ? Math.Round(p.Reviews.Average(r => r.Sao), 1) : 0;
+                            <td>@(soDG > 0 ? $"{tb:0.0} sao ({soDG} đánh giá)" : "Chưa có đánh giá")</td>
+                        }
+                    </tr>
+                    <tr><th scope="row">Đã bán</th>@foreach (var p in Model) { <td>@p.LuotBan</td> }</tr>
+                    <tr><th scope="row">Bảo hành</th>@foreach (var p in Model) { <td>24 tháng</td> }</tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/compare.css" asp-append-version="true" />
 }

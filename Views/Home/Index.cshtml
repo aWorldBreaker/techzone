@@ -24,63 +24,68 @@
         : (hero?.MoTa ?? "");
 }
 
-@* Hero: một sản phẩm thật, giá thật, thông số thật — không slogan chung chung.
-   Phase 5: ten/gia/anh/link doc tu DB (ViewBag.Hero); Id 1 khong co trong DB
-   thi hien hero chung khong kem gia, khong ghi tay gia SP khac. *@
-@if (hero is not null)
-{
-    <section class="hero">
-        <div>
-            <p class="hero-eyebrow">Sản phẩm nổi bật</p>
-            <h1>@hero.Ten</h1>
-            <p class="hero-price">
-                <strong>@hero.GiaBan.ToString("N0")đ</strong>
-                @if (hero.GiaKhuyenMai.HasValue && hero.Gia > hero.GiaBan)
-                {
-                    <s>@hero.Gia.ToString("N0")đ</s>
-                    <span class="hero-save">Giảm @((hero.Gia - hero.GiaBan).ToString("N0"))đ</span>
-                }
-            </p>
-            <p class="lead">@heroLead.@heroDanhGia</p>
-            <div class="hero-actions">
-                <a class="btn btn-primary" asp-controller="Products" asp-action="Details" asp-route-id="@hero.Id">Mua ngay — @hero.GiaBan.ToString("N0")đ</a>
-                <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
-            </div>
-            @* Phase 5 — go cam ket chua xac minh: "Giao nhanh 2h noi thanh"
-               khong co can cu nao trong code (PhiShip chi theo don >= 2tr /
-               voucher / hang — PriceCalculationService:112), thay bang muc
-               mien phi ship that co trong code; "Tra gop 0%" ghi ro gia lap
-               theo mau Checkout. "Bao hanh 24 thang" GIU — chinh sach that:
-               TraCuuBaoHanh/Warranty tinh han = NgayDat.AddMonths(24). *@
-            <p class="hero-facts">Bảo hành 24 tháng <span aria-hidden="true">•</span> Miễn phí ship đơn từ 2.000.000đ <span aria-hidden="true">•</span> Trả góp 0% (giả lập)</p>
-        </div>
-        <div class="hero-image">
-            <img src="@hero.AnhDaiDien" alt="@hero.Ten" fetchpriority="high" />
-        </div>
-    </section>
-}
-else
-{
-    <section class="hero">
-        <div>
-            <p class="hero-eyebrow">TechZone</p>
-            <h1>Công nghệ chính hãng, giá thật mỗi ngày</h1>
-            <p class="lead">Sản phẩm nổi bật hiện chưa có trong cửa hàng — xem toàn bộ danh mục bên dưới.</p>
-            <div class="hero-actions">
-                <a class="btn btn-secondary" asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
-            </div>
-        </div>
-    </section>
-}
+<div class="market-floor">
+    <nav class="department-menu" aria-label="Ngành hàng">
+        <h2>Ngành hàng</h2>
+        @foreach (var category in danhMuc.Where(category => category.Products.Count > 0).OrderBy(category => category.Id))
+        {
+            var product = category.Products.OrderByDescending(item => item.LuotBan).First();
+            <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@category.Id">
+                <span class="department-image"><img src="@product.AnhDaiDien" alt="" width="36" height="36" /></span>
+                <span>@category.Ten</span>
+                <span aria-hidden="true">›</span>
+            </a>
+        }
+        <a class="department-all" asp-controller="Products" asp-action="Index">Tất cả sản phẩm <span aria-hidden="true">→</span></a>
+    </nav>
 
-@* Banner khuyen mai do Admin quan ly (nhom D) — partial tu an khi khong co. *@
-@if (ViewBag.Banners is List<Banner> banners && banners.Any())
-{
-    <partial name="_Banners" model="banners" />
-}
+    <section class="hero">
+        <div class="hero-copy">
+            <p class="hero-eyebrow">Siêu thị điện máy TechZone</p>
+            @if (hero is not null)
+            {
+                <h1>@hero.Ten</h1>
+                <p class="lead">@heroLead.@heroDanhGia</p>
+                <p class="hero-price">
+                    <strong>@hero.GiaBan.ToString("N0")đ</strong>
+                    @if (hero.GiaKhuyenMai.HasValue && hero.Gia > hero.GiaBan)
+                    {
+                        <s>@hero.Gia.ToString("N0")đ</s>
+                        <span class="hero-save">Giảm @((hero.Gia - hero.GiaBan).ToString("N0"))đ</span>
+                    }
+                </p>
+                <a class="btn hero-buy" asp-controller="Products" asp-action="Details" asp-route-id="@hero.Id">Xem sản phẩm <span aria-hidden="true">→</span></a>
+            }
+            else
+            {
+                <h1>Thiết bị điện máy</h1>
+                <a class="btn hero-buy" asp-controller="Products" asp-action="Index">Xem sản phẩm <span aria-hidden="true">→</span></a>
+            }
+        </div>
+        @if (hero is not null)
+        {
+            <div class="hero-image">
+                <img src="@hero.AnhDaiDien" alt="@hero.Ten" fetchpriority="high" />
+            </div>
+        }
+    </section>
+
+    <section class="market-promos" id="khuyen-mai">
+        <h2>Ưu đãi tại siêu thị</h2>
+        @if (ViewBag.Banners is List<Banner> banners && banners.Count > 0)
+        {
+            <partial name="_Banners" model="banners" />
+        }
+        else
+        {
+            <p class="text-muted">Chưa có chương trình nổi bật.</p>
+        }
+        <a class="promo-sale-link" href="#flash-sale">Xem khung giờ Flash Sale <span aria-hidden="true">→</span></a>
+    </section>
+</div>
 
 @* Dải số liệu thật — đếm từ DB ở controller, không bịa con số xã hội chứng minh. *@
-<section class="proof-strip reveal" aria-label="Số liệu cửa hàng">
+<section class="proof-strip" aria-label="Số liệu cửa hàng">
     <div class="proof-item"><b data-count="@ViewBag.TongSanPham">@ViewBag.TongSanPham</b><span>sản phẩm chính hãng</span></div>
     <div class="proof-item"><b data-count="@ViewBag.TongHang">@ViewBag.TongHang</b><span>hãng công nghệ</span></div>
     <div class="proof-item"><b data-count="@ViewBag.TongDanhMuc">@ViewBag.TongDanhMuc</b><span>danh mục</span></div>
@@ -89,7 +94,7 @@ else
 
 @if (flashSale.Any() && ketThuc.HasValue)
 {
-    <section class="section flash-sale reveal" aria-label="Flash Sale">
+    <section class="section flash-sale" aria-label="Flash Sale">
         <div class="section-head">
             <h2>Flash Sale</h2>
             <span class="text-muted">Kết thúc lúc @ketThuc.Value.ToString("HH:mm") hôm nay</span>
@@ -122,7 +127,7 @@ else
                         }
                         <p class="product-meta">@(soDGFlash > 0 ? $"★ {tbFlash:0.0} ({soDGFlash} đánh giá)" : "Chưa có đánh giá") · Đã bán @f.Product.LuotBan</p>
                         <p class="product-price">
-                            <strong>@f.GiaSale.ToString("N0")đ</strong>
+                            <strong class="price-amount">@f.GiaSale.ToString("N0")đ</strong>
                             <s>@f.Product.Gia.ToString("N0")đ</s>
                         </p>
                         <p class="product-meta">Đã bán @f.DaBan / @f.GioiHanSL • <span class="stock-left">Còn @(f.GioiHanSL - f.DaBan)</span></p>
@@ -141,7 +146,7 @@ else
 {
     @* Phase 5 — empty state: hien thong bao thay vi an han muc (khach
        quen cho co Flash Sale se biet quay lai sau, khong tuong trang loi). *@
-    <section class="section flash-sale reveal" aria-label="Flash Sale">
+    <section class="section flash-sale" aria-label="Flash Sale">
         <div class="section-head">
             <h2>Flash Sale</h2>
         </div>
@@ -152,28 +157,7 @@ else
 @* Flash Sale theo khung gio (nhom B) — partial tu doc ViewBag.Slots. *@
 <partial name="_FlashSaleSlots" />
 
-<section class="section reveal">
-    <div class="section-head">
-        <h2>Danh mục</h2>
-    </div>
-    @if (danhMuc.Any())
-    {
-        <div class="chip-row">
-            @foreach (var c in danhMuc)
-            {
-                @* Phase 5 — chip co chu cai dau lam "icon" (Category khong
-                   co truong icon/anh trong DB, khong bia anh). *@
-                <a class="chip" asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id"><span class="chip-icon" aria-hidden="true">@c.Ten[0]</span>@c.Ten <span class="chip-count">@c.Products.Count sản phẩm</span></a>
-            }
-        </div>
-    }
-    else
-    {
-        <p class="empty-state">Chưa có danh mục nào — sản phẩm sẽ hiện ở đây khi cửa hàng thêm danh mục mới.</p>
-    }
-</section>
-
-<section class="section reveal">
+<section class="section market-shelf">
     <div class="section-head">
         <h2>Sản phẩm nổi bật</h2>
         <a asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>
@@ -194,7 +178,7 @@ else
 </section>
 
 @* Bán chạy: danh sách xếp hạng thay vì lưới thẻ thứ hai giống hệt lưới trên. *@
-<section class="section reveal">
+<section class="section market-shelf">
     <div class="section-head">
         <h2>Bán chạy nhất</h2>
         <a asp-controller="Products" asp-action="Index" asp-route-SapXep="ban-chay">Xem theo lượt bán</a>
@@ -251,7 +235,7 @@ else
         : voucherNoiBat.LoaiGiam == "PhanTram"
             ? $"Giảm {voucherNoiBat.GiaTri:N0}%{(voucherNoiBat.DieuKien > 0 ? $" cho đơn từ {voucherNoiBat.DieuKien:N0}đ" : "")}."
             : $"Giảm {voucherNoiBat.GiaTri:N0}đ{(voucherNoiBat.DieuKien > 0 ? $" cho đơn từ {voucherNoiBat.DieuKien:N0}đ" : "")}.";
-    <section class="voucher-band reveal">
+    <section class="voucher-band">
         <div>
             <h2>Mã @voucherNoiBat.Ma</h2>
             <p>@moTaVoucher Hết hạn @voucherNoiBat.NgayHetHan.ToString("dd/MM/yyyy"). Còn @(voucherNoiBat.SoLuong - voucherNoiBat.DaDung) lượt.</p>
@@ -261,6 +245,7 @@ else
 }
 
 @section Scripts {
+    <script src="~/js/flash-sale-countdown.js" asp-append-version="true"></script>
     <script>
         // Dem nguoc Flash Sale (chi chay tren trinh duyet, khong anh huong gia tren server).
         (function () {
@@ -280,26 +265,9 @@ else
             tick(); setInterval(tick, 1000);
         })();
 
-        // Hieu ung hien khi cuon toi + dem so tang dan (bo qua neu giam chuyen dong).
+        // Đếm số một lần khi dải số liệu hiện ra.
         (function () {
-            try {
             var giamChuyenDong = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            var khoi = document.querySelectorAll('.reveal');
-            if (!('IntersectionObserver' in window) || giamChuyenDong) {
-                khoi.forEach(function (el) { el.classList.add('is-visible'); });
-            } else {
-                var quanSat = new IntersectionObserver(function (entries) {
-                    entries.forEach(function (entry) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('is-visible');
-                            quanSat.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.12 });
-                khoi.forEach(function (el) { quanSat.observe(el); });
-            }
-
-            // Dem so: chay 1 lan khi dai so lieu hien ra.
             var soLieu = document.querySelectorAll('.proof-item b[data-count]');
             function demSo(el) {
                 var dich = parseInt(el.dataset.count, 10);
@@ -328,9 +296,11 @@ else
                 }, { threshold: 0.4 });
                 soLieu.forEach(function (el) { quanSatSo.observe(el); });
             }
-            } catch (e) {
-                document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('is-visible'); });
-            }
         })();
     </script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
 }

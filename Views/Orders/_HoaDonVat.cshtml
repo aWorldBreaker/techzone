@@ -8,17 +8,17 @@
 <div id="vat-fields" hidden>
     <div class="form-group">
         <label asp-for="TenCongTy">Tên công ty</label>
-        <input asp-for="TenCongTy" class="form-control" />
-        <span asp-validation-for="TenCongTy" class="text-danger"></span>
+        <input asp-for="TenCongTy" class="form-control" aria-describedby="TenCongTy-error" />
+        <span asp-validation-for="TenCongTy" id="TenCongTy-error" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="MaSoThue">Mã số thuế</label>
-        <input asp-for="MaSoThue" class="form-control" />
-        <span asp-validation-for="MaSoThue" class="text-danger"></span>
+        <input asp-for="MaSoThue" class="form-control" aria-describedby="MaSoThue-error" />
+        <span asp-validation-for="MaSoThue" id="MaSoThue-error" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="DiaChiCongTy">Địa chỉ công ty</label>
-        <textarea asp-for="DiaChiCongTy" class="form-control" rows="2"></textarea>
-        <span asp-validation-for="DiaChiCongTy" class="text-danger"></span>
+        <textarea asp-for="DiaChiCongTy" class="form-control" aria-describedby="DiaChiCongTy-error" rows="2"></textarea>
+        <span asp-validation-for="DiaChiCongTy" id="DiaChiCongTy-error" class="text-danger"></span>
     </div>
 </div>

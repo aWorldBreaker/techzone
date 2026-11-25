@@ -20,7 +20,7 @@
             <p class="product-specs">@string.Join(" • ", Model.SpecsNgan)</p>
         }
         <p class="product-price">
-            <strong>@Model.GiaBan.ToString("N0")đ</strong>
+            <strong class="price-amount">@Model.GiaBan.ToString("N0")đ</strong>
             @if (Model.GiaKhuyenMai.HasValue)
             {
                 <s>@Model.Gia.ToString("N0")đ</s>
@@ -39,23 +39,7 @@
             var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
         }
         <p class="product-meta">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan
-            @* Phase 5 — ton kho tren card. Nguong "Sap het" lay theo code co
-               san: Admin "Sap het hang (ton kho ≤ 10)" (Dashboard:91,
-               AdminController:67 TonKho <= 10). 0 = Het hang, 1–10 = Sap het,
-               >10 = Con X. Nut Them vao gio khoa khi het hang — server von
-               da tu choi soLuong > TonKho (CartController:57). *@
-            • @if (Model.TonKho <= 0)
-            {
-                <span class="stock-out">Hết hàng</span>
-            }
-            else if (Model.TonKho <= 10)
-            {
-                <span class="stock-low">Sắp hết — còn @Model.TonKho</span>
-            }
-            else
-            {
-                <span class="stock-ok">Còn @Model.TonKho</span>
-            }
+            • <partial name="_StockStatus" model="Model.TonKho" />
         </p>
         <form asp-controller="Cart" asp-action="Add" method="post">
             <input type="hidden" name="productId" value="@Model.Id" />

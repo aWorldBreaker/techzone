@@ -1,57 +1,35 @@
-/* TechZone — Sprint 6 Module 3 (M3-2): panel lọc thu gọn ở mobile.
-   - Chỉ thu gọn ở ≤768px; desktop form luôn mở, nút toggle ẩn (CSS).
-   - Không JS: nút toggle không hiện (class .is-ready chỉ JS thêm),
-     form luôn mở — vẫn lọc được bình thường.
-   - Có filter đang bật (server render data-active-filters > 0) thì panel
-     tự mở để người dùng thấy trạng thái lọc.
-   - Esc đóng panel (chỉ khi đang thu gọn ở mobile), trả focus về nút.
-   - Nút "Đóng" trong panel (#filter-close, chỉ hiện ở mobile): đóng
-     panel như Esc, cũng trả focus về nút toggle.
-   - Không animation khi đóng/mở (đổi [hidden] tức thì) nên không ảnh
-     hưởng prefers-reduced-motion.
-   - Theo mẫu header-menu.js (Module 1): aria-expanded, Esc, focus. */
+/* Mobile filter panel. Without JS the form stays visible. */
 (function () {
     'use strict';
-    var btn = document.getElementById('filter-toggle');
+    var toggle = document.getElementById('filter-toggle');
     var panel = document.getElementById('filter-panel');
-    if (!btn || !panel) return;
-    var closeBtn = document.getElementById('filter-close');
-    var mq = window.matchMedia('(max-width: 768px)');
-    var activeFilters = parseInt(panel.getAttribute('data-active-filters') || '0', 10) || 0;
-    var userToggled = false;
+    if (!toggle || !panel) return;
 
-    function set(open) {
+    var compact = window.matchMedia('(max-width: 1024px)');
+    var mobileOpen = false;
+
+    function sync() {
+        var open = !compact.matches || mobileOpen;
         panel.hidden = !open;
-        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        toggle.setAttribute('aria-expanded', String(open));
     }
-    function isOpen() { return !panel.hidden; }
-    /* Đóng panel ở mobile + trả focus về nút toggle (dùng chung cho nút
-       Đóng và phím Esc). Desktop: không làm gì (panel luôn mở). */
-    function closePanel() {
-        if (!mq.matches || !isOpen()) return;
-        userToggled = true;
-        set(false);
-        btn.focus();
-    }
-    function applyForViewport() {
-        if (!mq.matches) { set(true); return; }      // desktop: luôn mở
-        if (!userToggled) set(activeFilters > 0);    // mobile lần đầu: mở chỉ khi có filter
+    function close() {
+        if (!compact.matches || !mobileOpen) return;
+        mobileOpen = false;
+        sync();
+        toggle.focus();
     }
 
-    btn.classList.add('is-ready'); // chỉ khi JS chạy nút mới hiện
-    btn.addEventListener('click', function () {
-        userToggled = true;
-        set(!isOpen());
+    toggle.classList.add('is-ready');
+    toggle.addEventListener('click', function () {
+        mobileOpen = !mobileOpen;
+        sync();
     });
-    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    document.getElementById('filter-close').addEventListener('click', close);
     document.addEventListener('keydown', function (e) {
-        if (e.key !== 'Escape') return;
-        closePanel();
+        if (e.key === 'Escape') close();
     });
-    if (typeof mq.addEventListener === 'function') {
-        mq.addEventListener('change', applyForViewport);
-    } else if (typeof mq.addListener === 'function') {
-        mq.addListener(applyForViewport);
-    }
-    applyForViewport();
+    if (compact.addEventListener) compact.addEventListener('change', sync);
+    else compact.addListener(sync);
+    sync();
 })();

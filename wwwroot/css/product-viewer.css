@@ -1,7 +1,3 @@
-/* features-3d.css — Viewer 3D dung chung, trang chi tiet (Sprint 5).
-   Chi dung cho khoi #product-3d trong Views/Products/Details.cshtml.
-   Màu/khoảng cách dùng token từ design-tokens.css, tối đa radius 8px. */
-
 .detail-3d {
     position: relative;
 }

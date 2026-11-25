@@ -3,60 +3,77 @@
     ViewData["Title"] = "Giỏ hàng";
 }
 
-<h1>Giỏ hàng (@Model.Lines.Sum(l => l.SoLuong) sản phẩm)</h1>
+<header class="market-heading">
+    <partial name="_MarketPurchasePath" model="false" />
+    <div class="section-head">
+        <h1>Giỏ hàng</h1>
+        <a asp-controller="Products" asp-action="Index">Tiếp tục mua sắm <span aria-hidden="true">→</span></a>
+    </div>
+</header>
 
 @if (!Model.Lines.Any())
 {
-    <p>Giỏ hàng đang trống.</p>
-    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Tiếp tục mua sắm</a>
+    <p class="empty-state">Giỏ hàng đang trống.</p>
 }
 else
 {
     <div class="cart-layout">
-        <div>
-            @foreach (var line in Model.Lines)
-            {
-                <div class="cart-item">
-                    <img src="@line.Product.AnhDaiDien" alt="@line.Product.Ten" />
-                    <div>
-                        <h3 class="cart-item-title"><a asp-controller="Products" asp-action="Details" asp-route-id="@line.Product.Id">@line.Product.Ten</a></h3>
-                        @if (line.Variant is not null)
-                        {
-                            <p class="text-muted cart-line-meta">@line.Variant.TenBienThe</p>
-                        }
-                        <p class="cart-line-price"><strong>@line.DonGia.ToString("N0")đ</strong>
-                        @if (line.LaGiaSale)
-                        {
-                            <s class="text-muted">@line.GiaGoc.ToString("N0")đ</s>
-                            <span>@line.TenKhuyenMai</span>
-                        }
-                        </p>
-                        <form asp-action="Update" method="post" class="qty">
-                            <input type="hidden" name="productId" value="@line.Product.Id" />
-                            <input type="hidden" name="variantId" value="@line.Variant?.Id" />
-                            @* Sprint 6 Module 4 — nut - / + (xem cart-qty.js):
-                               - o 1 ve 0 = xoa dong; + kep ve TonKho. *@
-                            <button type="button" class="qty-btn" data-delta="-1" aria-label="Giảm số lượng">−</button>
-                            <input type="number" name="soLuong" min="0" max="@line.Product.TonKho" value="@line.SoLuong" aria-label="Số lượng" />
-                            <button type="button" class="qty-btn" data-delta="1" aria-label="Tăng số lượng">+</button>
-                            <button type="submit">Cập nhật</button>
-                        </form>
+        <div class="basket-column">
+            <section class="cart-basket card" aria-labelledby="basket-title">
+                <div class="section-head basket-head"><h2 id="basket-title">Sản phẩm đã chọn</h2><span>@Model.Lines.Sum(l => l.SoLuong) sản phẩm</span></div>
+                @foreach (var line in Model.Lines)
+                {
+                    <div class="cart-item">
+                        <img src="@line.Product.AnhDaiDien" alt="@line.Product.Ten" />
+                        <div>
+                            <h3 class="cart-item-title"><a asp-controller="Products" asp-action="Details" asp-route-id="@line.Product.Id">@line.Product.Ten</a></h3>
+                            @if (line.Variant is not null)
+                            {
+                                <p class="text-muted cart-line-meta">@line.Variant.TenBienThe</p>
+                            }
+                            <p class="cart-line-price price-amount"><strong>@line.DonGia.ToString("N0")đ</strong>
+                            @if (line.LaGiaSale)
+                            {
+                                <s class="text-muted">@line.GiaGoc.ToString("N0")đ</s>
+                                <span class="badge">@line.TenKhuyenMai</span>
+                            }
+                            </p>
+                            <form asp-action="Update" method="post" class="qty">
+                                <input type="hidden" name="productId" value="@line.Product.Id" />
+                                <input type="hidden" name="variantId" value="@line.Variant?.Id" />
+                                @* Sprint 6 Module 4 — nut - / + (xem cart-qty.js):
+                                   - o 1 ve 0 = xoa dong; + kep ve TonKho. *@
+                                <button type="button" class="qty-btn" data-delta="-1" aria-label="Giảm số lượng">−</button>
+                                <input type="number" name="soLuong" min="0" max="@line.Product.TonKho" value="@line.SoLuong" aria-label="Số lượng" />
+                                <button type="button" class="qty-btn" data-delta="1" aria-label="Tăng số lượng">+</button>
+                                <button type="submit" class="link-button">Cập nhật</button>
+                            </form>
+                        </div>
+                        <div class="cart-line-total">
+                            <p><strong>@line.ThanhTien.ToString("N0")đ</strong></p>
+                            <form asp-action="Remove" method="post">
+                                <input type="hidden" name="productId" value="@line.Product.Id" />
+                                <input type="hidden" name="variantId" value="@line.Variant?.Id" />
+                                <button type="submit" class="link-button">Xóa</button>
+                            </form>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <p><strong>@line.ThanhTien.ToString("N0")đ</strong></p>
-                        <form asp-action="Remove" method="post">
-                            <input type="hidden" name="productId" value="@line.Product.Id" />
-                            <input type="hidden" name="variantId" value="@line.Variant?.Id" />
-                            <button type="submit" class="link-button">Xóa</button>
-                        </form>
+                }
+            </section>
+            <section class="cart-voucher card" aria-labelledby="cart-voucher-title">
+                <h2 id="cart-voucher-title">Phiếu ưu đãi</h2>
+                <form asp-action="ApDungVoucher" method="post">
+                    <label for="ma">Mã giảm giá</label>
+                    <div class="voucher-entry">
+                        <input id="ma" name="ma" class="form-control" placeholder="Nhập mã voucher" value="@Model.MaVoucher" />
+                        <button type="submit" class="btn btn-secondary">Áp dụng</button>
                     </div>
-                </div>
-            }
-            <a asp-controller="Products" asp-action="Index">← Tiếp tục mua sắm</a>
+                </form>
+            </section>
         </div>
 
-        <aside class="summary" aria-label="Tóm tắt đơn hàng">
-            <h2>Tóm tắt đơn hàng</h2>
+        <aside class="summary market-receipt" aria-label="Tóm tắt đơn hàng">
+            <h2>Phiếu tính tiền</h2>
             <div class="summary-row"><span>Tạm tính</span><span>@Model.TamTinh.ToString("N0")đ</span></div>
             @if (Model.GiamGia > 0)
             {
@@ -73,10 +90,6 @@ else
             @if (Model.GiamGia > 0 || Model.GiamGiaCombo > 0 || Model.GiamGiaHang > 0)
             {
                 <div class="summary-row"><span>Tạm tính sau giảm</span><span>@Model.SauGiam.ToString("N0")đ</span></div>
-            }
-            @if (Model.GiamGiaHang > 0)
-            {
-                <p class="text-muted">Đã áp dụng ưu đãi hạng @ViewBag.Hang: giảm 2% tạm tính @Model.TamTinh.ToString("N0")đ, còn @Model.SauGiam.ToString("N0")đ trước phí ship — giống hệt tổng ở trang đặt hàng.</p>
             }
             <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
             <div class="summary-row total"><span>Tổng cộng</span><span>@Model.TongCong.ToString("N0")đ</span></div>
@@ -120,20 +133,18 @@ else
                 }
             }
 
-            <form asp-action="ApDungVoucher" method="post" class="mt">
-                <div class="form-group">
-                    <label for="ma">Mã giảm giá</label>
-                    <input id="ma" name="ma" class="form-control" placeholder="Nhập mã voucher, vd: TECHZONE500" value="@Model.MaVoucher" />
-                </div>
-                <button type="submit" class="btn btn-secondary btn-block">Áp dụng</button>
-            </form>
 
-            <a asp-controller="Orders" asp-action="Checkout" class="btn btn-primary btn-block mt">Đặt hàng</a>
+
+            <a asp-controller="Orders" asp-action="Checkout" class="btn btn-primary btn-block mt">Đến quầy thanh toán</a>
             <p class="text-muted">Thanh toán khi nhận hàng (COD) hoặc chuyển khoản — đều là giả lập, không thu tiền thật.</p>
         </aside>
     </div>
 }
 
 @section Scripts {
-    <script src="~/js/cart-qty.js"></script>
+    <script src="~/js/cart-qty.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/purchase.css" asp-append-version="true" />
 }

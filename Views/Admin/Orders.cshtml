@@ -8,17 +8,22 @@
     // truoc day chip chi co 4/6).
     string[] cacTrangThai = { TechZone.Models.OrderStatus.ChoXacNhan, TechZone.Models.OrderStatus.DaXacNhan, TechZone.Models.OrderStatus.DangDongGoi, TechZone.Models.OrderStatus.DangGiao, TechZone.Models.OrderStatus.DaGiao, TechZone.Models.OrderStatus.DaHuy };
 }
-<h1>Quản lý đơn hàng</h1>
+<header class="market-heading">
+    <div class="section-head">
+        <h1>Quản lý đơn hàng</h1>
+        <a class="btn hero-buy" asp-action="XuatCsvDonHang" asp-route-trangThai="@trangThai" asp-route-tuKhoa="@tuKhoa">Xuất CSV (@ViewBag.TongMuc đơn)</a>
+    </div>
+</header>
 
 @* Dot 2 (B2): chip nao dang loc thi .chip-active (nen primary, chu trang) —
    truoc day chip nao nhin cung giong nhau. *@
-<div class="chip-row">
-    <a class="chip @(trangThai is null ? "chip-active" : "")" asp-action="Orders">Tất cả</a>
+<nav class="chip-row" aria-label="Trạng thái đơn hàng">
+    <a class="chip @(trangThai is null ? "chip-active" : "")" asp-action="Orders" asp-route-tuKhoa="@tuKhoa" asp-route-sort="@sort" aria-current="@(trangThai is null ? "true" : null)">Tất cả</a>
     @foreach (var t in cacTrangThai)
     {
-        <a class="chip @(t == trangThai ? "chip-active" : "")" asp-action="Orders" asp-route-trangThai="@t">@t</a>
+        <a class="chip @(t == trangThai ? "chip-active" : "")" asp-action="Orders" asp-route-trangThai="@t" asp-route-tuKhoa="@tuKhoa" asp-route-sort="@sort" aria-current="@(t == trangThai ? "true" : null)">@t</a>
     }
-</div>
+</nav>
 
 @* Dot 2 (B1): tim kiem server — 1 o tim ma don / ten khach / SDT / dia chi
    (DiaChiGiao gom "Ho ten, SDT, dia chi"). *@
@@ -32,39 +37,40 @@
         <option value="tong-asc" selected="@(sort == "tong-asc")">Tổng tiền tăng dần</option>
     </select>
     <button type="submit" class="btn btn-primary">Tìm</button>
-    @if (tuKhoa is not null)
+    @if (tuKhoa is not null || !string.IsNullOrEmpty(sort))
     {
         <a class="btn btn-secondary" asp-action="Orders" asp-route-trangThai="@trangThai">Xóa lọc</a>
     }
 </form>
 <p class="admin-result-count text-muted" aria-live="polite">@ViewBag.TongMuc kết quả@(trangThai is not null ? $" — trạng thái “{trangThai}”" : "")@(tuKhoa is not null ? $" — tìm “{tuKhoa}”" : "")</p>
 @* Dot 3 (B3): xuat CSV — giu loc hien tai (trangThai/tuKhoa). *@
-<p><a class="btn btn-secondary" asp-action="XuatCsvDonHang" asp-route-trangThai="@trangThai" asp-route-tuKhoa="@tuKhoa">⬇ Xuất CSV (@ViewBag.TongMuc đơn)</a></p>
+
 
 @if (!Model.Any())
 {
-    <p class="admin-empty" role="status">🔍 Không có đơn nào@(trangThai is not null ? $" ở trạng thái “{trangThai}”" : "")@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử từ khóa khác hoặc <a asp-action="Orders">xem tất cả đơn</a>.</p>
+    <p class="admin-empty" role="status">Không có đơn nào@(trangThai is not null ? $" ở trạng thái “{trangThai}”" : "")@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : ""). <a asp-action="Orders">Xem tất cả đơn</a>.</p>
 }
 else
 {
-    @* Dot 3 (C5): bang chuyen dang card o <=480px (data-label lam nhan cot). *@
-    <div class="table-wrap"><table class="table table--card-mobile">
-        <thead>
-            <tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th><th scope="col">Giao đến</th><th scope="col">Tổng tiền</th><th scope="col">Trạng thái</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr>
+    <div class="table-wrap admin-record-list" tabindex="0" role="region" aria-label="Danh sách đơn hàng">
+    <table class="table table--card-mobile" role="table" aria-label="Đơn hàng">
+        <thead role="rowgroup">
+            <tr role="row"><th scope="col" role="columnheader">Mã đơn</th><th scope="col" role="columnheader">Ngày đặt</th><th scope="col" role="columnheader">Trạng thái</th><th scope="col" role="columnheader">Giao đến</th><th scope="col" role="columnheader">Tổng tiền</th><th scope="col" role="columnheader">Thao tác</th></tr>
         </thead>
-        <tbody>
+        <tbody role="rowgroup">
             @foreach (var o in Model)
             {
-                <tr>
-                    <td data-label="Mã đơn">#@o.Id</td>
-                    <td data-label="Ngày đặt">@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td data-label="Giao đến">@o.DiaChiGiao</td>
-                    <td data-label="Tổng tiền">@o.ThanhToan.ToString("N0")đ</td>
-                    <td data-label="Trạng thái"><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
-                    <td data-label="Thao tác">
-                        @* Dot 3 (B4): xem nhanh mo drawer (read-only); link ben canh van toi trang day du. *@
-                        <button type="button" class="btn btn-secondary btn-sm" data-order-drawer="@o.Id" data-order-url="@Url.Action("OrderDetails", new { id = o.Id })">Xem nhanh</button>
-                        <a asp-action="OrderDetails" asp-route-id="@o.Id">Xem / đổi trạng thái</a>
+                <tr role="row">
+                    <th scope="row" role="rowheader" class="admin-record-lead" data-label="Mã đơn"><a asp-action="OrderDetails" asp-route-id="@o.Id">Đơn #@o.Id</a></th>
+                    <td role="cell" data-label="Ngày đặt">@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td role="cell" data-label="Trạng thái"><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
+                    <td role="cell" class="admin-record-wide" data-label="Giao đến">@o.DiaChiGiao</td>
+                    <td role="cell" class="admin-record-wide" data-label="Tổng tiền"><strong class="admin-money">@o.ThanhToan.ToString("N0")đ</strong></td>
+                    <td role="cell" class="admin-record-actions" data-label="Thao tác">
+                        <div class="admin-row-actions">
+                            <a asp-action="OrderDetails" asp-route-id="@o.Id" class="btn btn-primary btn-sm" aria-label="Chi tiết đơn #@o.Id">Chi tiết</a>
+                            <button type="button" class="btn btn-secondary btn-sm" data-order-drawer="@o.Id" data-order-url="@Url.Action("OrderDetails", new { id = o.Id })" aria-label="Xem nhanh đơn #@o.Id">Xem nhanh</button>
+                        </div>
                     </td>
                 </tr>
             }

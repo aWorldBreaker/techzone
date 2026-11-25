@@ -1,0 +1,51 @@
+.cart-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(1rem, 3vw, 2rem); align-items: start; }
+@media (min-width: 769px) {
+  .cart-layout { grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 1fr); }
+  .cart-layout > .summary { grid-column: 2; grid-row: 1; position: sticky; top: var(--space-md); }
+}
+.basket-column { display: grid; gap: var(--space-md); min-width: 0; }
+.basket-head { border-block-end: 1px solid var(--color-border); padding-block-end: .75rem; margin: 0; }
+.basket-head span { color: var(--color-muted-foreground); font-size: .875rem; }
+.cart-item { display: grid; grid-template-columns: clamp(3.25rem, 10vw, 5rem) minmax(0, 1fr); gap: .75rem; align-items: start; padding-block: 1rem; }
+.cart-item + .cart-item { border-block-start: 1px solid var(--color-border); }
+.cart-item img { inline-size: 100%; aspect-ratio: 1; object-fit: contain; padding: .25rem; background: var(--market-photo); border-radius: var(--radius); }
+.cart-line-total { grid-column: 2; display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; }
+.cart-line-total p { margin: 0; font-variant-numeric: tabular-nums; }
+@media (min-width: 1100px) {
+  .cart-item { grid-template-columns: 5rem minmax(0, 1fr) max-content; }
+  .cart-line-total { grid-column: 3; flex-direction: column; align-items: end; }
+}
+.cart-item-title { margin: 0; overflow-wrap: anywhere; }
+.cart-line-meta, .cart-line-price { margin: .25rem 0; }
+.qty { display: inline-flex; flex-wrap: wrap; align-items: center; gap: .25rem; }
+.qty-btn { inline-size: 2.75rem; block-size: 2.75rem; border: 1px solid var(--color-control-border); border-radius: var(--radius); background: var(--color-muted); color: var(--color-foreground); font-weight: 700; }
+.qty .link-button { padding: .4rem; }
+.qty input { inline-size: 3rem; text-align: center; padding: .375rem; border: 1px solid var(--color-control-border); border-radius: var(--radius); }
+.cart-voucher { background: var(--market-ticket); border-style: dashed; }
+.voucher-entry { display: flex; flex-wrap: wrap; gap: .5rem; margin-block-start: .375rem; }
+.voucher-entry input { flex: 1 1 11rem; min-width: 0; }
+.receipt-items { margin: 0 0 1rem; padding: 0 0 .75rem; list-style: none; border-block-end: 1px dashed var(--color-border); }
+.receipt-items .summary-row { display: grid; grid-template-columns: 2.5rem minmax(0, 1fr) auto; align-items: center; font-size: .875rem; }
+.receipt-items img { border-radius: .35rem; background: var(--market-photo); object-fit: contain; }
+.receipt-items small { display: block; color: var(--color-muted-foreground); }
+.checkout-form { display: grid; gap: var(--space-md); }
+.checkout-form .card { min-inline-size: 0; }
+.checkout-form .checkout-heading { color: var(--color-primary-text); border-block-end: 1px solid var(--color-border); padding-block-end: .75rem; }
+.checkout-form fieldset { min-inline-size: 0; border: 0; padding: 0; margin-inline: 0; }
+.payment-methods { display: grid; gap: .5rem; }
+.payment-methods legend { margin-block-end: .5rem; }
+.payment-methods label {
+  display: flex; align-items: center; gap: .5rem; min-block-size: 2.75rem; margin: 0;
+  background: var(--color-muted); border: 1px solid var(--color-border); border-radius: var(--radius);
+  padding: .4rem .65rem; font-weight: 600; cursor: pointer;
+}
+.payment-methods label:has(:checked) { background: var(--color-primary-ghost); border-color: var(--color-primary); }
+@media (min-width: 1025px) {
+  .delivery-fields, .payment-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+  .payment-methods .qr-box { grid-column: 1 / -1; }
+}
+.checkout-submit { margin-block: var(--space-lg) var(--space-sm); }
+
+.qr-box { margin-top: var(--space-md); padding: var(--space-lg); border: 2px dashed var(--color-primary); border-radius: var(--radius); background: var(--color-card); text-align: center; }
+.qr-code { display: flex; align-items: center; justify-content: center; width: 120px; height: 120px; margin: 0 auto var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-muted); font-size: 1.5rem; font-weight: 700; color: var(--color-muted-foreground); letter-spacing: var(--space-sm); }
+.qr-amount { font-size: 1.25rem; font-weight: 700; color: var(--color-accent); font-variant-numeric: tabular-nums; }

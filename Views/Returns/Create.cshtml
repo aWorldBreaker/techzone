@@ -4,50 +4,52 @@
     var order = (TechZone.Models.Order)ViewBag.Order;
 }
 
-<h1>Yêu cầu đổi trả</h1>
-<p>Đơn #@order.Id • Ngày đặt: @order.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">Đơn #@order.Id</a>
+        <span aria-hidden="true">/</span><span aria-current="page">Đổi trả</span>
+    </nav>
+    <h1>Yêu cầu đổi trả</h1>
+    <p>Ngày đặt @order.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+</header>
 
 @if (Model.OrderDetailId is null)
 {
-    <p>Chọn sản phẩm trong đơn cần đổi trả:</p>
-    <table class="table">
-        <thead>
-            <tr><th>Sản phẩm</th><th>Số lượng</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var d in order.ChiTiet)
-            {
-                <tr>
-                    <td>@d.Product.Ten @d.Variant?.TenBienThe</td>
-                    <td>@d.SoLuong</td>
-                    <td>
-                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-orderDetailId="@d.Id">Đổi trả</a>
-                        |
-                        <a asp-action="Warranty" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Bảo hành</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <p><a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">← Về đơn hàng</a></p>
+    <partial name="_ChonSanPham" model="(order, false)" />
 }
 else
 {
     var detail = (TechZone.Models.OrderDetail)ViewBag.OrderDetail;
-    <p>Sản phẩm: <strong>@detail.Product.Ten @detail.Variant?.TenBienThe</strong></p>
-    <form asp-action="Create" method="post" enctype="multipart/form-data" class="return-form">
-        <input type="hidden" asp-for="OrderId" />
-        <input type="hidden" asp-for="OrderDetailId" />
-        <div class="form-group">
-            <label asp-for="LyDo">Lý do đổi trả</label>
-            <textarea asp-for="LyDo" class="form-control" rows="4" maxlength="1000" required></textarea>
-            <span asp-validation-for="LyDo" class="text-danger"></span>
-        </div>
-        <div class="form-group">
-            <label for="anhKem">Ảnh kèm theo (không bắt buộc, .jpg/.jpeg/.png/.webp, tối đa 5MB)</label>
-            <input type="file" name="anhKem" id="anhKem" class="form-control" accept=".jpg,.jpeg,.png,.webp" />
-        </div>
-        <button type="submit" class="btn btn-primary">Gửi yêu cầu đổi trả</button>
-        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-secondary">Quay lại đơn hàng</a>
-    </form>
+    <div class="order-layout">
+        <form asp-action="Create" method="post" enctype="multipart/form-data" class="card tracking-card service-card">
+            <h2>Thông tin đổi trả</h2>
+            <p><strong>@detail.Product.Ten</strong> @detail.Variant?.TenBienThe</p>
+            <input type="hidden" asp-for="OrderId" />
+            <input type="hidden" asp-for="OrderDetailId" />
+            <div class="form-group">
+                <label asp-for="LyDo">Lý do đổi trả</label>
+                <textarea asp-for="LyDo" class="form-control" rows="4" maxlength="1000" required></textarea>
+                <span asp-validation-for="LyDo" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label for="anhKem">Ảnh kèm theo (không bắt buộc)</label>
+                <input type="file" name="anhKem" id="anhKem" class="form-control" accept=".jpg,.jpeg,.png,.webp" aria-describedby="anhKem-help" />
+                <small id="anhKem-help" class="text-muted">JPG, JPEG, PNG hoặc WEBP, tối đa 5 MB.</small>
+            </div>
+            <div class="service-actions">
+                <button type="submit" class="btn btn-primary">Gửi yêu cầu đổi trả</button>
+                <a asp-action="Create" asp-route-orderId="@order.Id" class="btn btn-secondary">Chọn sản phẩm khác</a>
+            </div>
+        </form>
+        <aside class="card market-receipt service-card">
+            <h2>Sản phẩm cần đổi trả</h2>
+            <img src="@detail.Product.AnhDaiDien" alt="" width="72" height="72" class="thumb-sm" />
+            <p>Số lượng trong đơn <strong>@detail.SoLuong</strong></p>
+            <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-secondary">Xem đơn #@order.Id</a>
+        </aside>
+    </div>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

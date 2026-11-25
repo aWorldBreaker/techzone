@@ -134,23 +134,25 @@ public class AdminWave1Tests
         string Doc(params string[] parts) => File.ReadAllText(Path.Combine(new[] { root }.Concat(parts).ToArray()));
 
         var css = Doc("wwwroot", "css", "admin.css");
-        Assert.Contains(".badge-xong", css);
-        Assert.Contains(".badge-vang", css);
-        Assert.Contains(".badge-xanh", css);
+        var commonCss = Doc("wwwroot", "css", "common.css");
+        var dashboardCss = Doc("wwwroot", "css", "dashboard.css");
+        Assert.Contains(".badge-xong", commonCss);
+        Assert.Contains(".badge-vang", commonCss);
+        Assert.Contains(".badge-xanh", commonCss);
         Assert.Contains(".admin-pill", css);
-        Assert.Contains(".admin-eyebrow", css);
-        Assert.Contains(".stat-card--tien", css);
-        Assert.Contains(".stat-delta", css);
-        Assert.Contains(".filter-bar", css);
-        Assert.Contains(".chip-active", css);
+        Assert.Contains(".stat-card--tien", dashboardCss);
+        Assert.Contains(".stat-delta", dashboardCss);
+        Assert.Contains(".filter-bar", commonCss);
+        Assert.Contains(".chip-active", commonCss);
         Assert.Contains(".low-stock-soft", css);
         Assert.Contains(".summary-row.total", css);
-        Assert.Contains("BANG MAU TRANG THAI", css);
 
         var layout = Doc("Views", "Shared", "_AdminLayout.cshtml");
         Assert.Contains("ADMIN", layout);
         Assert.Contains("Khu quản trị", layout);
-        Assert.Contains("admin-eyebrow", layout);
+        Assert.Contains("~/css/common.css", layout);
+        Assert.Contains("RenderSectionAsync(\"Styles\"", layout);
+        Assert.Contains("~/css/dashboard.css", Doc("Views", "Admin", "Dashboard.cshtml"));
 
         var badge = Doc("Views", "Shared", "_TrangThaiBadge.cshtml");
         Assert.Contains("Chờ xác nhận", badge);

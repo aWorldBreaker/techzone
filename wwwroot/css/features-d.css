@@ -1,8 +1,0 @@
-/* Nhom D — Admin & van hanh (Phase 2, Sprint 6 Continuation).
-   TOAN BO rule trong file nay da DOI sang wwwroot/css/admin.css
-   (.chart/.chart-col/.chart-bar/.chart-label, .low-stock, .admin-links,
-   .stock-form, .banner-thumb) — layout Admin chi load admin.css nên các
-   class đó không còn ở đây nữa. File giữ lại làm stub để _Layout khỏi
-   lỗi nếu link còn trỏ tới; _Layout vẫn load file này (0 rule, không
-   ảnh hưởng hiển thị shop). Không thêm rule Admin mới vào đây — thêm
-   vào admin.css. */

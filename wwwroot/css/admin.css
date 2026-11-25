@@ -1,284 +1,73 @@
-/* TechZone — CSS riêng cho khu Admin (Sprint 6 Continuation, Phase 2).
-   Layout Admin CHỈ load file này (+ design-tokens.css qua @import bên
-   dưới): không load site.css / features-*.css của shop.
-   Vì vậy file này tự chứa 2 phần:
-   (A) Bản sao các utility DÙNG CHUNG với shop (giá trị copy y nguyên từ
-       site.css / features-c.css — nguồn chuẩn vẫn là các file đó; nếu đổi
-       giá trị ở shop thì đồng bộ lại đây): .btn*, .form-*, .table*,
-       .alert*, .badge*, .pagination, .chip*, .section-head, .inline-form,
-       .link-button, .text-*, .mt, .input-narrow, .review-item,
-       .filter-links, .admin-duyet + base body/headings/focus.
-   (B) Class CHỈ Admin dùng, đã DỜI khỏi file chung (xóa ở nguồn cũ):
-       .stat-grid/.stat-card (từ site.css), .chart/.chart-col/.chart-bar/
-       .chart-label/.low-stock/.admin-links/.stock-form/.banner-thumb
-       (từ features-d.css — file đó giờ chỉ còn ghi chú), .filter-links/
-       .admin-duyet (từ features-c.css).
-   Mọi rule chỉ dùng token var(--color-*) / var(--space-*) — dark mode
-   theo html[data-theme="dark"] trong design-tokens.css.
+/* Admin shell, table screens, forms and the dynamically populated order drawer. */
+html:has(.admin-body) { --sticky-offset: 5rem; }
+@media (max-width: 768px) { html:has(.admin-body) { --sticky-offset: 7rem; } }
+.admin-main > .table-wrap { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-panel); }
+.admin-main .table tbody tr:last-child > td { border-block-end: 0; }
+.admin-search { border: 1px solid var(--color-border); background: var(--color-card); border-radius: var(--radius-panel); padding: .75rem; }
+.admin-topbar-actions a:hover { text-decoration: underline; }
 
-   BANG MAU TRANG THAI (Dot 1 Admin-enhance, A2) — 1 nguon that duy nhat:
-   class badge o day + partial Views/Shared/_TrangThaiBadge.cshtml map
-   chuoi trang thai -> class. Khong dat mau trang thai inline o view.
-     Don hang:  "Chờ xác nhận" .badge-cho (vang, noi bat nhat)
-                "Đã xác nhận"  .badge-xanh (xanh primary nhat)
-                "Đang đóng gói"/"Đang giao" .badge-giao (xanh teal info)
-                "Đã giao"      .badge-xong (xanh la success)
-                "Đã hủy"       .badge-huy (do)
-     Bat/tat:   "Đang bật" .badge-bat (xanh la) / "Đang tắt"/"Đã tắt" .badge-tat (xam)
-     Hang KH:   "Vàng" .badge-vang (vang that) / "Bạch kim" .badge-xanh /
-                "Bạc"/"Đồng" .badge (xam) — khong co token tim/vang kim rieng.
-     Duyet:     "Chờ duyệt" .badge-cho (vang, noi bat nhat) /
-                "Đã duyệt"/"Hoàn thành" .badge-xong / "Từ chối" .badge-huy
-     Thong bao: "Chưa" (chua doc) .badge-cho / "Rồi" (da doc) .badge-roi (xam)
-     Kho:       ton = 0 -> .badge-huy "Hết hàng" + o .low-stock;
-                1..10 -> o .low-stock-soft (vang nhat). Nguong chot Dot 1: <= 10.
-   Nguon token: chi var(--color-*) trong design-tokens.css (khong them mau). */
-
-@import url('design-tokens.css');
-
-/* ---------- (A) Base + utility dùng chung (copy từ site.css) ---------- */
-* { box-sizing: border-box; }
-html { font-size: 16px; }
-body {
-  margin: 0; background: var(--color-background); color: var(--color-foreground);
-  font-family: var(--font-sans); line-height: 1.5;
-}
-h1, h2, h3, h4 { font-family: var(--font-sans); line-height: 1.25; margin: 0 0 var(--space-md); }
-a { color: var(--color-primary-text); text-decoration: none; }
-a:hover { text-decoration: underline; }
-img { max-width: 100%; height: auto; display: block; }
-button, input, select, textarea { font: inherit; }
-input, select, textarea { background: var(--color-card); color: var(--color-foreground); }
-button { cursor: pointer; }
-:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 2px; }
-::selection { background: var(--color-primary); color: var(--color-on-primary); }
-
-.skip-link { position: absolute; left: var(--space-md); top: -100px; z-index: 10; background: var(--color-primary); color: var(--color-on-primary); padding: var(--space-sm) var(--space-md); border-radius: var(--radius); font-weight: 600; transition: top 200ms ease; }
-.skip-link:focus { top: var(--space-sm); color: var(--color-on-primary); text-decoration: none; }
-
-/* Buttons (copy site.css:111-123) */
-.btn { display: inline-block; padding: 12px 24px; border-radius: var(--radius); font-weight: 600; border: 2px solid transparent; text-align: center; transition: all 200ms ease; }
-.btn:hover { text-decoration: none; }
-.btn-primary { background: var(--color-primary); color: var(--color-on-primary); }
-.btn-primary:hover { background: var(--color-primary-hover); }
-.btn-secondary { background: transparent; color: var(--color-primary-text); border-color: var(--color-primary); }
-.btn-secondary:hover { background: var(--color-muted); }
-.btn-sm { padding: 8px 14px; font-size: .9rem; }
-.btn-block { width: 100%; }
-.btn-danger { background: var(--color-destructive); color: var(--color-on-primary); }
-.btn-danger:hover { filter: brightness(.92); }
-.btn-warning { background: var(--color-warning-bg); color: var(--color-warning-fg); border-color: var(--color-warning-border); }
-.btn-warning:hover { filter: brightness(.96); }
-
-.inline-form { display: inline; }
-.link-button { background: none; border: none; color: var(--color-primary-text); font-weight: 600; padding: 0; }
-.link-button:hover { text-decoration: underline; }
-
-/* Forms (copy site.css:197-201) */
-.form-group { margin-bottom: var(--space-md); }
-.form-group label { display: block; font-weight: 600; margin-bottom: var(--space-xs); }
-.form-control { width: 100%; padding: 12px 16px; border: 1px solid var(--color-border); border-radius: var(--radius); font-size: 1rem; background: var(--color-card); }
-.form-control:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px var(--color-primary-ring); }
-.input-narrow { max-width: 120px; }
-
-/* Tables (copy site.css:44,230-232) */
-/* position: relative — .table-wrap là containing block của span.visually-hidden
-   (absolute) trong <th>: span bị cắt bởi overflow-x của wrap, không thoát ra
-   gây tràn ngang trang ở mobile (Products 390 từng +134px khi wrap static). */
-.table-wrap { overflow-x: auto; position: relative; }
-
-/* Ẩn thị giác nhưng vẫn đọc được bằng screen reader (vd nhãn cột Thao tác).
-   Dùng span có text thật vì axe empty-table-header không chấp nhận <th>
-   trống chỉ có aria-label. */
-.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
-.table { width: 100%; border-collapse: collapse; }
-.table th, .table td { padding: 12px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: top; }
-.table th { background: var(--color-muted); }
-
-/* Alerts (copy site.css:246-260) */
-.alert { padding: 12px 16px; border-radius: var(--radius); margin-bottom: var(--space-md); }
-.alert-success { background: var(--color-success-bg); color: var(--color-success-fg); border: 1px solid var(--color-success-border); }
-.alert-error { background: var(--color-error-bg); color: var(--color-error-fg); border: 1px solid var(--color-error-border); }
-.alert-warning { background: var(--color-warning-bg); color: var(--color-warning-fg); border: 1px solid var(--color-warning-border); }
-.alert-info { background: var(--color-info-bg); color: var(--color-info-fg); border: 1px solid var(--color-info-border); }
-.alert-danger { background: var(--color-error-bg); color: var(--color-error-fg); border: 1px solid var(--color-error-border); }
-
-/* Badges (copy site.css:283-287) */
-.badge { display: inline-block; padding: 2px 10px; border-radius: var(--radius); font-size: .85rem; font-weight: 600; background: var(--color-muted); }
-.badge-cho { background: var(--color-warning-bg); color: var(--color-warning-fg); border: 1px solid var(--color-warning-border); }
-.badge-giao { background: var(--color-info-bg); color: var(--color-info-fg); border: 1px solid var(--color-info-border); }
-.badge-huy { background: var(--color-danger-soft-bg); color: var(--color-danger-soft-fg); border: 1px solid var(--color-danger-soft-border); }
-/* A2 — bien the them (Dot 1): .badge-xanh (da xac nhan / Bach kim),
-   .badge-xong (da giao / da duyet / hoan thanh), .badge-bat (dang bat),
-   .badge-tat (dang tat / da tat), .badge-vang (hang Vang — vang that),
-   .badge-roi (thong bao da doc), .badge-chua = .badge-cho. */
-.badge-xanh { background: var(--color-primary-ghost); color: var(--color-primary-text); border: 1px solid var(--color-primary); }
-.badge-xong { background: var(--color-success-bg); color: var(--color-success-fg); border: 1px solid var(--color-success-border); }
-.badge-bat { background: var(--color-success-bg); color: var(--color-success-fg); border: 1px solid var(--color-success-border); }
-.badge-tat { background: var(--color-muted); color: var(--color-muted-foreground); border: 1px solid var(--color-border); }
-.badge-vang { background: var(--color-warning-bg); color: var(--color-warning-fg); border: 1px solid var(--color-warning-border); }
-.badge-roi { background: var(--color-muted); color: var(--color-muted-foreground); border: 1px solid var(--color-border); }
-
-/* Pagination Admin (copy site.css:300-302) */
-.pagination { display: flex; gap: var(--space-md); align-items: center; margin-top: var(--space-lg); }
-.pagination .page-current { font-weight: 700; color: var(--color-primary-text); }
-
-/* Chips / section head / misc (copy site.css:169,191-193,308) */
-.chip-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin: var(--space-lg) 0; }
-.chip { display: inline-block; padding: 8px 16px; border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-foreground); font-weight: 600; }
-.chip:hover { border-color: var(--color-teal); color: var(--color-teal); text-decoration: none; }
-/* C6 (Dot 1) — copy y nguyen site.css:197-198: chip trang thai dang chon
-   o Orders (truoc day Admin thieu nen chip nao nhin cung giong nhau). */
-.chip-active { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
-.chip-active:hover { color: var(--color-on-primary); border-color: var(--color-primary); }
-/* C6 (Dot 1) — copy y nguyen site.css:208-218: .filter-bar dung o
-   FlashSaleSlots nhung truoc day khong dinh nghia trong admin.css. */
-.filter-bar { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: end; background: var(--color-muted); border-radius: var(--radius); padding: var(--space-md); margin-bottom: var(--space-lg); }
-.filter-bar .form-group { margin-bottom: 0; min-width: 150px; }
-.filter-bar select, .filter-bar input { width: 100%; }
-.filter-bar[hidden] { display: none; }
-.filter-bar input::placeholder { color: var(--color-muted-foreground); opacity: 1; }
-.section-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-md); flex-wrap: wrap; }
-.text-muted { color: var(--color-muted-foreground); }
-.text-danger { color: var(--color-destructive); }
-.mt { margin-top: var(--space-lg); }
-.review-item { border-bottom: 1px solid var(--color-border); padding: 12px 0; }
-
-/* ---------- (B) Class chỉ Admin dùng — đã dời khỏi file chung ---------- */
-/* Lọc trạng thái + form duyệt trong bảng (dời từ features-c.css). */
 .filter-links a { margin-right: var(--space-sm); }
 .admin-duyet { display: flex; gap: var(--space-sm); align-items: center; margin-top: var(--space-xs); }
 .admin-duyet select { width: auto; }
-
-/* Thẻ thống kê Dashboard (dời từ site.css:278-282 + tabular-nums).
-   Dot 1 (A3): vien trai mau theo nhom chi so + icon + delta.
-     --tien (doanh thu): cam accent  | --don (don hang): xanh primary
-     --kho (san pham/kho): teal      | --khach (khach hang): xanh la success
-     --huy (don da huy): do destructive. */
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-lg); margin-bottom: var(--space-xl); }
-.stat-card { border: 1px solid var(--color-border); border-left: 4px solid var(--color-border); border-radius: var(--radius); padding: var(--space-lg); background: var(--color-card); }
-.stat-card .value { font-size: 1.75rem; font-weight: 700; color: var(--color-primary-text); font-variant-numeric: tabular-nums; }
-.stat-card .label { color: var(--color-muted-foreground); }
-.stat-card--tien { border-left-color: var(--color-accent); }
-.stat-card--don { border-left-color: var(--color-primary); }
-.stat-card--kho { border-left-color: var(--color-teal); }
-.stat-card--khach { border-left-color: var(--color-success-fg); }
-.stat-card--huy { border-left-color: var(--color-destructive); }
-.stat-card .stat-icon { font-size: 1.4rem; line-height: 1; margin-bottom: var(--space-xs); }
-.stat-card .stat-delta { font-size: .85rem; font-weight: 600; margin-top: var(--space-xs); font-variant-numeric: tabular-nums; }
-.stat-card .stat-delta--len { color: var(--color-success-fg); }
-.stat-card .stat-delta--xuong { color: var(--color-destructive); }
-.stat-card .stat-delta--bang { color: var(--color-muted-foreground); }
-/* Do #DC2626 tren nen card dark chi ~2.9:1 (axe color-contrast) — o dark
-   dung --color-error-fg (#FECACA) cho delta giam. */
-html[data-theme="dark"] .stat-card .stat-delta--xuong { color: var(--color-error-fg); }
-
-/* ---------- Dot 2 (B1) — Form tim kiem + sap xep server (Admin) ----------
-   GET form tren Products/Orders/Vouchers/Customers: o tim + select sort
-   + nut Tim tren 1 hang (xuong hang o mobile). Dem ket qua + empty state
-   dung chung cho 4 trang (B7 dung ban rieng o TongQuan, xem cuoi file). */
 .admin-search { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: stretch; margin: var(--space-md) 0 var(--space-xs); }
 .admin-search input[type="search"] { flex: 1 1 260px; }
 .admin-search select { flex: 0 1 200px; }
-.admin-result-count { margin: var(--space-xs) 0 var(--space-md); font-variant-numeric: tabular-nums; }
-.admin-empty { border: 1px dashed var(--color-border); border-radius: var(--radius); background: var(--color-muted); padding: var(--space-lg); text-align: center; }
-
-/* ---------- Dot 2 (A6) — Thumbnail san pham trong bang (48px) ----------
-   Khung co dinh 48x48 + object-fit: cover (bai hoc vu vo anh card Dong ho
-   §36 — khong de anh tu do kich thuoc). Anh dai dien lay tu ProductImages
-   (LaAnhChinh), khong co thi placeholder.svg (Product.AnhDaiDien). */
+.admin-result-count, .tongquan-count { margin: var(--space-xs) 0 var(--space-md); font-variant-numeric: tabular-nums; }
+.admin-empty, .tongquan-empty { border: 1px dashed var(--color-border); border-radius: var(--radius); background: var(--color-muted); padding: var(--space-lg); text-align: center; }
 .product-thumb-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .product-thumb-cell a { overflow-wrap: anywhere; }
 .product-thumb { width: 48px; height: 48px; object-fit: cover; flex-shrink: 0; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-muted); }
 
-/* ---------- Dot 2 (B7) — Dem ket qua + empty state loc TongQuan ----------
-   .tongquan-count/.tongquan-empty do admin.js tao/ cap nhat khi loc
-   (khong co san trong markup — JS chen sau o loc cua panel). */
-.tongquan-count { margin: var(--space-xs) 0 var(--space-md); font-variant-numeric: tabular-nums; }
-.tongquan-empty { border: 1px dashed var(--color-border); border-radius: var(--radius); background: var(--color-muted); padding: var(--space-lg); text-align: center; margin: var(--space-md) 0; }
+
+.tongquan-empty { margin-block: var(--space-md); }
 .tongquan-empty p { margin: 0 0 var(--space-sm); }
 .tongquan-empty p:last-child { margin-bottom: 0; }
-
-/* Biểu đồ cột doanh thu 30 ngày (dời từ features-d.css).
-   Dot 2 (A4) — chart doc duoc: .chart-wrap gom truc Y + vung cot;
-   .chart-yaxis 5 moc (max, 3/4, 1/2, 1/4, 0) can dung vach luoi;
-   .chart-value la gia tri rut gon tren moi cot > 0 (render server,
-   tat JS van hien); cot max to mau --color-accent.
-   Luoi: background lap moi 38.5px = 1/4 chieu cao vung cot (180 - 26
-   nhan ngay) nen vach nam dung moc 0/25/50/75/100%. Nhan ngay co dinh
-   26px de chieu cao vung cot khong doi theo font. */
-.chart-wrap { display: flex; gap: var(--space-sm); border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); padding: var(--space-md) var(--space-sm) 0; }
-.chart-yaxis { display: flex; flex-direction: column; justify-content: space-between; height: 180px; padding-bottom: 26px; flex-shrink: 0; min-width: 36px; font-size: .7rem; line-height: 1; color: var(--color-muted-foreground); text-align: right; font-variant-numeric: tabular-nums; }
-.chart-yaxis span { transform: translateY(-50%); white-space: nowrap; }
-.chart {
-  flex: 1; min-width: 0; display: flex; align-items: flex-end; gap: var(--space-xs);
-  height: 180px; padding: 0;
-  background-image: linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
-  background-size: 100% 38.5px; background-repeat: repeat-y;
-  overflow-x: auto;
-}
-.chart-col { flex: 1 1 0; min-width: 18px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; }
-.chart-bar { width: 100%; max-width: 28px; height: 0; background: var(--color-primary); border-radius: var(--radius) var(--radius) 0 0; transition: height 300ms ease; }
-.chart-bar:hover { background: var(--color-primary-hover); }
-.chart-col--max .chart-bar { background: var(--color-accent); }
-.chart-col--max .chart-bar:hover { background: var(--color-accent); filter: brightness(.92); }
-.chart-col--max .chart-value { color: var(--color-accent); }
-.chart-value { flex-shrink: 0; padding-bottom: 2px; font-size: .68rem; font-weight: 700; line-height: 1.2; color: var(--color-foreground); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.chart-label { flex-shrink: 0; height: 26px; padding-top: var(--space-xs); font-size: .75rem; color: var(--color-muted-foreground); white-space: nowrap; }
-
-/* Tồn kho thấp (Dot 1: chot 1 nguong <= 10, thay cho < 5 lech nhau truoc
-   day) + link nhanh Dashboard + form nhập kho + ảnh banner trong bảng
-   (dời từ features-d.css). */
 .low-stock { background: var(--color-danger-soft-bg); color: var(--color-danger-soft-fg); font-weight: 700; }
-/* Ton 1..10: to vang nhat (canh bao nhe); ton = 0: .low-stock + badge "Hết hàng". */
+
 .low-stock-soft { background: var(--color-warning-bg); color: var(--color-warning-fg); font-weight: 700; }
 .admin-links { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
 .stock-form { display: flex; gap: var(--space-sm); align-items: center; flex-wrap: wrap; }
 .banner-thumb { width: 96px; height: 54px; object-fit: cover; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-muted); }
 
-/* ---------- A5 (Dot 1) — Khoi tien don hang (Admin) ----------
-   _BangTienDon.cshtml dung chung voi shop (site.css co .summary o do),
-   nhung layout Admin KHONG load site.css nen o Admin cac dong summary-row
-   tung ve inline dinh lien nhau. Dinh nghia lai o day (copy gia tri tu
-   site.css:238-240,257 + them): bang 2 cot (nhan trai, so phai, tabular),
-   dong tong to + dam + vien tren. Chi trinh bay lai — KHONG doi so tien. */
+
 .admin-main .summary { max-width: 560px; border: 1px solid var(--color-border); border-radius: var(--radius); padding: var(--space-md) var(--space-lg); background: var(--color-card); }
 .admin-main .summary-row { display: flex; justify-content: space-between; gap: var(--space-lg); padding: 8px 0; border-bottom: 1px solid var(--color-border); }
 .admin-main .summary-row span:last-child { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-weight: 600; }
 .admin-main .summary-row.total { border-top: 2px solid var(--color-foreground); border-bottom: none; margin-top: 4px; padding-top: 12px; font-size: 1.25rem; font-weight: 700; }
 .admin-main .summary-row.total span:last-child { font-weight: 700; }
 .admin-main .summary p { margin-bottom: 0; }
-
-/* ---------- Shell Admin: sidebar + topbar + breadcrumb + main ---------- */
-.admin-body { min-height: 100vh; }
+.admin-body {
+  min-height: 100vh;
+  --color-on-destructive: var(--color-card);
+  --color-danger-soft-bg: var(--color-error-bg);
+  --color-danger-soft-fg: var(--color-error-fg);
+  --color-danger-soft-border: var(--color-error-border);
+}
 .admin-shell { display: flex; min-height: 100vh; }
 .admin-sidebar {
-  width: 248px; flex-shrink: 0; background: var(--color-muted);
+  --color-focus: var(--market-yellow);
+  width: 14.5rem; flex-shrink: 0; background: var(--market-rail);
+  color: var(--market-on-canopy);
   border-right: 1px solid var(--color-border);
   display: flex; flex-direction: column;
-  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  position: sticky; top: 0; height: 100vh; height: 100dvh; overflow-y: auto;
 }
-/* A1 (Dot 1): sidebar Admin khac han shop — nen muted (light); o dark,
-   --color-muted == --color-card nen dung --color-background (toi hon). */
-html[data-theme="dark"] .admin-sidebar { background: var(--color-background); }
-html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-muted); }
-.admin-logo { font-family: var(--font-sans); font-size: 1.5rem; font-weight: 700; color: var(--color-foreground); padding: var(--space-lg) var(--space-lg) var(--space-md); }
-.admin-logo span { color: var(--color-primary-text); }
-.admin-logo small { font-size: .8rem; font-weight: 600; color: var(--color-muted-foreground); }
-.admin-logo:hover { text-decoration: none; }
+.admin-logo { padding: var(--space-lg) var(--space-lg) var(--space-md); color: var(--market-on-canopy); }
+.admin-logo span { color: var(--market-yellow); }
+.admin-logo small { font-size: .8rem; font-weight: 600; color: var(--market-on-canopy-muted); }
 .admin-sidebar nav { flex: 1; padding: 0 var(--space-sm) var(--space-md); }
-.admin-nav-group { padding: var(--space-md) var(--space-sm) var(--space-xs); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--color-muted-foreground); }
-.admin-sidebar nav a { display: block; padding: 10px 12px; border-radius: var(--radius); color: var(--color-foreground); font-weight: 600; }
-.admin-sidebar nav a:hover { background: var(--color-muted); text-decoration: none; }
-.admin-sidebar nav a.is-active { background: var(--color-primary); color: var(--color-on-primary); }
+.admin-nav-group { padding: var(--space-md) var(--space-sm) var(--space-xs); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--market-on-canopy-muted); }
+.admin-sidebar nav a { display: block; padding: 10px 12px; border-radius: var(--radius); color: var(--market-on-canopy); font-weight: 600; text-decoration: none; }
+.admin-sidebar nav a:hover { background: var(--market-canopy); }
+.admin-sidebar nav a.is-active { background: var(--market-yellow); color: var(--market-ink); }
 .admin-sidebar nav a.admin-nav-sub { padding-left: var(--space-xl); font-weight: 500; font-size: .95rem; }
-.admin-sidebar-foot { border-top: 1px solid var(--color-border); padding: var(--space-md) var(--space-lg); }
-.admin-sidebar-foot a { color: var(--color-muted-foreground); font-weight: 600; }
+.admin-sidebar-foot { border-top: 1px solid var(--market-canopy); padding: var(--space-md) var(--space-lg); }
+.admin-sidebar-foot a { color: var(--market-on-canopy); font-weight: 600; }
 
 .admin-main-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .admin-topbar {
   display: flex; align-items: center; gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg);
+  padding: .625rem var(--space-lg);
   background: var(--color-card); border-bottom: 1px solid var(--color-border);
   position: sticky; top: 0; z-index: 5;
 }
@@ -287,30 +76,26 @@ html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-mut
 .admin-breadcrumb a { font-weight: 600; }
 .admin-breadcrumb [aria-current="page"] { color: var(--color-foreground); font-weight: 700; }
 .admin-topbar-actions { display: flex; align-items: center; gap: var(--space-md); flex-shrink: 0; }
-.admin-topbar-actions a { font-weight: 600; white-space: nowrap; }
-/* A1 (Dot 1): pill ADMIN o topbar, canh ten user — nhan manh "day la Admin". */
-.admin-pill { display: inline-block; background: var(--color-foreground); color: var(--color-background); font-size: .75rem; font-weight: 700; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
-/* A1 (Dot 1): nhan "Khu quản trị" tren moi trang Admin (tren H1). */
-.admin-eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--color-primary-text); margin: 0 0 var(--space-xs); }
-.theme-toggle { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); padding: 8px 12px; line-height: 1; }
-.admin-user { font-weight: 600; white-space: nowrap; }
+.admin-topbar-actions a { font-weight: 600; white-space: nowrap; text-decoration: none; }
+@media (max-width: 480px) { .admin-topbar-actions a { display: none; } }
+@media (min-width: 769px) { .admin-main .table :is(th, td) { padding-block: .625rem; } }
 
-.admin-main { flex: 1; padding: var(--space-lg); min-width: 0; max-width: 1200px; width: 100%; margin: 0 auto; }
+.admin-pill { display: inline-block; background: var(--market-yellow); color: var(--market-ink); font-size: .75rem; font-weight: 700; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+
+.admin-user { font-weight: 600; white-space: nowrap; }
+@media (max-width: 1100px) { .admin-user { display: none; } }
+
+.admin-main { flex: 1; padding: var(--space-lg); min-width: 0; max-width: 96rem; width: 100%; margin: 0 auto; }
 .admin-footer { border-top: 1px solid var(--color-border); padding: var(--space-md) var(--space-lg); }
 .admin-footer p { color: var(--color-muted-foreground); text-align: center; margin: 0; font-size: .9rem; }
 .admin-overlay { display: none; }
-
-/* ---------- Responsive: không tràn ngang ở 320/360/390 ---------- */
-@media (max-width: 1024px) {
-  .stat-grid { grid-template-columns: repeat(2, 1fr); }
-}
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed; left: 0; top: 0; z-index: 20;
-    transform: translateX(-105%); transition: transform 200ms ease;
+    visibility: hidden; transform: translateX(-105%); transition: transform 200ms ease;
     box-shadow: var(--shadow-lg);
   }
-  .admin-shell.sidebar-open .admin-sidebar { transform: translateX(0); }
+  .admin-shell.sidebar-open .admin-sidebar { visibility: visible; transform: translateX(0); }
   .admin-shell.sidebar-open .admin-overlay {
     display: block; position: fixed; inset: 0; z-index: 15;
     background: rgba(0, 0, 0, .45);
@@ -320,19 +105,12 @@ html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-mut
   .admin-breadcrumb { order: 3; flex-basis: 100%; white-space: normal; }
   .admin-user { display: none; }
   .admin-main { padding: var(--space-md); }
+  .admin-menu-toggle { min-inline-size: 2.75rem; min-block-size: 2.75rem; }
+  .admin-topbar-actions { margin-inline-start: auto; }
+  .admin-pill { display: none; }
   .admin-duyet { flex-wrap: wrap; }
   .section-head { flex-direction: column; align-items: stretch; }
 }
-@media (max-width: 480px) {
-  .stat-grid { grid-template-columns: 1fr; }
-  .admin-topbar-actions a { display: none; }
-}
-@media (prefers-reduced-motion: reduce) {
-  .admin-sidebar, .chart-bar { transition: none; }
-}
-
-/* ---------- Trang tong hop (Admin/TongQuan) ---------- */
-/* Tab nav: dung token hien co, dark mode theo design-tokens.css. */
 .tongquan-tabs { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin: var(--space-lg) 0; }
 .tongquan-tab { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); color: var(--color-foreground); padding: 10px 14px; font-weight: 600; }
 .tongquan-tab:hover { border-color: var(--color-primary); }
@@ -350,29 +128,12 @@ html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-mut
   .tongquan-filter-row { flex-direction: column; }
   .tongquan-filter-row .tongquan-filter,
   .tongquan-filter-row .tongquan-sort { flex: 0 0 auto; }
-  /* Dot 2 (A4): mobile luoc nhan X — chi hien ngay 1, 6, 11, 16, 21, 26
-     (cach 5 ngay, het vet den chen nhau); gia tri tren cot chi giu cot max. */
-  .chart-label { display: none; }
-  .chart-col:nth-child(5n+1) .chart-label { display: block; }
-  .chart-value { display: none; }
-  .chart-col--max .chart-value { display: block; }
   .admin-search select { flex-basis: 100%; }
 }
-
-/* ================= Dot 3 ("Chuyen sau + mobile", 2026-11-12) ================= */
-
-/* ---------- C4 — Nut dat co cham 44px ----------
-   .btn-sm truoc day ~37px (padding 8px + font .9rem); .link-button trong
-   bang chi ~22px cao. Tang len 44px (tieu chuan cham). Chi doi kich
-   thuoc, khong doi mau/class. */
 .btn-sm { min-height: 44px; padding: 10px 14px; display: inline-flex; align-items: center; justify-content: center; }
 .table .link-button { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 4px; }
 
-/* ---------- A7 — Form them moi nhom thanh card 2 cot ----------
-   .admin-form-grid boc cac <fieldset class="admin-form-card">; 2 cot o
-   desktop, 1 cot o mobile (<=768px). Chi layout — field + validation
-   giu nguyen. Legend la tieu de nhom (vd Voucher: "Gia tri" / "Dieu
-   kien" / "Thoi gian"). */
+
 .admin-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-bottom: var(--space-md); }
 .admin-form-card { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); padding: var(--space-md) var(--space-lg) var(--space-sm); margin: 0; min-width: 0; }
 .admin-form-card > legend { font-weight: 700; padding: 0 8px; }
@@ -380,12 +141,6 @@ html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-mut
 @media (max-width: 768px) {
   .admin-form-grid { grid-template-columns: 1fr; }
 }
-
-/* ---------- B4 — Drawer xem nhanh don (read-only) ----------
-   Drawer ben phai + overlay; mo bang nut [data-order-drawer] o
-   Orders/TongQuan-tab-Don. Noi dung lay tu action OrderDetails() da co
-   (fetch + trich .admin-main, bo cac <form> de chi doc — xem admin.js).
-   role="dialog" + aria-modal="true" o markup; focus trap + Esc o JS. */
 .order-drawer-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .45); z-index: 30; }
 .order-drawer-overlay[hidden] { display: none; }
 .order-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100vw); background: var(--color-card); color: var(--color-foreground); z-index: 31; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; }
@@ -397,15 +152,7 @@ html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-mut
 .order-drawer-foot { padding: var(--space-md) var(--space-lg); border-top: 1px solid var(--color-border); flex-shrink: 0; }
 .order-drawer-foot p { margin: 0; }
 
-/* ---------- C5 — Mobile <=480px: bang -> card; tab 1 hang cuon ngang;
-   chart vua khung (het cuon ngang o 390, no Dot 2) ----------
-   Bang .table--card-mobile (Products/Orders + 2 tab TongQuan tuong ung):
-   moi <tr> thanh 1 card, moi <td> hien nhan cot qua data-label
-   (attr). thead an khoi mat nhin nhung van doc duoc bang screen reader
-   (ky thuat clip nhu .visually-hidden, khong display:none).
-   Tab TongQuan: 1 hang cuon ngang + scroll-snap (thay cho 2 cot x 6 hang
-   ~500px). Chart: bo overflow-x:auto + min-width cot 18px (30 cot x
-   18px + gap vuot 390) -> cot co lai vua khung, khong cuon nua. */
+
 @media (max-width: 480px) {
   .table--card-mobile, .table--card-mobile tbody, .table--card-mobile tr, .table--card-mobile td { display: block; width: 100%; }
   .table--card-mobile thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
@@ -418,18 +165,87 @@ html[data-theme="dark"] .admin-sidebar nav a:hover { background: var(--color-mut
 
   .tongquan-tabs { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 4px; }
   .tongquan-tab { flex: 0 0 auto; scroll-snap-align: start; }
+}
+/* Use the available work area, including when the sidebar or drawer is open. */
+.admin-record-list { container-type: inline-size; }
+.admin-main > .admin-record-list.table-wrap { border: 0; background: transparent; }
+.admin-record-list .table {
+  border: 1px solid var(--color-border);
+  border-block-start: .25rem solid var(--color-primary);
+  border-radius: var(--radius-panel);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--color-card);
+}
+.admin-record-list .table thead th { background: var(--color-primary-ghost); }
+.admin-record-list .table :is(th, td) { vertical-align: middle; overflow-wrap: anywhere; }
+.admin-record-list .table tbody tr:last-child > th { border-block-end: 0; }
+.admin-record-list .admin-record-lead { background: transparent; font-weight: 750; }
+.admin-record-list .product-thumb { object-fit: contain; background: var(--market-photo); }
+.admin-record-code { display: block; font-size: .8125rem; font-weight: 500; }
+.admin-money { color: var(--color-accent); font-variant-numeric: tabular-nums; }
+.admin-row-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.admin-quick-stock .table { border-block-start-color: var(--color-accent); }
 
-  .chart { overflow-x: visible; gap: 2px; }
-  .chart-col { min-width: 0; }
-  /* Cot max o gan phai: nhan gia tri "40,2tr" (nowrap, ~31px) vuot khoi
-     cot ~8px lam chart thua ~2px scrollWidth (do 2026-11-12). An luon
-     nhan nay o mobile — gia tri day du da co trong bang 30 ngay (C3). */
-  .chart-col--max .chart-value { display: none; }
+@container (width < 49rem) {
+  .admin-record-list .table { display: block; border: 0; background: transparent; }
+  .admin-record-list thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .admin-record-list .table tbody { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); gap: var(--space-sm); }
+  .admin-record-list .table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    margin: 0;
+    padding: .1rem .85rem;
+    border: 1px solid var(--color-border);
+    border-block-start: .25rem solid var(--color-primary);
+    border-radius: var(--radius-panel);
+    background: var(--color-card);
+  }
+  .admin-quick-stock .table tbody tr { border-block-start-color: var(--color-accent); }
+  .admin-record-list .table tbody :is(th, td) { display: block; width: auto; min-width: 0; padding: .5rem .35rem; border: 0; }
+  .admin-record-list .table td[data-label]::before {
+    content: attr(data-label);
+    content: attr(data-label) / "";
+    display: block;
+    margin-block-end: .1rem;
+    color: var(--color-muted-foreground);
+    font-size: .8125rem;
+    font-weight: 600;
+  }
+  .admin-record-list .table :is(.admin-record-lead, .admin-record-wide, .admin-record-actions) { grid-column: 1 / -1; }
+  .admin-record-list .table .admin-record-lead { padding-block: .75rem; border-block-end: 1px solid var(--color-border); }
+  .admin-record-list .table .admin-record-actions { border-block-start: 1px dashed var(--color-control-border); margin-top: .25rem; }
+  .admin-record-list .table td.admin-record-actions::before { content: none; }
+  .admin-record-list .admin-row-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-record-list .admin-row-actions .btn { width: 100%; padding-inline: .4rem; }
 }
 
-/* ---------- C3 — Bang 30 ngay kem chart (cho screen reader) ----------
-   Bang so lieu day du cua DoanhThu30Ngay (da co san o ViewModel) dat ngay
-   duoi chart o ca Dashboard + TongQuan. Hien luon (khong visually-hidden)
-   de Admin nao cung doc duoc so lieu chinh xac, ke ca khi tat JS. */
-.chart-data-table { margin-top: var(--space-md); }
-.chart-data-table caption { text-align: left; font-weight: 700; padding-bottom: var(--space-xs); }
+.admin-order-layout { display: grid; gap: var(--space-md); }
+.admin-order-layout > * { min-width: 0; }
+.admin-order-column { display: grid; gap: var(--space-md); }
+.market-heading .admin-order-title { flex-direction: row; align-items: center; }
+.admin-order-layout .admin-order-summary { align-self: start; border-block-start: .25rem solid var(--color-primary); }
+.admin-order-layout .admin-order-summary .summary { max-width: none; border: 0; padding: 0; }
+.admin-order-summary .summary-row { gap: var(--space-sm); }
+.admin-order-summary .summary-row.total { border-block-start: 1px dashed var(--color-control-border); }
+.admin-order-summary .total > :last-child { color: var(--color-accent); }
+.admin-order-edit .form-group { max-width: 25rem; }
+.admin-order-edit .admin-row-actions > * { flex: 0 1 auto; }
+.order-drawer-head { background: var(--market-rail); color: var(--market-on-canopy); }
+.order-drawer-head .btn { color: var(--market-on-canopy); border-color: var(--market-on-canopy-muted); }
+.order-drawer-head .btn:hover { background: var(--market-canopy); }
+.order-drawer-head .btn:focus-visible { outline-color: var(--market-yellow); }
+.order-drawer-body > .admin-main { padding: 0; }
+.order-drawer-body .market-heading { padding: .75rem 1rem; }
+@media (min-width: 1200px) {
+  .admin-order-layout { grid-template-columns: minmax(0, 1.55fr) minmax(19rem, 1fr); }
+  .order-drawer .admin-order-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .admin-search input[type="search"] { flex-basis: 100%; min-width: 0; }
+  .admin-search select { flex: 1 1 9rem; width: auto; min-width: 0; }
+  .admin-search > :is(a, button) { flex: 0 0 auto; }
+  .admin-order-layout .summary-row.total { font-size: 1rem; }
+  .order-drawer-body { padding: var(--space-md); }
+}

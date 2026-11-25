@@ -2,63 +2,65 @@
 @{
     ViewData["Title"] = "Yêu cầu của tôi";
     var baoHanh = (List<TechZone.Models.WarrantyClaim>)ViewBag.BaoHanh;
+    var nhom = new[]
+    {
+        (Ten: "Đổi trả", Loai: "doitra", Trong: "Bạn chưa có yêu cầu đổi trả nào.",
+            Muc: Model.Select(r => (r.Id, r.OrderId, SanPham: r.Product.Ten, PhienBan: r.OrderDetail?.Variant?.TenBienThe, NoiDung: r.LyDo, r.NgayTao, r.TrangThai))),
+        (Ten: "Bảo hành", Loai: "baohanh", Trong: "Bạn chưa có yêu cầu bảo hành nào.",
+            Muc: baoHanh.Select(w => (w.Id, w.OrderId, SanPham: w.Product.Ten, PhienBan: (string?)null, NoiDung: w.MoTaLoi, w.NgayTao, w.TrangThai)))
+    };
 }
 
-<h1>Yêu cầu của tôi</h1>
-<p><a asp-controller="Orders" asp-action="MyOrders">← Về danh sách đơn của tôi</a> • <a asp-action="TraCuu">Tra cứu bảo hành</a></p>
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Orders" asp-action="MyOrders">Đơn hàng của tôi</a>
+        <span aria-hidden="true">/</span><span aria-current="page">Đổi trả và bảo hành</span>
+    </nav>
+    <h1>Yêu cầu của tôi</h1>
+    <p>Theo dõi các yêu cầu đổi trả và bảo hành đã gửi.</p>
+</header>
 
-<h2>Đổi trả</h2>
-@if (!Model.Any())
-{
-    <p>Bạn chưa có yêu cầu đổi trả nào.</p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr><th>Mã</th><th>Đơn</th><th>Sản phẩm</th><th>Lý do</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var r in Model)
+<nav class="order-help" aria-label="Hậu mãi">
+    <a asp-action="TraCuu" class="btn btn-primary">Tra cứu bảo hành</a>
+</nav>
+
+<div class="order-column">
+    @foreach (var khu in nhom)
+    {
+        <section aria-labelledby="requests-@khu.Loai">
+            <h2 id="requests-@khu.Loai">@khu.Ten</h2>
+            @if (!khu.Muc.Any())
             {
-                <tr>
-                    <td>#@r.Id</td>
-                    <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@r.OrderId">#@r.OrderId</a></td>
-                    <td>@r.Product.Ten @r.OrderDetail?.Variant?.TenBienThe</td>
-                    <td>@r.LyDo</td>
-                    <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@r.TrangThai</td>
-                    <td><a asp-action="Details" asp-route-id="@r.Id" asp-route-loai="doitra">Xem</a></td>
-                </tr>
+                <div class="card service-card">@khu.Trong</div>
             }
-        </tbody>
-    </table>
-}
-
-<h2>Bảo hành</h2>
-@if (!baoHanh.Any())
-{
-    <p>Bạn chưa có yêu cầu bảo hành nào.</p>
-}
-else
-{
-    <table class="table">
-        <thead>
-            <tr><th>Mã</th><th>Đơn</th><th>Sản phẩm</th><th>Mô tả lỗi</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var w in baoHanh)
+            else
             {
-                <tr>
-                    <td>#@w.Id</td>
-                    <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@w.OrderId">#@w.OrderId</a></td>
-                    <td>@w.Product.Ten</td>
-                    <td>@w.MoTaLoi</td>
-                    <td>@w.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@w.TrangThai</td>
-                    <td><a asp-action="Details" asp-route-id="@w.Id" asp-route-loai="baohanh">Xem</a></td>
-                </tr>
+                <ul class="order-list service-list" role="list">
+                    @foreach (var yeuCau in khu.Muc)
+                    {
+                        <li class="card order-list-card service-card">
+                            <div class="section-head">
+                                <div>
+                                    <h3>@khu.Ten #@yeuCau.Id</h3>
+                                    <p class="text-muted">@yeuCau.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
+                                </div>
+                                <partial name="_TrangThaiBadge" model="yeuCau.TrangThai" />
+                            </div>
+                            <p><strong>@yeuCau.SanPham</strong> @yeuCau.PhienBan</p>
+                            <p class="service-description">@yeuCau.NoiDung</p>
+                            <div class="order-list-footer">
+                                <a asp-action="Details" asp-route-id="@yeuCau.Id" asp-route-loai="@khu.Loai" class="btn btn-primary"
+                                   aria-label="Xem yêu cầu @khu.Ten số @yeuCau.Id">Xem yêu cầu</a>
+                                <a asp-controller="Orders" asp-action="Details" asp-route-id="@yeuCau.OrderId" class="btn btn-secondary">Đơn #@yeuCau.OrderId</a>
+                            </div>
+                        </li>
+                    }
+                </ul>
             }
-        </tbody>
-    </table>
+        </section>
+    }
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

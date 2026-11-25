@@ -49,7 +49,7 @@ public class HomeController : Controller
             .ToListAsync();
 
         var danhMuc = await _db.Categories
-            .Include(c => c.Products)
+            .Include(c => c.Products).ThenInclude(p => p.Images)
             .OrderBy(c => c.Ten)
             .ToListAsync();
 

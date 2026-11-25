@@ -1,0 +1,39 @@
+@model (TechZone.Models.Order Order, bool BaoHanh)
+@{
+    var thaoTac = Model.BaoHanh ? "Bảo hành" : "Đổi trả";
+}
+
+<section class="card tracking-card service-card">
+    <h2>Chọn sản phẩm cần @thaoTac.ToLowerInvariant()</h2>
+    <ul class="order-lines" role="list">
+        @foreach (var dong in Model.Order.ChiTiet)
+        {
+            <li class="service-line">
+                <img src="@dong.Product.AnhDaiDien" alt="" width="56" height="56" loading="lazy" />
+                <div>
+                    <strong>@dong.Product.Ten</strong>
+                    @if (dong.Variant is not null)
+                    {
+                        <span class="text-muted">@dong.Variant.TenBienThe</span>
+                    }
+                    <span class="text-muted">Số lượng @dong.SoLuong</span>
+                    <div class="service-actions">
+                        @if (Model.BaoHanh)
+                        {
+                            <a asp-action="Warranty" asp-route-orderId="@Model.Order.Id" asp-route-productId="@dong.ProductId" class="btn btn-primary">Bảo hành</a>
+                            <a asp-action="Create" asp-route-orderId="@Model.Order.Id" asp-route-orderDetailId="@dong.Id" class="btn btn-secondary">Đổi trả</a>
+                        }
+                        else
+                        {
+                            <a asp-action="Create" asp-route-orderId="@Model.Order.Id" asp-route-orderDetailId="@dong.Id" class="btn btn-primary">Đổi trả</a>
+                            @if (Model.Order.TrangThai == OrderStatus.DaGiao)
+                            {
+                                <a asp-action="Warranty" asp-route-orderId="@Model.Order.Id" asp-route-productId="@dong.ProductId" class="btn btn-secondary">Bảo hành</a>
+                            }
+                        }
+                    </div>
+                </div>
+            </li>
+        }
+    </ul>
+</section>

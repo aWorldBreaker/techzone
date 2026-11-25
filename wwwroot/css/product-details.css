@@ -1,0 +1,51 @@
+.detail-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(1.25rem, 4vw, 3rem); align-items: start; }
+@media (min-width: 769px) { .detail-layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+.detail-image {
+  background: linear-gradient(135deg, var(--market-photo), var(--market-photo-warm));
+  color: var(--market-ink); border-radius: var(--radius-panel); padding: clamp(.875rem, 3vw, 1.75rem);
+}
+.detail-image img { inline-size: 100%; max-block-size: 34rem; object-fit: contain; }
+#product-image { mix-blend-mode: multiply; }
+.gallery-title { font-size: .9rem; font-weight: 750; }
+.detail-image .viewer-note, .detail-image .viewer-toolbar .btn-secondary { color: var(--market-ink); }
+.detail-image .viewer-toolbar .btn-secondary:hover { background: var(--market-moss); }
+.detail-image :focus-visible { outline-color: var(--market-green); }
+.detail-buy { border-block-start: .25rem solid var(--color-primary); }
+.detail-price, .buy-policy, .detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
+.detail-price { background: var(--market-ticket); padding: .75rem; border-radius: var(--radius); }
+.buy-policy { margin-block: .75rem; color: var(--color-muted-foreground); font-size: .875rem; }
+.buy-policy span { background: var(--color-muted); border-radius: var(--radius); padding: .25rem .5rem; }
+.detail-add, .detail-actions { margin-block-start: var(--space-md); }
+.detail-add .btn-primary { width: 100%; }
+.detail-actions form { margin: 0; }
+.detail-section { border-block-start: 1px solid var(--color-border); margin-block-start: var(--space-lg); }
+
+.thumb-btn { padding: 0; border: 2px solid transparent; border-radius: var(--radius); background: none; cursor: pointer; line-height: 0; }
+.thumb-btn:hover { border-color: var(--color-border); }
+.thumb-btn[aria-current="true"] { border-color: var(--color-primary); }
+.detail-image .thumb-btn img { width: 72px; height: 72px; }
+.spec-table { width: 100%; border-collapse: collapse; margin-top: var(--space-md); }
+.spec-table th, .spec-table td { padding: 10px 12px; border-bottom: 1px solid var(--color-border); text-align: left; }
+.spec-table th { width: 35%; background: var(--color-muted); }
+.price-big { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.5rem); font-weight: 850; }
+.price-old { color: var(--color-muted-foreground); margin-left: var(--space-sm); }
+.variant-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; }
+.variant { border: 2px solid var(--color-border); border-radius: var(--radius); padding: 8px 14px; font-weight: 600; background: var(--color-card); }
+.variant.selected { border-color: var(--color-primary); background: var(--color-muted); }
+
+.review-image { max-width: 240px; border: 1px solid var(--color-border); border-radius: var(--radius); margin-top: var(--space-sm); }
+
+/* Khoi hoi - dap */
+.qa-item { border-bottom: 1px solid var(--color-border); padding: var(--space-md) 0; }
+.qa-question { margin: 0 0 var(--space-xs); }
+.qa-answer { background: var(--color-muted); border-radius: var(--radius); padding: var(--space-sm) var(--space-md); margin: var(--space-sm) 0 0; }
+
+/* Khoi mua kem (combo) */
+.combo-block { border: 1px solid var(--color-border); border-radius: var(--radius); background: var(--color-card); padding: var(--space-lg); }
+.combo-items { display: flex; align-items: center; gap: var(--space-md); margin-top: var(--space-md); flex-wrap: wrap; }
+.combo-item { flex: 1; min-width: 140px; text-align: center; }
+.combo-item img { width: 120px; height: 120px; object-fit: contain; background: var(--color-muted); border-radius: var(--radius); margin: 0 auto var(--space-sm); padding: var(--space-sm); }
+.combo-item p { margin: 0 0 var(--space-xs); }
+.combo-plus { font-size: 1.5rem; font-weight: 700; color: var(--color-muted-foreground); }
+.combo-total { font-size: 1.15rem; margin-top: var(--space-md); }
+.combo-total strong { color: var(--color-accent); font-variant-numeric: tabular-nums; }

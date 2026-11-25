@@ -1,219 +1,250 @@
 @model TechZone.Models.ProductFilterViewModel
 @{
     ViewData["Title"] = "Danh mục sản phẩm";
-    // Sprint 6 Module 3 (M3-2): đếm filter đang bật để hiện badge trên nút
-    // "Bộ lọc" mobile + tự mở panel khi đã có filter (người dùng cần thấy
-    // trạng thái lọc thay vì tưởng chưa lọc gì).
-    // Đếm CHỈ điều kiện lọc, KHÔNG đếm sắp xếp (SapXep không phải filter);
-    // khoảng giá (GiaTu + GiaDen) đếm là 1 điều kiện.
-    var activeFilterCount = 0;
-    if (Model.CategoryId.HasValue) activeFilterCount++;
-    if (Model.BrandId.HasValue) activeFilterCount++;
-    if (!string.IsNullOrWhiteSpace(Model.Chip)) activeFilterCount++;
-    if (!string.IsNullOrWhiteSpace(Model.Ram)) activeFilterCount++;
-    if (!string.IsNullOrWhiteSpace(Model.DungLuong)) activeFilterCount++;
-    if (Model.GiaTu.HasValue || Model.GiaDen.HasValue) activeFilterCount++;
-    if (!string.IsNullOrWhiteSpace(Model.TuKhoa)) activeFilterCount++;
+    var boLoc = new Dictionary<string, (string Label, string Value)>();
+    void Them(string key, string label, string? value)
+    {
+        if (!string.IsNullOrWhiteSpace(value)) boLoc.Add(key, (label, value));
+    }
+    Them("CategoryId", Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten ?? "Danh mục", Model.CategoryId?.ToString());
+    Them("BrandId", Model.ThuongHieu.FirstOrDefault(b => b.Id == Model.BrandId)?.Ten ?? "Hãng", Model.BrandId?.ToString());
+    Them("Chip", $"Chip {Model.Chip}", Model.Chip);
+    Them("Ram", $"RAM {Model.Ram}", Model.Ram);
+    Them("DungLuong", $"Dung lượng {Model.DungLuong}", Model.DungLuong);
+    Them("GiaTu", $"Từ {Model.GiaTu:N0}đ", FormattableString.Invariant($"{Model.GiaTu}"));
+    Them("GiaDen", $"Đến {Model.GiaDen:N0}đ", FormattableString.Invariant($"{Model.GiaDen}"));
+    Them("TuKhoa", $"Tìm: {Model.TuKhoa}", Model.TuKhoa);
+    var activeFilterCount = boLoc.Count;
 }
 
-<h1>Sản phẩm @if (Model.CategoryId.HasValue)
-{
-    <span>— @Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten</span>
-}</h1>
-<p class="text-muted">@Model.TongSo sản phẩm</p>
+<header class="market-heading catalog-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Home" asp-action="Index">Trang chủ</a><span aria-hidden="true">/</span><span aria-current="page">Ngành hàng</span>
+    </nav>
+    <h1>@(Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten ?? "Khám phá ngành hàng")</h1>
+    <nav class="department-tabs" aria-label="Chọn ngành hàng">
+        <a asp-action="Index" class="chip @(Model.CategoryId is null ? "chip-active" : "")"
+           aria-current="@(Model.CategoryId is null ? "page" : null)">Tất cả</a>
+        @foreach (var category in Model.DanhMuc.OrderBy(c => c.Id))
+        {
+            var selected = category.Id == Model.CategoryId;
+            <a asp-action="Index" asp-route-CategoryId="@category.Id" class="chip @(selected ? "chip-active" : "")"
+               aria-current="@(selected ? "page" : null)">@category.Ten</a>
+        }
+    </nav>
+</header>
 
-@* Nút mở/đóng panel lọc — chỉ hiện ở ≤768px khi JS chạy (xem site.css +
-   js/filter-toggle.js); desktop form luôn mở, nút ẩn. *@
-<button type="button" id="filter-toggle" class="filter-toggle" aria-expanded="@(activeFilterCount > 0 ? "true" : "false")" aria-controls="filter-panel">
-    Bộ lọc <span aria-hidden="true">▾</span>
-    @if (activeFilterCount > 0)
-    {
-        <span class="filter-count-badge" aria-label="@activeFilterCount bộ lọc đang bật">@activeFilterCount</span>
-    }
-</button>
-
-<form method="get" id="filter-panel" class="filter-bar" data-active-filters="@activeFilterCount" aria-label="Lọc sản phẩm">
-    <div class="form-group">
-        <label for="CategoryId">Danh mục</label>
-        <select id="CategoryId" name="CategoryId" class="form-control" asp-items="@(new SelectList(Model.DanhMuc, "Id", "Ten", Model.CategoryId))">
-            <option value="">Tất cả</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="BrandId">Hãng</label>
-        <select id="BrandId" name="BrandId" class="form-control" asp-items="@(new SelectList(Model.ThuongHieu, "Id", "Ten", Model.BrandId))">
-            <option value="">Tất cả</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="Chip">Chip</label>
-        <select id="Chip" name="Chip" class="form-control" asp-items="@(new SelectList(Model.Chips, Model.Chip))">
-            <option value="">Tất cả</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="Ram">RAM</label>
-        <select id="Ram" name="Ram" class="form-control" asp-items="@(new SelectList(Model.Rams, Model.Ram))">
-            <option value="">Tất cả</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="DungLuong">Dung lượng</label>
-        <select id="DungLuong" name="DungLuong" class="form-control" asp-items="@(new SelectList(Model.DungLuongs, Model.DungLuong))">
-            <option value="">Tất cả</option>
-        </select>
-    </div>
-    <div class="form-group">
-        <label for="GiaTu">Giá từ (đ)</label>
-        <input id="GiaTu" name="GiaTu" type="number" min="0" step="100000" class="form-control" value="@Model.GiaTu" />
-    </div>
-    <div class="form-group">
-        <label for="GiaDen">Giá đến (đ)</label>
-        <input id="GiaDen" name="GiaDen" type="number" min="0" step="100000" class="form-control" value="@Model.GiaDen" />
-    </div>
-    <div class="form-group">
+<div class="catalog-toolbar section-head">
+    <p class="text-muted" role="status">@Model.TongSo sản phẩm</p>
+    <button type="button" id="filter-toggle" class="btn btn-secondary filter-toggle" aria-expanded="false" aria-controls="filter-panel">
+        Bộ lọc @(activeFilterCount > 0 ? $"({activeFilterCount})" : "")
+    </button>
+    <div class="catalog-sort">
         <label for="SapXep">Sắp xếp</label>
-        <select id="SapXep" name="SapXep" class="form-control">
+        <select id="SapXep" name="SapXep" form="filter-panel" class="form-control">
             <option value="mac-dinh" selected="@(Model.SapXep == "mac-dinh")">Mặc định</option>
             <option value="gia-tang" selected="@(Model.SapXep == "gia-tang")">Giá tăng dần</option>
             <option value="gia-giam" selected="@(Model.SapXep == "gia-giam")">Giá giảm dần</option>
             <option value="ban-chay" selected="@(Model.SapXep == "ban-chay")">Bán chạy</option>
             <option value="moi-nhat" selected="@(Model.SapXep == "moi-nhat")">Mới nhất</option>
         </select>
+        <button type="submit" form="filter-panel" class="btn btn-secondary">Áp dụng</button>
     </div>
-    <div class="form-group">
-        <label for="TuKhoa">Tìm kiếm</label>
-        <input id="TuKhoa" name="TuKhoa" type="search" class="form-control" value="@Model.TuKhoa" placeholder="Tên sản phẩm..." />
-    </div>
-    <div class="filter-actions">
-        <button type="submit" class="btn btn-primary">Lọc</button>
-        <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
-        @* Nút Đóng — Sprint 6 Module 3: chỉ hiện ở mobile (≤768px, xem
-           site.css); bấm thì đóng panel + trả focus về nút "Bộ lọc"
-           (xem filter-toggle.js). Desktop panel luôn mở nên nút ẩn. *@
-        <button type="button" class="btn btn-secondary filter-close" id="filter-close">Đóng</button>
-    </div>
-</form>
+</div>
 
-@* 3 thông báo riêng, không dùng chung một câu:
-   (a) trang vượt giới hạn — controller clamp về trang cuối nên trang cuối
-       LUÔN có SP, nhánh này nằm ở khối else bên dưới (khi còn kết quả),
-       không phải ở đây; (b) lọc không khớp sản phẩm nào;
-   (c) rỗng thật (không có SP nào). *@
-@if (!Model.KetQua.Any())
+@if (activeFilterCount > 0)
 {
-    @if (activeFilterCount > 0)
+    <div class="chip-row" role="group" aria-label="Bộ lọc đang áp dụng">
+        @foreach (var (key, filter) in boLoc)
+        {
+            var route = boLoc.Where(f => f.Key != key).ToDictionary(f => f.Key, f => f.Value.Value);
+            route["SapXep"] = Model.SapXep;
+            <a asp-action="Index" asp-all-route-data="route" class="chip" aria-label="Gỡ bộ lọc @filter.Label">@filter.Label <span aria-hidden="true">×</span></a>
+        }
+    </div>
+}
+
+<div class="catalog-layout">
+    <form method="get" id="filter-panel" class="filter-bar" aria-label="Lọc sản phẩm">
+        <h2>Lọc sản phẩm</h2>
+        <div class="form-group">
+            <label for="CategoryId">Danh mục</label>
+            <select id="CategoryId" name="CategoryId" class="form-control" asp-items="@(new SelectList(Model.DanhMuc, "Id", "Ten", Model.CategoryId))">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="BrandId">Hãng</label>
+            <select id="BrandId" name="BrandId" class="form-control" asp-items="@(new SelectList(Model.ThuongHieu, "Id", "Ten", Model.BrandId))">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="Chip">Chip</label>
+            <select id="Chip" name="Chip" class="form-control" asp-items="@(new SelectList(Model.Chips, Model.Chip))">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="Ram">RAM</label>
+            <select id="Ram" name="Ram" class="form-control" asp-items="@(new SelectList(Model.Rams, Model.Ram))">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="DungLuong">Dung lượng</label>
+            <select id="DungLuong" name="DungLuong" class="form-control" asp-items="@(new SelectList(Model.DungLuongs, Model.DungLuong))">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div class="catalog-range">
+            <div class="form-group">
+                <label for="GiaTu">Giá từ (đ)</label>
+                <input id="GiaTu" name="GiaTu" type="number" min="0" step="100000" class="form-control" value="@Model.GiaTu" />
+            </div>
+            <div class="form-group">
+                <label for="GiaDen">Giá đến (đ)</label>
+                <input id="GiaDen" name="GiaDen" type="number" min="0" step="100000" class="form-control" value="@Model.GiaDen" />
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="TuKhoa">Tìm kiếm</label>
+            <input id="TuKhoa" name="TuKhoa" type="search" class="form-control" value="@Model.TuKhoa" placeholder="Tên sản phẩm..." />
+        </div>
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">Lọc</button>
+            <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
+            <button type="button" class="btn btn-secondary filter-close" id="filter-close">Đóng</button>
+        </div>
+    </form>
+
+    <div class="catalog-results">
+    @* 3 thông báo riêng, không dùng chung một câu:
+       (a) trang vượt giới hạn — controller clamp về trang cuối nên trang cuối
+           LUÔN có SP, nhánh này nằm ở khối else bên dưới (khi còn kết quả),
+           không phải ở đây; (b) lọc không khớp sản phẩm nào;
+       (c) rỗng thật (không có SP nào). *@
+    @if (!Model.KetQua.Any())
     {
-        <p>Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+        @if (activeFilterCount > 0)
+        {
+            <p class="empty-state">Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+        }
+        else
+        {
+            <p class="empty-state">Chưa có sản phẩm nào. Vui lòng quay lại sau.</p>
+        }
     }
     else
     {
-        <p>Chưa có sản phẩm nào. Vui lòng quay lại sau.</p>
-    }
-}
-else
-{
-    @if (Model.TrangVuotGioiHan)
-    {
-        <p class="alert alert-info" role="status">
-            Trang @Model.TrangYeuCau không tồn tại, đang hiển thị trang cuối (@Model.TongTrang/@Model.TongTrang).
-            <a asp-action="Index"
-               asp-route-Trang="@Model.TongTrang"
-               asp-route-CategoryId="@Model.CategoryId"
-               asp-route-BrandId="@Model.BrandId"
-               asp-route-Chip="@Model.Chip"
-               asp-route-Ram="@Model.Ram"
-               asp-route-DungLuong="@Model.DungLuong"
-               asp-route-GiaTu="@Model.GiaTu"
-               asp-route-GiaDen="@Model.GiaDen"
-               asp-route-SapXep="@Model.SapXep"
-               asp-route-TuKhoa="@Model.TuKhoa">Về trang cuối</a>
-        </p>
-    }
-    <div class="product-grid">
-        @foreach (var p in Model.KetQua)
+        @if (Model.TrangVuotGioiHan)
         {
-            <partial name="_ProductCard" model="p" />
+            <p class="alert alert-info" role="status">
+                Trang @Model.TrangYeuCau không tồn tại, đang hiển thị trang cuối (@Model.TongTrang/@Model.TongTrang).
+                <a asp-action="Index"
+                   asp-route-Trang="@Model.TongTrang"
+                   asp-route-CategoryId="@Model.CategoryId"
+                   asp-route-BrandId="@Model.BrandId"
+                   asp-route-Chip="@Model.Chip"
+                   asp-route-Ram="@Model.Ram"
+                   asp-route-DungLuong="@Model.DungLuong"
+                   asp-route-GiaTu="@Model.GiaTu"
+                   asp-route-GiaDen="@Model.GiaDen"
+                   asp-route-SapXep="@Model.SapXep"
+                   asp-route-TuKhoa="@Model.TuKhoa">Về trang cuối</a>
+            </p>
         }
-    </div>
+        <div class="product-grid">
+            @foreach (var p in Model.KetQua)
+            {
+                <partial name="_ProductCard" model="p" />
+            }
+        </div>
 
-    @if (Model.TongTrang > 1)
-    {
-        @* Phân trang — Sprint 6 Module 3: nút Trước/Sau + windowing
-           (trang 1 … ±2 quanh trang hiện tại … trang cuối, có dấu …),
-           không render toàn bộ nút; trang hiện tại có aria-current="page"
-           + class chip-active. Giữ nguyên: không render nav khi
-           TongTrang <= 1; mọi link giữ đủ filter + chiều sort. *@
-        var trangNav = Math.Min(Math.Max(1, Model.Trang), Model.TongTrang);
-        var cacTrang = new List<int> { 1 };
-        for (var i = Math.Max(2, trangNav - 2); i <= Math.Min(Model.TongTrang - 1, trangNav + 2); i++)
+        @if (Model.TongTrang > 1)
         {
-            cacTrang.Add(i);
-        }
-        if (Model.TongTrang > 1)
-        {
-            cacTrang.Add(Model.TongTrang);
-        }
-        <nav class="mt" aria-label="Phân trang">
-            @if (trangNav > 1)
+            @* Phân trang — Sprint 6 Module 3: nút Trước/Sau + windowing
+               (trang 1 … ±2 quanh trang hiện tại … trang cuối, có dấu …),
+               không render toàn bộ nút; trang hiện tại có aria-current="page"
+               + class chip-active. Giữ nguyên: không render nav khi
+               TongTrang <= 1; mọi link giữ đủ filter + chiều sort. *@
+            var trangNav = Math.Min(Math.Max(1, Model.Trang), Model.TongTrang);
+            var cacTrang = new List<int> { 1 };
+            for (var i = Math.Max(2, trangNav - 2); i <= Math.Min(Model.TongTrang - 1, trangNav + 2); i++)
             {
-                <a class="chip" asp-action="Index"
-                   asp-route-Trang="@(trangNav - 1)"
-                   asp-route-CategoryId="@Model.CategoryId"
-                   asp-route-BrandId="@Model.BrandId"
-                   asp-route-Chip="@Model.Chip"
-                   asp-route-Ram="@Model.Ram"
-                   asp-route-DungLuong="@Model.DungLuong"
-                   asp-route-GiaTu="@Model.GiaTu"
-                   asp-route-GiaDen="@Model.GiaDen"
-                   asp-route-SapXep="@Model.SapXep"
-                   asp-route-TuKhoa="@Model.TuKhoa">‹ Trước</a>
+                cacTrang.Add(i);
             }
-            else
+            if (Model.TongTrang > 1)
             {
-                <span class="chip chip-disabled" aria-disabled="true">‹ Trước</span>
+                cacTrang.Add(Model.TongTrang);
             }
-            @foreach (var soTrang in cacTrang)
-            {
-                @* Dấu … khi trang này không kề trang trước trong danh sách. *@
-                @if (soTrang > 1 && !cacTrang.Contains(soTrang - 1))
+            <nav class="mt" aria-label="Phân trang">
+                @if (trangNav > 1)
                 {
-                    <span class="pagination-ellipsis" aria-hidden="true">…</span>
+                    <a class="chip" asp-action="Index"
+                       asp-route-Trang="@(trangNav - 1)"
+                       asp-route-CategoryId="@Model.CategoryId"
+                       asp-route-BrandId="@Model.BrandId"
+                       asp-route-Chip="@Model.Chip"
+                       asp-route-Ram="@Model.Ram"
+                       asp-route-DungLuong="@Model.DungLuong"
+                       asp-route-GiaTu="@Model.GiaTu"
+                       asp-route-GiaDen="@Model.GiaDen"
+                       asp-route-SapXep="@Model.SapXep"
+                       asp-route-TuKhoa="@Model.TuKhoa">‹ Trước</a>
                 }
-                <a class="chip @(soTrang == trangNav ? "chip-active" : "")" aria-current="@(soTrang == trangNav ? "page" : null)" asp-action="Index"
-                   asp-route-Trang="@soTrang"
-                   asp-route-CategoryId="@Model.CategoryId"
-                   asp-route-BrandId="@Model.BrandId"
-                   asp-route-Chip="@Model.Chip"
-                   asp-route-Ram="@Model.Ram"
-                   asp-route-DungLuong="@Model.DungLuong"
-                   asp-route-GiaTu="@Model.GiaTu"
-                   asp-route-GiaDen="@Model.GiaDen"
-                   asp-route-SapXep="@Model.SapXep"
-                   asp-route-TuKhoa="@Model.TuKhoa">@soTrang</a>
-            }
-            @if (trangNav < Model.TongTrang)
-            {
-                <a class="chip" asp-action="Index"
-                   asp-route-Trang="@(trangNav + 1)"
-                   asp-route-CategoryId="@Model.CategoryId"
-                   asp-route-BrandId="@Model.BrandId"
-                   asp-route-Chip="@Model.Chip"
-                   asp-route-Ram="@Model.Ram"
-                   asp-route-DungLuong="@Model.DungLuong"
-                   asp-route-GiaTu="@Model.GiaTu"
-                   asp-route-GiaDen="@Model.GiaDen"
-                   asp-route-SapXep="@Model.SapXep"
-                   asp-route-TuKhoa="@Model.TuKhoa">Sau ›</a>
-            }
-            else
-            {
-                <span class="chip chip-disabled" aria-disabled="true">Sau ›</span>
-            }
-        </nav>
+                else
+                {
+                    <span class="chip chip-disabled" aria-disabled="true">‹ Trước</span>
+                }
+                @foreach (var soTrang in cacTrang)
+                {
+                    @* Dấu … khi trang này không kề trang trước trong danh sách. *@
+                    @if (soTrang > 1 && !cacTrang.Contains(soTrang - 1))
+                    {
+                        <span class="pagination-ellipsis" aria-hidden="true">…</span>
+                    }
+                    <a class="chip @(soTrang == trangNav ? "chip-active" : "")" aria-current="@(soTrang == trangNav ? "page" : null)" asp-action="Index"
+                       asp-route-Trang="@soTrang"
+                       asp-route-CategoryId="@Model.CategoryId"
+                       asp-route-BrandId="@Model.BrandId"
+                       asp-route-Chip="@Model.Chip"
+                       asp-route-Ram="@Model.Ram"
+                       asp-route-DungLuong="@Model.DungLuong"
+                       asp-route-GiaTu="@Model.GiaTu"
+                       asp-route-GiaDen="@Model.GiaDen"
+                       asp-route-SapXep="@Model.SapXep"
+                       asp-route-TuKhoa="@Model.TuKhoa">@soTrang</a>
+                }
+                @if (trangNav < Model.TongTrang)
+                {
+                    <a class="chip" asp-action="Index"
+                       asp-route-Trang="@(trangNav + 1)"
+                       asp-route-CategoryId="@Model.CategoryId"
+                       asp-route-BrandId="@Model.BrandId"
+                       asp-route-Chip="@Model.Chip"
+                       asp-route-Ram="@Model.Ram"
+                       asp-route-DungLuong="@Model.DungLuong"
+                       asp-route-GiaTu="@Model.GiaTu"
+                       asp-route-GiaDen="@Model.GiaDen"
+                       asp-route-SapXep="@Model.SapXep"
+                       asp-route-TuKhoa="@Model.TuKhoa">Sau ›</a>
+                }
+                else
+                {
+                    <span class="chip chip-disabled" aria-disabled="true">Sau ›</span>
+                }
+            </nav>
+        }
     }
-}
+    </div>
+</div>
 
 @section Scripts {
-    <script src="~/js/filter-toggle.js"></script>
+    <script src="~/js/filter-toggle.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/catalog.css" asp-append-version="true" />
 }

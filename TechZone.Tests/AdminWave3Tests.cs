@@ -330,7 +330,7 @@ public class AdminWave3Tests
         Assert.Contains(".table--card-mobile", css);
         Assert.Contains("data-label", css);
         Assert.Contains("scroll-snap-type: x mandatory", css);
-        Assert.Contains(".chart { overflow-x: visible", css);
+        Assert.Contains(".chart { overflow-x: visible", Doc("wwwroot", "css", "dashboard.css"));
         Assert.Contains("table--card-mobile", Doc("Views", "Admin", "Products.cshtml"));
         Assert.Contains("table--card-mobile", Doc("Views", "Admin", "Orders.cshtml"));
         Assert.Contains("table--card-mobile", tq);

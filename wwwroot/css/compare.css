@@ -1,0 +1,65 @@
+.compare-board { container-type: inline-size; }
+.compare-toolbar { margin-block-end: .75rem; }
+.compare-scroll-hint { display: none; margin: 0 0 .75rem; color: var(--color-muted-foreground); font-size: .875rem; }
+.compare-wrap {
+  --compare-label: clamp(4.5rem, 16vw, 9rem);
+  --compare-cell-pad: clamp(.4rem, 1.5vw, 1rem);
+  overflow-x: auto;
+  scroll-padding-inline: var(--compare-label) var(--compare-cell-pad);
+  scrollbar-color: var(--color-control-border) var(--color-muted);
+  border: 1px solid var(--color-border);
+  border-block-start: .25rem solid var(--color-primary);
+  border-radius: var(--radius-panel);
+  background: var(--color-card);
+}
+.compare-table {
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.compare-board-full .compare-table { min-inline-size: 27rem; }
+.compare-table :is(th, td) { padding: .65rem var(--compare-cell-pad); vertical-align: middle; }
+.compare-table :is(thead th:first-child, th[scope="row"]) {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: var(--color-muted);
+  border-inline-end: 1px solid var(--color-control-border);
+}
+.compare-table thead th { width: auto; background: var(--color-primary-ghost); vertical-align: top; }
+.compare-table thead th:first-child { width: var(--compare-label); vertical-align: bottom; }
+.compare-table td { text-align: center; }
+.compare-table td + td { border-inline-start: 1px solid var(--color-border); }
+.compare-table tbody tr:last-child :is(td, th) { border-block-end: 0; }
+.compare-table .compare-group th {
+  background: var(--market-green);
+  color: var(--market-on-canopy);
+}
+.compare-group span { position: sticky; inset-inline-start: var(--compare-cell-pad); display: inline-block; }
+.compare-product { display: grid; justify-items: center; gap: .5rem; text-align: center; }
+.compare-thumb {
+  inline-size: min(100%, 6rem);
+  block-size: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  padding: .25rem;
+  border-radius: var(--radius);
+  background: var(--market-photo);
+}
+.compare-price td { background: var(--market-ticket); }
+.compare-price strong, .compare-money { white-space: nowrap; }
+.compare-actions { display: grid; gap: .4rem; }
+.compare-actions .btn { min-block-size: 2.75rem; padding: .35rem .2rem; }
+
+@container (width < calc(27rem + 2px)) {
+  .compare-scroll-hint { display: block; }
+}
+@media (max-width: 590px) {
+  .compare-table { font-size: .875rem; }
+  .compare-actions .btn { font-size: inherit; }
+}
+@media (max-width: 350px) {
+  .compare-price strong, .compare-money { font-size: .8125rem; }
+}

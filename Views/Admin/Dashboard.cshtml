@@ -27,31 +27,141 @@
     Func<decimal, string> rutGonTien = v => v >= 1_000_000 ? (v / 1_000_000).ToString("0.#", viVn) + "tr" : v >= 1_000 ? (v / 1_000).ToString("0.#", viVn) + "k" : v.ToString("N0", viVn);
     var max30Ngay = Model.DoanhThu30Ngay.Any() ? Model.DoanhThu30Ngay.Max(d => d.DoanhThu) : 0;
 }
-<div class="section-head">
-    <h1>Dashboard</h1>
-    <a asp-action="TongQuan">Mở trang tổng hợp</a>
+<header class="market-heading order-heading">
+    <div class="section-head">
+        <h1>Dashboard cửa hàng</h1>
+        <a class="btn hero-buy" asp-action="TongQuan">Mở trang tổng hợp</a>
+    </div>
+    <p>Theo dõi đơn hàng, doanh thu và tồn kho.</p>
+</header>
+
+<nav class="admin-dashboard-nav" aria-label="Quản lý cửa hàng">
+    <a class="btn btn-primary" asp-action="Orders">Quản lý đơn hàng</a>
+    <a class="btn btn-secondary" asp-action="Products">Quản lý sản phẩm</a>
+    <a class="btn btn-secondary" asp-action="Kho">Quản lý kho</a>
+</nav>
+
+<h2>Cần xử lý</h2>
+<div class="stat-grid stat-queue">
+    <div class="stat-card stat-card--don">
+        <div class="value">@Model.DonMoi</div>
+        <div class="label"><a asp-action="Orders" asp-route-trangThai="@OrderStatus.ChoXacNhan">Đơn chờ xác nhận</a></div>
+    </div>
+    <div class="stat-card stat-card--don">
+        <div class="value">@Model.DonChoXuLy</div>
+        <div class="label"><a asp-action="Orders">Đơn chờ xử lý</a></div>
+    </div>
+    <div class="stat-card stat-card--don">
+        <div class="value">@Model.DoiTraChoDuyet</div>
+        <div class="label"><a asp-controller="Returns" asp-action="AdminIndex">Đổi trả chờ duyệt</a></div>
+    </div>
+    <div class="stat-card stat-card--huy">
+        <div class="value">@Model.SanPhamHetHang</div>
+        <div class="label"><a asp-action="Products" asp-route-sort="ton-asc">Sản phẩm hết hàng (tồn = 0)</a></div>
+    </div>
 </div>
 
+<h2>Chỉ số cửa hàng</h2>
 <div class="stat-grid">
-    <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💰</div><div class="value">@Model.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div>@if (deltaThangText is not null) { <div class="stat-delta @deltaThangClass">@deltaThangText</div> }</div>
-    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🕐</div><div class="value">@Model.DonMoi</div><div class="label">Đơn chờ xác nhận</div></div>
-    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🧾</div><div class="value">@Model.TongDon</div><div class="label">Tổng số đơn</div></div>
-    <div class="stat-card stat-card--kho"><div class="stat-icon" aria-hidden="true">📦</div><div class="value">@Model.TongSanPham</div><div class="label">Sản phẩm</div></div>
-    <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">📈</div><div class="value">@Model.DoanhThuTuan.ToString("N0")đ</div><div class="label">Doanh thu 7 ngày gần nhất</div>@if (deltaTuanText is not null) { <div class="stat-delta @deltaTuanClass">@deltaTuanText</div> }</div>
-    <div class="stat-card stat-card--khach"><div class="stat-icon" aria-hidden="true">👥</div><div class="value">@Model.KhachMoiThang</div><div class="label">Khách mới trong tháng</div></div>
-    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">⏳</div><div class="value">@Model.DonChoXuLy</div><div class="label">Đơn chờ xử lý</div></div>
-    <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">🚫</div><div class="value">@Model.DonDaHuy</div><div class="label">Đơn đã hủy</div></div>
-    @* Dot 2 (B5): 6 chi so moi — chi doc, tinh tu field/query da co hoac
-       Count/Sum chi doc. Gia tri ton kho ghi ro theo GIA BAN. *@
-    <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💵</div><div class="value">@Model.DoanhThuHomNay.ToString("N0")đ</div><div class="label">Doanh thu hôm nay</div></div>
-    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">🧾</div><div class="value">@Model.GiaTriDonTrungBinh.ToString("N0")đ</div><div class="label">Giá trị đơn trung bình (tháng này)</div></div>
-    <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">📉</div><div class="value">@((Model.TiLeHuy * 100).ToString("N1"))%</div><div class="label">Tỷ lệ hủy (@Model.DonDaHuy / @Model.TongDon đơn)</div></div>
-    <div class="stat-card stat-card--don"><div class="stat-icon" aria-hidden="true">↩️</div><div class="value">@Model.DoiTraChoDuyet</div><div class="label">Đổi trả chờ duyệt</div></div>
-    <div class="stat-card stat-card--huy"><div class="stat-icon" aria-hidden="true">📭</div><div class="value">@Model.SanPhamHetHang</div><div class="label">Sản phẩm hết hàng (tồn = 0)</div></div>
-    <div class="stat-card stat-card--kho"><div class="stat-icon" aria-hidden="true">📦</div><div class="value">@Model.GiaTriTonKho.ToString("N0")đ</div><div class="label">Giá trị tồn kho (theo giá bán)</div></div>
+    <div class="stat-card stat-card--tien">
+        <div class="value">@Model.DoanhThuHomNay.ToString("N0")đ</div>
+        <div class="label">Doanh thu hôm nay</div>
+    </div>
+    <div class="stat-card stat-card--tien">
+        <div class="value">@Model.DoanhThuThang.ToString("N0")đ</div>
+        <div class="label">Doanh thu tháng này</div>
+        @if (deltaThangText is not null) { <div class="stat-delta @deltaThangClass">@deltaThangText</div> }
+    </div>
+    <div class="stat-card stat-card--tien">
+        <div class="value">@Model.DoanhThuTuan.ToString("N0")đ</div>
+        <div class="label">Doanh thu 7 ngày gần nhất</div>
+        @if (deltaTuanText is not null) { <div class="stat-delta @deltaTuanClass">@deltaTuanText</div> }
+    </div>
+    <div class="stat-card stat-card--don">
+        <div class="value">@Model.TongDon</div>
+        <div class="label">Tổng số đơn</div>
+    </div>
+    <div class="stat-card stat-card--kho">
+        <div class="value">@Model.TongSanPham</div>
+        <div class="label">Sản phẩm</div>
+    </div>
+    <div class="stat-card stat-card--khach">
+        <div class="value">@Model.KhachMoiThang</div>
+        <div class="label">Khách mới trong tháng</div>
+    </div>
+    <div class="stat-card stat-card--huy">
+        <div class="value">@Model.DonDaHuy</div>
+        <div class="label">Đơn đã hủy</div>
+    </div>
+    <div class="stat-card stat-card--don">
+        <div class="value">@Model.GiaTriDonTrungBinh.ToString("N0")đ</div>
+        <div class="label">Giá trị đơn trung bình (tháng này)</div>
+    </div>
+    <div class="stat-card stat-card--huy">
+        <div class="value">@((Model.TiLeHuy * 100).ToString("N1"))%</div>
+        <div class="label">Tỷ lệ hủy (@Model.DonDaHuy / @Model.TongDon đơn)</div>
+    </div>
+    <div class="stat-card stat-card--kho">
+        <div class="value">@Model.GiaTriTonKho.ToString("N0")đ</div>
+        <div class="label">Giá trị tồn kho (theo giá bán)</div>
+    </div>
 </div>
 
-<section>
+<div class="admin-dashboard-panels">
+<section class="admin-dashboard-wide">
+    <div class="section-head">
+        <h2>Đơn gần đây</h2>
+        <a asp-action="Orders">Xem tất cả đơn →</a>
+    </div>
+    <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Đơn gần đây">
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Mã đơn</th><th scope="col" role="columnheader">Ngày đặt</th><th scope="col" role="columnheader">Trạng thái</th><th scope="col" role="columnheader">Tổng tiền</th></tr></thead>
+        <tbody role="rowgroup">
+            @foreach (var o in Model.DonGanDay)
+            {
+                <tr role="row">
+                    <th scope="row" role="rowheader" class="admin-record-lead"><a asp-action="OrderDetails" asp-route-id="@o.Id">Đơn #@o.Id</a></th>
+                    <td role="cell" data-label="Ngày đặt">@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td role="cell" data-label="Trạng thái"><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
+                    <td role="cell" class="admin-record-wide" data-label="Tổng tiền"><strong class="admin-money">@o.ThanhToan.ToString("N0")đ</strong></td>
+                </tr>
+            }
+        </tbody>
+    </table></div>
+</section>
+
+<section class="admin-dashboard-wide admin-quick-stock">
+    <h2>Sắp hết hàng (tồn kho ≤ 10)</h2>
+    @if (!Model.SapHetHang.Any())
+    {
+        <p class="text-muted">Không có sản phẩm nào sắp hết hàng.</p>
+    }
+    else
+    {
+        <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Sản phẩm sắp hết hàng">
+            <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Sản phẩm</th><th scope="col" role="columnheader">Tồn kho</th><th scope="col" role="columnheader">Nhập nhanh</th></tr></thead>
+            <tbody role="rowgroup">
+                @foreach (var p in Model.SapHetHang)
+                {
+                    <tr role="row">
+                    <th scope="row" role="rowheader" class="admin-record-lead"><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />@p.Ten</span></th>
+                    <td role="cell" class="admin-record-wide" data-label="Tồn kho"><span class="badge @(p.TonKho == 0 ? "badge-huy" : "badge-cho")">@(p.TonKho == 0 ? "Hết hàng · 0" : $"Còn {p.TonKho}")</span></td>
+                    <td role="cell" class="admin-record-actions">
+                        @* Dot 2 (B6): nhap kho nhanh tai day — tai dung POST
+                           NhapKho cu (tuTrang=Dashboard de quay lai day). *@
+                        <form asp-action="NhapKho" method="post" class="stock-form">
+                            <input type="hidden" name="productId" value="@p.Id" />
+                            <input type="hidden" name="tuTrang" value="Dashboard" />
+                            <input type="number" name="soLuong" class="form-control input-narrow" min="1" value="10" required aria-label="Số lượng nhập cho @p.Ten" />
+                            <button type="submit" class="btn btn-primary btn-sm">Nhập kho</button>
+                        </form>
+                    </td></tr>
+                }
+            </tbody>
+        </table></div>
+    }
+</section>
+
+<section class="admin-dashboard-wide">
     <h2>Doanh thu 30 ngày gần nhất</h2>
     @* M7-1: chua co don nao trong 30 ngay thi tat ca cot = 0 — JS dung ve
        (max &lt;= 0 thi return) de lai khung chart trong + 30 nhan ngay,
@@ -84,7 +194,9 @@
     @* Dot 3 (C3): bang 30 ngay kem chart — so lieu day du cua
        DoanhThu30Ngay (da co san), cho screen reader + doc so chinh xac
        khi tat JS (chart chi hien cot). *@
-    <div class="table-wrap chart-data-table"><table class="table">
+    <details class="chart-data-table">
+    <summary>Xem số liệu từng ngày</summary>
+    <div class="table-wrap"><table class="table">
         <caption>Doanh thu từng ngày (30 ngày gần nhất)</caption>
         <thead><tr><th scope="col">Ngày</th><th scope="col">Doanh thu</th></tr></thead>
         <tbody>
@@ -94,6 +206,7 @@
             }
         </tbody>
     </table></div>
+    </details>
     }
 </section>
 
@@ -130,88 +243,40 @@
     </table></div>
 </section>
 
-<section class="mt">
+<section class="admin-dashboard-wide">
     <h2>Top bán chạy</h2>
-    <div class="table-wrap"><table class="table">
-        <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Đã bán</th><th scope="col">Tồn kho</th><th scope="col">Giá bán</th></tr></thead>
-        <tbody>
+    <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Sản phẩm bán chạy">
+        <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Sản phẩm</th><th scope="col" role="columnheader">Đã bán</th><th scope="col" role="columnheader">Tồn kho</th><th scope="col" role="columnheader">Giá bán</th></tr></thead>
+        <tbody role="rowgroup">
             @foreach (var p in Model.TopBanChay)
             {
-                <tr>
-                    <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
-                    <td>@p.LuotBan</td>
-                    <td>@p.TonKho</td>
-                    <td>@p.GiaBan.ToString("N0")đ</td>
+                <tr role="row">
+                    <th scope="row" role="rowheader" class="admin-record-lead"><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" width="48" height="48" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></th>
+                    <td role="cell" data-label="Đã bán">@p.LuotBan</td>
+                    <td role="cell" data-label="Tồn kho">@p.TonKho</td>
+                    <td role="cell" class="admin-record-wide" data-label="Giá bán"><strong class="admin-money">@p.GiaBan.ToString("N0")đ</strong></td>
                 </tr>
             }
         </tbody>
     </table></div>
 </section>
 
-<section class="mt">
-    <h2>Sắp hết hàng (tồn kho ≤ 10)</h2>
-    @if (!Model.SapHetHang.Any())
-    {
-        <p class="text-muted">Không có sản phẩm nào sắp hết hàng.</p>
-    }
-    else
-    {
-        <div class="table-wrap"><table class="table">
-            <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Nhập nhanh</th></tr></thead>
-            <tbody>
-                @foreach (var p in Model.SapHetHang)
-                {
-                    <tr><td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" />@p.Ten</span></td><td class="@(p.TonKho == 0 ? "low-stock" : "low-stock-soft")"><strong>@p.TonKho</strong>@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
-                    <td>
-                        @* Dot 2 (B6): nhap kho nhanh tai day — tai dung POST
-                           NhapKho cu (tuTrang=Dashboard de quay lai day). *@
-                        <form asp-action="NhapKho" method="post" class="stock-form">
-                            <input type="hidden" name="productId" value="@p.Id" />
-                            <input type="hidden" name="tuTrang" value="Dashboard" />
-                            <input type="number" name="soLuong" class="form-control input-narrow" min="1" value="10" required aria-label="Số lượng nhập cho @p.Ten" />
-                            <button type="submit" class="btn btn-primary btn-sm">Nhập kho</button>
-                        </form>
-                    </td></tr>
-                }
-            </tbody>
-        </table></div>
-    }
-</section>
+</div>
 
-<section class="mt">
-    <div class="section-head">
-        <h2>Đơn gần đây</h2>
-        <a asp-action="Orders">Xem tất cả đơn →</a>
-    </div>
-    <div class="table-wrap"><table class="table">
-        <thead><tr><th scope="col">Mã đơn</th><th scope="col">Ngày đặt</th><th scope="col">Tổng tiền</th><th scope="col">Trạng thái</th></tr></thead>
-        <tbody>
-            @foreach (var o in Model.DonGanDay)
-            {
-                <tr>
-                    <td><a asp-action="OrderDetails" asp-route-id="@o.Id">#@o.Id</a></td>
-                    <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@o.ThanhToan.ToString("N0")đ</td>
-                    <td><partial name="_TrangThaiBadge" model="o.TrangThai" /></td>
-                </tr>
-            }
-        </tbody>
-    </table></div>
-    <p class="mt">
-        <a class="btn btn-secondary" asp-action="Products">Quản lý sản phẩm</a>
-        <a class="btn btn-secondary" asp-action="Vouchers">Quản lý voucher</a>
-        <a class="btn btn-secondary" asp-action="Combos">Quản lý combo</a>
-    </p>
-    <p class="mt admin-links">
-        <a asp-action="Kho">Quản lý kho</a>
-        <a asp-action="KhachHang">Khách hàng</a>
-        <a asp-action="Reviews">Duyệt đánh giá &amp; hỏi đáp</a>
-        <a asp-action="Banners">Quản lý banner</a>
-        <a asp-action="FlashSaleSlots">Khung Flash Sale</a>
-        <a asp-action="ThongBao">Gửi thông báo</a>
-    </p>
-</section>
+<nav class="mt admin-links" aria-label="Quản lý khác">
+    <a asp-action="Vouchers">Quản lý voucher</a>
+    <a asp-action="Combos">Quản lý combo</a>
+    <a asp-action="KhachHang">Khách hàng</a>
+    <a asp-action="Reviews">Duyệt đánh giá &amp; hỏi đáp</a>
+    <a asp-action="Banners">Quản lý banner</a>
+    <a asp-action="FlashSaleSlots">Khung Flash Sale</a>
+    <a asp-action="ThongBao">Gửi thông báo</a>
+</nav>
 
 @section Scripts {
-    <script src="~/js/dashboard-chart.js"></script>
+    <script src="~/js/dashboard-chart.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
 }

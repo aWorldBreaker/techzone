@@ -1,6 +1,8 @@
 @model int
 
-<a class="cart-link" asp-controller="Cart" asp-action="Index" aria-label="@(Model > 0 ? $"Giỏ hàng, {Model} sản phẩm" : "Giỏ hàng")">Giỏ hàng
+<a class="cart-link" asp-controller="Cart" asp-action="Index" aria-label="@(Model > 0 ? $"Giỏ hàng, {Model} sản phẩm" : "Giỏ hàng")">
+    <span class="cart-label">Giỏ hàng</span>
+    <svg class="cart-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h2l3 12h12l2-8H5"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
     @if (Model > 0)
     {
         <span class="cart-badge" aria-hidden="true">@Model</span>

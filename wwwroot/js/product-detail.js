@@ -15,11 +15,7 @@
     'use strict';
 
     function dinhDangTien(gia) {
-        // QA Phase 4 (fix): dinh dang KHOP server (ToString("N0") ra
-        // dau phay — vd "12,990,000đ" o moi trang). Dung vi-VN (dau cham)
-        // se lam gia doi dinh dang ngay khi doi variant (server render
-        // dau phay luc tai trang, JS ghi de dau cham luc doi select).
-        return Math.round(gia).toLocaleString('en-US') + 'đ';
+        return Math.round(gia).toLocaleString('vi-VN') + 'đ';
     }
 
     /* --- Gallery thumbnail --- */

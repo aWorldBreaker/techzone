@@ -13,104 +13,163 @@
     var laVi = new[] { "MoMo", "ZaloPay", "VNPay" }.Contains(Model.PhuongThucTT);
 }
 
-<h1>Đơn hàng #@Model.Id</h1>
-<p>Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm") • Trạng thái: <strong>@Model.TrangThai</strong></p>
-<p>Giao đến: @Model.DiaChiGiao</p>
-<p>Phương thức: @Model.PhuongThucTT @(Model.PhuongThucTT == "COD" ? "(thanh toán khi nhận hàng — giả lập)" : "(giả lập)")</p>
-
-@if (Model.InstallmentMonths.HasValue)
-{
-    <p>Trả góp 0% (giả lập): @Model.TienGopMoiThang.ToString("N0")đ/tháng × @Model.InstallmentMonths tháng</p>
-}
-
-<p>Trạng thái thanh toán: <strong>@(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</strong></p>
-@if (laVi)
-{
-    @if (!Model.DaThanhToan && laChuDon && Model.TrangThai != OrderStatus.DaHuy)
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        @if (laChuDon)
+        {
+            <a asp-action="MyOrders">Đơn hàng của tôi</a>
+        }
+        else
+        {
+            <a asp-controller="Products" asp-action="Index">Ngành hàng</a>
+        }
+        <span aria-hidden="true">/</span><span aria-current="page">Đơn #@Model.Id</span>
+    </nav>
+    @if (ViewBag.OrderJustPlaced is true)
     {
-        <form asp-action="XacNhanThanhToan" method="post" class="inline-form">
-            <input type="hidden" name="id" value="@Model.Id" />
-            <button type="submit" class="btn btn-primary btn-sm">Tôi đã thanh toán</button>
-        </form>
+        <p class="order-confirmation" role="status">Đặt hàng thành công</p>
     }
-}
+    <div class="section-head">
+        <h1>Đơn hàng #@Model.Id</h1>
+        <partial name="_TrangThaiBadge" model="Model.TrangThai" />
+    </div>
+    <p>Ngày đặt @Model.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+</header>
 
-@if (!string.IsNullOrEmpty(Model.VatTenCongTy))
-{
-    @* SEC-04: link hoa don khong kem token trong URL nua — khach vang lai
-       se nhap lai ma tra cuu bang form POST khi mo hoa don. *@
-    <p><a asp-action="HoaDon" asp-route-id="@Model.Id">Xem hóa đơn VAT</a> (@Model.VatTenCongTy)</p>
-}
-
-<h2>Theo dõi đơn hàng</h2>
-@if (Model.TrangThai == OrderStatus.DaHuy)
-{
-    var mocHuy = lichSu.FirstOrDefault(h => h.TrangThai == OrderStatus.DaHuy);
-    <p class="alert alert-error">Đơn hàng đã hủy@(mocHuy is not null ? $" lúc {mocHuy.NgayCapNhat:dd/MM/yyyy HH:mm}" : "").</p>
-}
-else
-{
-    <ol class="timeline">
-        @foreach (var buoc in OrderStatus.Timeline)
-        {
-            var moc = lichSu.FirstOrDefault(h => h.TrangThai == buoc);
-            var hienTai = Model.TrangThai == buoc;
-            <li class="timeline-step @(moc is not null ? "done" : "") @(hienTai ? "current" : "")">
-                <span class="timeline-dot" aria-hidden="true"></span>
-                <span class="timeline-ten">@buoc</span>
-                @if (moc is not null)
-                {
-                    <span class="timeline-moc">@moc.NgayCapNhat.ToString("dd/MM/yyyy HH:mm")</span>
-                }
-            </li>
-        }
-    </ol>
-}
-
-<table class="table">
-    <thead>
-        <tr><th>Sản phẩm</th><th>Phiên bản</th><th>Đơn giá</th><th>Số lượng</th><th>Thành tiền</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var d in Model.ChiTiet)
-        {
-            <tr>
-                <td><a asp-controller="Products" asp-action="Details" asp-route-id="@d.ProductId">@d.Product.Ten</a></td>
-                <td>@d.Variant?.TenBienThe</td>
-                <td>@d.DonGia.ToString("N0")đ
-                    @if (!string.IsNullOrEmpty(d.TenKhuyenMai))
+<section class="card tracking-card">
+    <h2>Theo dõi đơn hàng</h2>
+    @if (Model.TrangThai == OrderStatus.DaHuy)
+    {
+        var mocHuy = lichSu.FirstOrDefault(h => h.TrangThai == OrderStatus.DaHuy);
+        <p class="alert alert-error">Đơn hàng đã hủy@(mocHuy is not null ? $" lúc {mocHuy.NgayCapNhat:dd/MM/yyyy HH:mm}" : "").</p>
+    }
+    else
+    {
+        <ol class="timeline">
+            @foreach (var buoc in OrderStatus.Timeline)
+            {
+                var moc = lichSu.FirstOrDefault(h => h.TrangThai == buoc);
+                var hienTai = Model.TrangThai == buoc;
+                <li aria-current="@(hienTai ? "step" : null)" class="timeline-step @(moc is not null ? "done" : "") @(hienTai ? "current" : "")">
+                    <span class="timeline-dot" aria-hidden="true"></span>
+                    <span class="timeline-ten">@buoc</span>
+                    @if (moc is not null)
                     {
-                        <span>(@d.TenKhuyenMai, giá gốc <s>@d.GiaGoc.ToString("N0")đ</s>)</span>
+                        <span class="timeline-moc">@moc.NgayCapNhat.ToString("dd/MM/yyyy HH:mm")</span>
                     }
-                </td>
-                <td>@d.SoLuong</td>
-                <td>@d.ThanhTien.ToString("N0")đ</td>
-            </tr>
-        }
-    </tbody>
-</table>
+                </li>
+            }
+        </ol>
+    }
+</section>
 
-<partial name="_BangTienDon" model="Model" />
+<div class="order-layout mt">
+    <div class="order-column">
+        <section class="card order-delivery">
+            <h2>Giao hàng và thanh toán</h2>
+            <p><strong>Giao đến</strong><br />@Model.DiaChiGiao</p>
+            <p>Phương thức: @Model.PhuongThucTT @(Model.PhuongThucTT == "COD" ? "(thanh toán khi nhận hàng — giả lập)" : "(giả lập)")</p>
+
+            @if (Model.InstallmentMonths.HasValue)
+            {
+                <p>Trả góp 0% (giả lập): @Model.TienGopMoiThang.ToString("N0")đ/tháng × @Model.InstallmentMonths tháng</p>
+            }
+
+            <p>Trạng thái thanh toán: <strong>@(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</strong></p>
+            @if (laVi)
+            {
+                @if (!Model.DaThanhToan && laChuDon && Model.TrangThai != OrderStatus.DaHuy)
+                {
+                    <form asp-action="XacNhanThanhToan" method="post" class="inline-form">
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button type="submit" class="btn btn-primary btn-sm">Tôi đã thanh toán</button>
+                    </form>
+                }
+            }
+
+            @if (!string.IsNullOrEmpty(Model.VatTenCongTy))
+            {
+                @* SEC-04: link hoa don khong kem token trong URL nua — khach vang lai
+                   se nhap lai ma tra cuu bang form POST khi mo hoa don. *@
+                <p><a asp-action="HoaDon" asp-route-id="@Model.Id">Xem hóa đơn VAT</a> (@Model.VatTenCongTy)</p>
+            }
+        </section>
+
+        <section class="card order-products">
+            <h2>Sản phẩm trong đơn</h2>
+            <ul class="order-lines">
+                @foreach (var line in Model.ChiTiet)
+                {
+                    <li>
+                        <img src="@line.Product.AnhDaiDien" alt="" width="64" height="64" loading="lazy" />
+                        <div>
+                            <a asp-controller="Products" asp-action="Details" asp-route-id="@line.ProductId">@line.Product.Ten</a>
+                            @if (line.Variant is not null)
+                            {
+                                <span class="text-muted">@line.Variant.TenBienThe</span>
+                            }
+                            <span class="text-muted">@line.DonGia.ToString("N0")đ × @line.SoLuong</span>
+                            @if (!string.IsNullOrEmpty(line.TenKhuyenMai))
+                            {
+                                <small>@line.TenKhuyenMai · Giá gốc <s>@line.GiaGoc.ToString("N0")đ</s></small>
+                            }
+                        </div>
+                        <strong class="price-amount">@line.ThanhTien.ToString("N0")đ</strong>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        @if (laChuDon && Model.TrangThai is (OrderStatus.DangGiao or OrderStatus.DaGiao))
+        {
+            <section class="card tracking-card">
+                <h2>Đổi trả và bảo hành</h2>
+                <div class="service-actions">
+                    <a asp-controller="Returns" asp-action="Create" asp-route-orderId="@Model.Id" class="btn btn-primary">Đổi trả</a>
+                    @if (Model.TrangThai == OrderStatus.DaGiao)
+                    {
+                        <a asp-controller="Returns" asp-action="Warranty" asp-route-orderId="@Model.Id" class="btn btn-secondary">Bảo hành</a>
+                    }
+                    <a asp-controller="Returns" asp-action="Index" class="btn btn-secondary">Yêu cầu của tôi</a>
+                </div>
+            </section>
+        }
+    </div>
+
+    <aside class="card market-receipt order-receipt" aria-labelledby="order-receipt-title">
+        <h2 id="order-receipt-title">Phiếu tính tiền</h2>
+        <partial name="_BangTienDon" model="Model" />
+    </aside>
+</div>
 
 @if (doiDuocDiaChi)
 {
-    <h2>Đổi địa chỉ giao hàng</h2>
-    <form asp-action="DoiDiaChi" method="post" class="address-form">
-        <input type="hidden" name="id" value="@Model.Id" />
-        <div class="form-group">
-            <label for="hoTenNhan">Họ tên người nhận</label>
-            <input type="text" name="hoTenNhan" id="hoTenNhan" class="form-control" value="@hoTenCu" required />
-        </div>
-        <div class="form-group">
-            <label for="soDienThoai">Số điện thoại</label>
-            <input type="text" name="soDienThoai" id="soDienThoai" class="form-control" value="@sdtCu" required />
-        </div>
-        <div class="form-group">
-            <label for="diaChi">Địa chỉ giao hàng</label>
-            <textarea name="diaChi" id="diaChi" class="form-control" rows="2" required>@diaChiCu</textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Cập nhật địa chỉ</button>
-    </form>
+    <details class="card address-change mt">
+        <summary>Đổi địa chỉ giao hàng</summary>
+        <form asp-action="DoiDiaChi" method="post" class="mt">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="form-group">
+                <label for="hoTenNhan">Họ tên người nhận</label>
+                <input type="text" name="hoTenNhan" id="hoTenNhan" class="form-control" value="@hoTenCu" required />
+            </div>
+            <div class="form-group">
+                <label for="soDienThoai">Số điện thoại</label>
+                <input type="text" name="soDienThoai" id="soDienThoai" class="form-control" value="@sdtCu" required />
+            </div>
+            <div class="form-group">
+                <label for="diaChi">Địa chỉ giao hàng</label>
+                <textarea name="diaChi" id="diaChi" class="form-control" rows="2" required>@diaChiCu</textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Cập nhật địa chỉ</button>
+        </form>
+    </details>
 }
 
-<p class="mt"><a asp-action="MyOrders">← Về danh sách đơn của tôi</a></p>
+@if (laChuDon)
+{
+    <p class="mt"><a asp-action="MyOrders">← Về danh sách đơn của tôi</a></p>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
+}

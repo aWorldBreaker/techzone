@@ -189,12 +189,12 @@
                 main.querySelectorAll('form').forEach(function (f) { f.remove(); });
                 var h1 = main.querySelector('h1');
                 if (h1) h1.remove();
-                var eyebrow = main.querySelector('.admin-eyebrow');
-                if (eyebrow) eyebrow.remove();
                 var alert = main.querySelector('.alert');
                 if (alert) alert.remove();
-                body.innerHTML = '';
-                body.appendChild(document.importNode(main, true));
+                var noiDung = document.createElement('div');
+                noiDung.className = 'admin-main';
+                noiDung.append(...main.children);
+                body.replaceChildren(noiDung);
             })
             .catch(function () {
                 body.innerHTML = '<p class="alert alert-error" role="alert">Không tải được đơn #' + id + '. Mở <a href="' + url + '">trang đầy đủ</a>.</p>';

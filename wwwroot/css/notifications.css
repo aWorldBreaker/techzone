@@ -1,0 +1,10 @@
+.notif-list { display: grid; gap: var(--space-sm); list-style: none; margin: 0; padding: 0; }
+.notif-item { min-inline-size: 0; border-inline-start: .25rem solid var(--color-border); }
+.notif-item .section-head { margin: 0 0 .35rem; gap: .35rem .75rem; }
+.notif-item h2 { font-size: clamp(1rem, .9rem + .45vw, 1.3rem); }
+.notif-item p { margin: 0 0 .45rem; white-space: pre-wrap; }
+.notif-item time { font-size: .875rem; font-variant-numeric: tabular-nums; }
+.notif-unread { border-inline-start-color: var(--color-accent); background: var(--color-primary-ghost); }
+@media (max-width: 480px) {
+  .notif-mark-read, .notif-mark-read .btn { inline-size: 100%; }
+}

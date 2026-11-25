@@ -1,0 +1,45 @@
+@model List<TechZone.Models.Address>
+@{
+    ViewData["Title"] = "Sổ địa chỉ";
+}
+
+<header class="market-heading">
+    <nav class="market-path" aria-label="Đường dẫn"><a asp-controller="Account" asp-action="Profile">Tài khoản</a><span aria-hidden="true">/</span><span aria-current="page">Sổ địa chỉ</span></nav>
+    <div class="section-head">
+        <h1>Sổ địa chỉ</h1>
+        <a asp-action="Edit" class="btn hero-buy">Thêm địa chỉ</a>
+    </div>
+</header>
+
+@if (Model.Count == 0)
+{
+    <p class="empty-state">Bạn chưa lưu địa chỉ giao hàng nào.</p>
+}
+else
+{
+    <div class="address-grid">
+        @foreach (var address in Model)
+        {
+            <article class="card address-card @(address.MacDinh ? "address-default" : "")">
+                <header class="section-head">
+                    <h2>@address.HoTenNhan</h2>
+                    @if (address.MacDinh)
+                    {
+                        <span class="badge badge-xanh">Mặc định</span>
+                    }
+                </header>
+                <p>@address.DiaChi</p>
+                <p class="text-muted">@address.SoDienThoai</p>
+                <a asp-action="Edit" asp-route-id="@address.Id" class="btn btn-secondary btn-sm">Sửa</a>
+                <form asp-action="Delete" asp-route-id="@address.Id" method="post" class="inline-form"
+                      onsubmit="return confirm('Xóa địa chỉ này?');">
+                    <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+                </form>
+            </article>
+        }
+    </div>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+}

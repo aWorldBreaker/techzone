@@ -486,9 +486,10 @@ public class AdminWave2Tests
         Assert.Contains("product-thumb", tq);
 
         // A4: truc Y + gia tri tren cot + cot max accent o ca 2 chart.
-        Assert.Contains(".chart-yaxis", css);
-        Assert.Contains(".chart-value", css);
-        Assert.Contains(".chart-col--max", css);
+        var dashboardCss = Doc("wwwroot", "css", "dashboard.css");
+        Assert.Contains(".chart-yaxis", dashboardCss);
+        Assert.Contains(".chart-value", dashboardCss);
+        Assert.Contains(".chart-col--max", dashboardCss);
         Assert.Contains("chart-yaxis", dash);
         Assert.Contains("chart-value", dash);
         Assert.Contains("chart-col--max", dash);

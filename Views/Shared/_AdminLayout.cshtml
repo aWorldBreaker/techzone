@@ -1,10 +1,3 @@
-@* TechZone — Layout riêng cho khu Admin (Sprint 6 Continuation, Phase 2).
-   Chỉ load design tokens + admin.css + theme.js + admin.js: KHÔNG load
-   site.css/features-*.css, KHÔNG webgl-bg.js, KHÔNG header-menu.js,
-   KHÔNG features-b.js, KHÔNG search/category-nav/footer của shop.
-   Breadcrumb suy ra từ RouteData (controller/action) + ViewData["Title"],
-   không cần sửa từng view. Sidebar active cũng tính từ RouteData:
-   ProductForm -> Sản phẩm, OrderDetails -> Đơn hàng, SuaCombo -> Combo. *@
 @{
     var route = ViewContext.RouteData.Values;
     var controller = (route["controller"] as string) ?? "";
@@ -80,11 +73,14 @@
             }
             document.documentElement.setAttribute('data-theme', t);
         })();
-        document.documentElement.classList.add('js');
     </script>
     <title>@title - TechZone Admin</title>
     <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" href="~/css/admin.css" />
+    <link rel="stylesheet" href="~/css/design-tokens.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/common.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/market-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body class="admin-body">
     <a class="skip-link" href="#admin-main">Bỏ qua tới nội dung chính</a>
@@ -94,23 +90,23 @@
             <a class="admin-logo" asp-controller="Home" asp-action="Index">Tech<span>Zone</span> <small>Admin</small></a>
             <nav aria-label="Quản trị">
                 <div class="admin-nav-group">Tổng quan</div>
-                <a class="@ActiveClass("Dashboard")" asp-controller="Admin" asp-action="Dashboard" aria-current="@(active == "Dashboard" ? "page" : null)">📊 Dashboard</a>
-                <a class="@ActiveClass("TongQuan")" asp-controller="Admin" asp-action="TongQuan" aria-current="@(active == "TongQuan" ? "page" : null)">🧩 Trang tổng hợp</a>
+                <a class="@ActiveClass("Dashboard")" asp-controller="Admin" asp-action="Dashboard" aria-current="@(active == "Dashboard" ? "page" : null)">Dashboard</a>
+                <a class="@ActiveClass("TongQuan")" asp-controller="Admin" asp-action="TongQuan" aria-current="@(active == "TongQuan" ? "page" : null)">Trang tổng hợp</a>
                 <div class="admin-nav-group">Bán hàng</div>
-                <a class="@ActiveClassExact("Admin", "Products")" asp-controller="Admin" asp-action="Products" aria-current="@(controller == "Admin" && action == "Products" ? "page" : null)">📦 Sản phẩm</a>
-                <a class="admin-nav-sub @ActiveClassExact("Admin", "ProductForm")" asp-controller="Admin" asp-action="ProductForm" aria-current="@(controller == "Admin" && action == "ProductForm" ? "page" : null)">＋ Thêm sản phẩm</a>
-                <a class="@ActiveClass("Orders")" asp-controller="Admin" asp-action="Orders" aria-current="@(active == "Orders" ? "page" : null)">🧾 Đơn hàng</a>
-                <a class="@ActiveClass("KhachHang")" asp-controller="Admin" asp-action="KhachHang" aria-current="@(active == "KhachHang" ? "page" : null)">👥 Khách hàng</a>
-                <a class="@ActiveClass("Kho")" asp-controller="Admin" asp-action="Kho" aria-current="@(active == "Kho" ? "page" : null)">🏬 Kho</a>
+                <a class="@ActiveClassExact("Admin", "Products")" asp-controller="Admin" asp-action="Products" aria-current="@(controller == "Admin" && action == "Products" ? "page" : null)">Sản phẩm</a>
+                <a class="admin-nav-sub @ActiveClassExact("Admin", "ProductForm")" asp-controller="Admin" asp-action="ProductForm" aria-current="@(controller == "Admin" && action == "ProductForm" ? "page" : null)">Thêm sản phẩm</a>
+                <a class="@ActiveClass("Orders")" asp-controller="Admin" asp-action="Orders" aria-current="@(active == "Orders" ? "page" : null)">Đơn hàng</a>
+                <a class="@ActiveClass("KhachHang")" asp-controller="Admin" asp-action="KhachHang" aria-current="@(active == "KhachHang" ? "page" : null)">Khách hàng</a>
+                <a class="@ActiveClass("Kho")" asp-controller="Admin" asp-action="Kho" aria-current="@(active == "Kho" ? "page" : null)">Kho</a>
                 <div class="admin-nav-group">Khuyến mãi</div>
-                <a class="@ActiveClass("Vouchers")" asp-controller="Admin" asp-action="Vouchers" aria-current="@(active == "Vouchers" ? "page" : null)">🎟️ Voucher</a>
-                <a class="@ActiveClass("Combos")" asp-controller="Admin" asp-action="Combos" aria-current="@(active == "Combos" ? "page" : null)">🎁 Combo</a>
-                <a class="@ActiveClass("FlashSaleSlots")" asp-controller="Admin" asp-action="FlashSaleSlots" aria-current="@(active == "FlashSaleSlots" ? "page" : null)">⚡ Flash Sale</a>
-                <a class="@ActiveClass("Banners")" asp-controller="Admin" asp-action="Banners" aria-current="@(active == "Banners" ? "page" : null)">🖼️ Banner</a>
+                <a class="@ActiveClass("Vouchers")" asp-controller="Admin" asp-action="Vouchers" aria-current="@(active == "Vouchers" ? "page" : null)">Voucher</a>
+                <a class="@ActiveClass("Combos")" asp-controller="Admin" asp-action="Combos" aria-current="@(active == "Combos" ? "page" : null)">Combo</a>
+                <a class="@ActiveClass("FlashSaleSlots")" asp-controller="Admin" asp-action="FlashSaleSlots" aria-current="@(active == "FlashSaleSlots" ? "page" : null)">Flash Sale</a>
+                <a class="@ActiveClass("Banners")" asp-controller="Admin" asp-action="Banners" aria-current="@(active == "Banners" ? "page" : null)">Banner</a>
                 <div class="admin-nav-group">Chăm sóc khách</div>
-                <a class="@ActiveClass("Reviews")" asp-controller="Admin" asp-action="Reviews" aria-current="@(active == "Reviews" ? "page" : null)">⭐ Đánh giá &amp; hỏi đáp</a>
-                <a class="@ActiveClass("Returns")" asp-controller="Returns" asp-action="AdminIndex" aria-current="@(active == "Returns" ? "page" : null)">↩️ Đổi trả / Bảo hành</a>
-                <a class="@ActiveClass("ThongBao")" asp-controller="Admin" asp-action="ThongBao" aria-current="@(active == "ThongBao" ? "page" : null)">🔔 Thông báo</a>
+                <a class="@ActiveClass("Reviews")" asp-controller="Admin" asp-action="Reviews" aria-current="@(active == "Reviews" ? "page" : null)">Đánh giá &amp; hỏi đáp</a>
+                <a class="@ActiveClass("Returns")" asp-controller="Returns" asp-action="AdminIndex" aria-current="@(active == "Returns" ? "page" : null)">Đổi trả / Bảo hành</a>
+                <a class="@ActiveClass("ThongBao")" asp-controller="Admin" asp-action="ThongBao" aria-current="@(active == "ThongBao" ? "page" : null)">Thông báo</a>
             </nav>
             <div class="admin-sidebar-foot">
                 <a asp-controller="Home" asp-action="Index">← Về cửa hàng</a>
@@ -144,7 +140,7 @@
                 </nav>
                 <div class="admin-topbar-actions">
                     <a asp-controller="Home" asp-action="Index">Về cửa hàng</a>
-                    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
+                    <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><partial name="_ThemeIcon" /></button>
                     <span class="admin-pill" title="Khu vực quản trị">ADMIN</span>
                     @if (User.Identity?.IsAuthenticated == true)
                     {
@@ -157,7 +153,6 @@
             </header>
 
             <main id="admin-main" class="admin-main">
-                <p class="admin-eyebrow">Khu quản trị</p>
                 @if (TempData["Success"] is string ok)
                 {
                     <div class="alert alert-success" role="alert">@ok</div>
@@ -180,8 +175,8 @@
 
     @* theme.js dùng chung với shop (chỉ bind #theme-toggle + localStorage,
        không có hiệu ứng storefront). admin.js chỉ toggle sidebar mobile. *@
-    <script src="~/js/theme.js"></script>
-    <script src="~/js/admin.js"></script>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <script src="~/js/admin.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

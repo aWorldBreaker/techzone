@@ -1,0 +1,35 @@
+@model TechZone.Controllers.AddressInput
+@{
+    var id = ViewData["AddressId"];
+    ViewData["Title"] = id is null ? "Thêm địa chỉ" : "Sửa địa chỉ";
+}
+
+<header class="market-heading">
+    <nav class="market-path" aria-label="Đường dẫn"><a asp-action="Index">Sổ địa chỉ</a><span aria-hidden="true">/</span><span aria-current="page">@ViewData["Title"]</span></nav>
+    <h1>@ViewData["Title"]</h1>
+</header>
+<form asp-action="Edit" asp-route-id="@id" method="post" class="address-form address-editor">
+    <h2>Thông tin giao hàng</h2>
+    <div class="form-group">
+        <label asp-for="HoTenNhan">Họ tên người nhận</label>
+        <input asp-for="HoTenNhan" class="form-control" aria-describedby="HoTenNhan-error" autocomplete="shipping name" required />
+        <span asp-validation-for="HoTenNhan" id="HoTenNhan-error" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="SoDienThoai">Số điện thoại</label>
+        <input asp-for="SoDienThoai" type="tel" class="form-control" aria-describedby="SoDienThoai-error" autocomplete="shipping tel" required />
+        <span asp-validation-for="SoDienThoai" id="SoDienThoai-error" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DiaChi">Địa chỉ giao hàng</label>
+        <textarea asp-for="DiaChi" class="form-control" aria-describedby="DiaChi-error" rows="3" autocomplete="shipping street-address" required></textarea>
+        <span asp-validation-for="DiaChi" id="DiaChi-error" class="text-danger"></span>
+    </div>
+    <p class="address-preference"><label><input asp-for="MacDinh" /> Dùng làm địa chỉ mặc định</label></p>
+    <button type="submit" class="btn btn-primary">Lưu địa chỉ</button>
+    <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+</form>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+}

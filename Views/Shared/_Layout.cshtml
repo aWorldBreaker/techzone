@@ -16,22 +16,18 @@
             }
             document.documentElement.setAttribute('data-theme', t);
         })();
-        document.documentElement.classList.add('js');
     </script>
     <title>@ViewData["Title"] - TechZone</title>
     @* M7-2: favicon (truoc day /favicon.ico tra 404 moi trang). *@
     <link rel="icon" href="~/favicon.ico" type="image/x-icon" />
-    <link rel="stylesheet" href="~/css/site.css" />
-    <link rel="stylesheet" href="~/css/features-a.css" />
-    <link rel="stylesheet" href="~/css/features-b.css" />
-    <link rel="stylesheet" href="~/css/features-d.css" />
-    <link rel="stylesheet" href="~/css/features-c.css" />
-    <link rel="stylesheet" href="~/css/features-3d.css" />
+    <link rel="stylesheet" href="~/css/design-tokens.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/common.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/market-theme.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
-<body>
+<body class="storefront">
     <a class="skip-link" href="#main-content">Bỏ qua tới nội dung chính</a>
-    <canvas id="webgl-bg" aria-hidden="true"></canvas>
-    <div class="bg-dots" aria-hidden="true"></div>
     <header class="site-header">
         <div class="container header-inner">
             <button type="button" id="menu-toggle" class="menu-toggle" aria-expanded="false" aria-controls="mobile-menu" aria-label="Mở menu điều hướng"><span aria-hidden="true">☰</span></button>
@@ -45,7 +41,7 @@
                 <a asp-controller="Compare" asp-action="Index">So sánh</a>
                 @await Component.InvokeAsync("GioHangBadge")
                 <a asp-controller="Wishlist" asp-action="Index">Yêu thích</a>
-                <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><span aria-hidden="true">🌙</span></button>
+                <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Chuyển sang giao diện tối" title="Chuyển sáng/tối"><partial name="_ThemeIcon" /></button>
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     @await Component.InvokeAsync("ThongBaoBell")
@@ -163,10 +159,8 @@
         </div>
     </footer>
 
-    <script src="~/js/theme.js"></script>
-    <script src="~/js/header-menu.js"></script>
-    <script src="~/js/webgl-bg.js"></script>
-    <script src="~/js/features-b.js"></script>
+    <script src="~/js/theme.js" asp-append-version="true"></script>
+    <script src="~/js/header-menu.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

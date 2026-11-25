@@ -1,0 +1,29 @@
+.department-tabs { display: flex; gap: .5rem; overflow-x: auto; padding: .25rem .25rem .5rem; margin: .75rem -.25rem -.5rem; }
+.department-tabs .chip { flex: 0 0 auto; min-block-size: 2.5rem; border-color: var(--market-moss); }
+.department-tabs .chip:hover { background: var(--market-canopy); }
+.department-tabs .chip-active, .department-tabs .chip-active:hover { background: var(--market-yellow); color: var(--market-ink); border-color: var(--market-yellow); }
+.catalog-toolbar { margin-block-end: var(--space-md); }
+.catalog-toolbar p { margin: 0; }
+.catalog-sort { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm); }
+.catalog-sort select { width: auto; }
+.catalog-range { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-sm); }
+#filter-panel { display: grid; gap: var(--space-sm); background: var(--color-card); border: 1px solid var(--color-border); }
+#filter-panel h2 { font-size: 1rem; color: var(--color-primary-text); margin-block: 0 .25rem; }
+#filter-panel[hidden], .filter-toggle, .filter-close { display: none; }
+#filter-panel .form-group { min-width: 0; }
+.filter-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); }
+.filter-actions .btn { padding-inline: .75rem; }
+.catalog-results { min-width: 0; }
+@media (max-width: 1024px) {
+  .catalog-toolbar { justify-content: start; }
+  .catalog-toolbar .filter-toggle { margin-inline-start: auto; }
+  .catalog-sort { flex-basis: 100%; }
+  .filter-toggle.is-ready, .filter-close { display: inline-block; }
+  #filter-panel { max-block-size: 65dvh; overflow: auto; scroll-padding-block-end: 5rem; }
+  .filter-actions { position: sticky; bottom: 0; background: var(--color-card); padding-block: .25rem; }
+}
+@media (min-width: 1025px) {
+  .catalog-layout { display: grid; grid-template-columns: 15rem minmax(0, 1fr); gap: var(--space-lg); align-items: start; }
+  #filter-panel { border-block-start: .25rem solid var(--color-primary); }
+  .catalog-results .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

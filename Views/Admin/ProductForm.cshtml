@@ -5,7 +5,7 @@
     var brands = (List<TechZone.Models.Brand>)ViewBag.Brands;
     Model.Specs ??= new TechZone.Models.ProductSpecs();
 }
-<h1>@ViewData["Title"]</h1>
+<header class="market-heading"><h1>@ViewData["Title"]</h1></header>
 
 @* Dot 3 (A7): form nhom thanh card 2 cot; giu nguyen field + validation. *@
 <form asp-action="ProductForm" method="post" enctype="multipart/form-data">

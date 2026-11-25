@@ -96,7 +96,25 @@ public class OrdersController : Controller
         // doi giua GET va POST thi tra ve trang nay voi tong moi + yeu
         // cau xac nhan lai thay vi dat luon.
         LuuAnhGiaCheckout(ketQuaGet);
-        return View(vm);
+        return await HienCheckoutAsync(vm, dienDiaChiMacDinh: true);
+    }
+
+    private async Task<ViewResult> HienCheckoutAsync(CheckoutViewModel model, bool dienDiaChiMacDinh = false)
+    {
+        var userId = LayUserIdHienTai();
+        if (userId is not null)
+        {
+            var addresses = await _db.Addresses.AsNoTracking().Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.MacDinh).ThenByDescending(a => a.Id).ToListAsync();
+            ViewBag.DiaChiDaLuu = addresses;
+            if (dienDiaChiMacDinh && addresses.FirstOrDefault(a => a.MacDinh) is { } address)
+            {
+                model.HoTenNhan = address.HoTenNhan;
+                model.SoDienThoai = address.SoDienThoai;
+                model.DiaChi = address.DiaChi;
+            }
+        }
+        return View("Checkout", model);
     }
 
     /// <summary>
@@ -128,13 +146,13 @@ public class OrdersController : Controller
             TempData["Error"] = loiVat;
             await ApDungUuDaiCheckoutAsync(gioHang);
             model.GioHang = gioHang;
-            return View(model);
+            return await HienCheckoutAsync(model);
         }
         if (!ModelState.IsValid)
         {
             await ApDungUuDaiCheckoutAsync(gioHang);
             model.GioHang = gioHang;
-            return View(model);
+            return await HienCheckoutAsync(model);
         }
 
         // Doi diem tich luy (nhom B): chi khi dang nhap va nhap diem > 0.
@@ -158,7 +176,7 @@ public class OrdersController : Controller
         {
             TempData["Error"] = ketQuaGia.LoiDiem;
             model.GioHang = gioHang;
-            return View(model);
+            return await HienCheckoutAsync(model);
         }
         if (userId is not null && model.DiemDung > 0)
         {
@@ -269,7 +287,7 @@ public class OrdersController : Controller
         _cart.Clear();
         HttpContext.Session.Remove("TechZone.Voucher");
         HttpContext.Session.Remove("TechZone.ComboId");
-        TempData["Success"] = $"Đặt hàng thành công. Mã đơn: #{ketQua.DonHang.Id}.";
+        TempData["PlacedOrderId"] = ketQua.DonHang.Id;
         // SEC-04: ma tra cuu goc (plaintext) chi truyen qua TempData
         // (session server) de hien 1 lan duy nhat tren trang Details —
         // khong nam trong URL. Don tai khoan thi null.
@@ -327,16 +345,31 @@ public class OrdersController : Controller
         TempData["Error"] = "Giá đã thay đổi, vui lòng xác nhận lại.";
         ViewBag.GiaDaThayDoi = true;
         model.GioHang = gioHang;
-        return View(model);
+        return await HienCheckoutAsync(model);
     }
 
     [Authorize]
-    public async Task<IActionResult> MyOrders()
+    public async Task<IActionResult> MyOrders(string? maDon = null, string? trangThai = null)
     {
-        var userId = _db.Users.FirstOrDefault(u => u.UserName == User.Identity!.Name)?.Id;
-        var orders = await _db.Orders
+        var userId = LayUserIdHienTai();
+        if (userId is null) return Challenge();
+
+        maDon = maDon?.Trim();
+        var query = _db.Orders.AsNoTracking().Where(o => o.UserId == userId);
+        if (!string.IsNullOrEmpty(maDon))
+        {
+            if (!int.TryParse(maDon.TrimStart('#'), out var id) || id <= 0) id = 0;
+            query = query.Where(o => o.Id == id);
+        }
+        if (trangThai is not null && OrderStatus.LaTrangThaiHopLe(trangThai))
+            query = query.Where(o => o.TrangThai == trangThai);
+        else
+            trangThai = null;
+
+        ViewData["MaDon"] = maDon;
+        ViewData["TrangThai"] = trangThai;
+        var orders = await query
             .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
-            .Where(o => o.UserId == userId)
             .OrderByDescending(o => o.NgayDat)
             .ToListAsync();
         return View(orders);
@@ -354,7 +387,7 @@ public class OrdersController : Controller
     public async Task<IActionResult> Details(int id)
     {
         var order = await _db.Orders
-            .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
+            .Include(o => o.ChiTiet).ThenInclude(d => d.Product).ThenInclude(p => p.Images)
             .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
             .Include(o => o.LichSuTrangThai)
             .FirstOrDefaultAsync(o => o.Id == id);
@@ -363,8 +396,20 @@ public class OrdersController : Controller
         // don vang lai; CoTheXemDonQ voi token null van dung cho chu don).
         if (order is not null
             && OrderAccess.CoTheXemDonQ(order, userId, User.IsInRole("Admin"), guestToken: null))
+        {
+            if (TempData.Peek("PlacedOrderId") is int placedId && placedId == id)
+            {
+                ViewBag.OrderJustPlaced = true;
+                TempData.Remove("PlacedOrderId");
+            }
             return HienThiDonHang(order, userId);
-        ViewBag.GuestTokenMoi = TempData["GuestTokenMoi"] as string;
+        }
+        if (order is { UserId: null } && TempData.Peek("PlacedOrderId") is int guestOrderId && guestOrderId == id)
+        {
+            ViewBag.GuestTokenMoi = TempData["GuestTokenMoi"] as string;
+            ViewBag.OrderJustPlaced = ViewBag.GuestTokenMoi is string;
+            TempData.Remove("PlacedOrderId");
+        }
         return View("NhapMaTraCuu", new NhapMaTraCuuViewModel { OrderId = id, HanhDong = "Details" });
     }
 
@@ -380,7 +425,7 @@ public class OrdersController : Controller
     public async Task<IActionResult> Details(int id, string token)
     {
         var order = await _db.Orders
-            .Include(o => o.ChiTiet).ThenInclude(d => d.Product)
+            .Include(o => o.ChiTiet).ThenInclude(d => d.Product).ThenInclude(p => p.Images)
             .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
             .Include(o => o.LichSuTrangThai)
             .FirstOrDefaultAsync(o => o.Id == id);

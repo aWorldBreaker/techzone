@@ -1,0 +1,26 @@
+.tier-badge { display: inline-block; padding: 4px 12px; border-radius: var(--radius); font-weight: 700; font-size: .9rem; }
+.tier-dong { background: var(--color-muted); color: var(--color-muted-foreground); }
+.tier-bac { background: var(--color-info-bg); color: var(--color-info-fg); }
+.tier-vang { background: var(--color-warning-bg); color: var(--color-warning-fg); }
+.tier-bachkim { background: var(--color-primary-ring); color: var(--color-primary-text); }
+
+/* Hien thi diem tich luy */
+.points-display { font-weight: 700; font-size: 1.25rem; color: var(--color-primary-text); font-variant-numeric: tabular-nums; margin-left: var(--space-sm); }
+
+/* Tien do len hang (the <progress> mac dinh cua trinh duyet) */
+.tier-progress-bar { width: 100%; max-width: 420px; height: .75rem; appearance: none; border: 0; border-radius: 1rem; background: var(--color-card); }
+.tier-progress-bar::-webkit-progress-bar { background: var(--color-card); border-radius: 1rem; }
+.tier-progress-bar::-webkit-progress-value { background: var(--color-primary); border-radius: 1rem; }
+.tier-progress-bar::-moz-progress-bar { background: var(--color-primary); border-radius: 1rem; }
+
+
+.profile-info p { margin: 0 0 var(--space-sm); }
+.profile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--space-md); }
+.market-heading > p { margin: .5rem 0 0; color: var(--market-on-canopy-muted); }
+.member-card { background: var(--market-ticket); border-block-start: .25rem solid var(--color-accent); }
+.customer-services a { display: flex; justify-content: space-between; gap: .5rem; padding: .75rem 0; border-block-start: 1px solid var(--color-border); font-weight: 700; }
+.address-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); gap: var(--space-md); }
+.address-card { border-block-start: .25rem solid var(--color-border); }
+.address-default { border-block-start-color: var(--color-primary); background: var(--color-primary-ghost); }
+.address-editor h2 { padding-block-end: .65rem; border-block-end: 1px solid var(--color-border); color: var(--color-primary-text); }
+.address-preference { padding: .75rem; background: var(--color-muted); border-radius: var(--radius); }

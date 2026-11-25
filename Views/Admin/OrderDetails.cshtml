@@ -7,46 +7,77 @@
         .Concat(TechZone.Models.OrderStatus.ChuyenTrangThaiHopLe[Model.TrangThai])
         .Distinct().ToArray();
 }
-<h1>Đơn hàng #@Model.Id</h1>
-<p>Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy HH:mm") • Trạng thái: <partial name="_TrangThaiBadge" model="Model.TrangThai" /></p>
-<p>Khách: @Model.User?.HoTen (@Model.User?.Email)</p>
-<p>Giao đến: @Model.DiaChiGiao</p>
-<p>Phương thức: @Model.PhuongThucTT • @(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</p>
-@if (Model.PhuongThucTT == "COD" && Model.TrangThai == TechZone.Models.OrderStatus.DaGiao && !Model.DaThanhToan)
-{
-    <form asp-action="XacNhanThuCod" method="post">
-        <input type="hidden" name="id" value="@Model.Id" />
-        <button type="submit" class="btn btn-secondary">Ghi nhận đã thu tiền COD</button>
-    </form>
-}
+<header class="market-heading order-heading">
+    <div class="section-head admin-order-title">
+        <h1>Đơn hàng #@Model.Id</h1>
+        <partial name="_TrangThaiBadge" model="Model.TrangThai" />
+    </div>
+    <p>Ngày đặt @Model.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+</header>
+<div class="admin-order-layout">
+    <div class="admin-order-column">
+        <section class="card" aria-label="Giao hàng và thanh toán">
+            <h2>Giao hàng và thanh toán</h2>
+            @if (Model.User is not null)
+            {
+                <p>Khách: @Model.User.HoTen (@Model.User.Email)</p>
+            }
+            <p>Giao đến: @Model.DiaChiGiao</p>
+            <p>Phương thức: @Model.PhuongThucTT · @(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</p>
+            @if (Model.PhuongThucTT == "COD" && Model.TrangThai == OrderStatus.DaGiao && !Model.DaThanhToan)
+            {
+                <form asp-action="XacNhanThuCod" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-secondary">Ghi nhận đã thu tiền COD</button>
+                </form>
+            }
+        </section>
 
-<div class="table-wrap"><table class="table">
-    <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Đơn giá</th><th scope="col">Số lượng</th><th scope="col">Thành tiền</th></tr></thead>
-    <tbody>
-        @foreach (var d in Model.ChiTiet)
-        {
-            <tr>
-                <td><a asp-controller="Products" asp-action="Details" asp-route-id="@d.ProductId">@d.Product.Ten</a></td>
-                <td>@d.DonGia.ToString("N0")đ</td>
-                <td>@d.SoLuong</td>
-                <td>@d.ThanhTien.ToString("N0")đ</td>
-            </tr>
-        }
-    </tbody>
-</table></div>
+        <section class="card">
+            <h2>Sản phẩm trong đơn</h2>
+            <div class="table-wrap admin-record-list" tabindex="0" role="region" aria-label="Sản phẩm trong đơn">
+                <table class="table" role="table" aria-label="Chi tiết sản phẩm">
+                    <thead role="rowgroup"><tr role="row"><th scope="col" role="columnheader">Sản phẩm</th><th scope="col" role="columnheader">Đơn giá</th><th scope="col" role="columnheader">Số lượng</th><th scope="col" role="columnheader">Thành tiền</th></tr></thead>
+                    <tbody role="rowgroup">
+                        @foreach (var d in Model.ChiTiet)
+                        {
+                            <tr role="row">
+                                <th scope="row" role="rowheader" class="admin-record-lead">
+                                    <a asp-controller="Products" asp-action="Details" asp-route-id="@d.ProductId">@d.Product.Ten</a>
+                                    @if (d.Variant is not null)
+                                    {
+                                        <small class="admin-record-code text-muted">@d.Variant.TenBienThe</small>
+                                    }
+                                </th>
+                                <td role="cell" data-label="Đơn giá">@d.DonGia.ToString("N0")đ</td>
+                                <td role="cell" data-label="Số lượng">@d.SoLuong</td>
+                                <td role="cell" class="admin-record-wide" data-label="Thành tiền"><strong class="admin-money">@d.ThanhTien.ToString("N0")đ</strong></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+    <aside class="card admin-order-summary">
+        <h2>Phiếu tính tiền</h2>
+        <partial name="_BangTienDon" model="Model" />
+    </aside>
+</div>
 
-<partial name="_BangTienDon" model="Model" />
-
-<form asp-action="DoiTrangThai" method="post" class="mt">
+<form asp-action="DoiTrangThai" method="post" class="card admin-order-edit mt">
+    <h2>Xử lý đơn hàng</h2>
     <input type="hidden" name="id" value="@Model.Id" />
     <div class="form-group">
         <label for="trangThaiMoi">Đổi trạng thái</label>
         <select id="trangThaiMoi" name="trangThaiMoi" class="form-control" asp-items="@(new SelectList(cacTrangThai, Model.TrangThai))"></select>
     </div>
-    <button type="submit" class="btn btn-primary">Cập nhật trạng thái</button>
-    <a asp-action="Orders" class="btn btn-secondary">Về danh sách đơn</a>
+    <div class="admin-row-actions">
+        <button type="submit" class="btn btn-primary">Cập nhật trạng thái</button>
+        <a asp-action="Orders" class="btn btn-secondary">Về danh sách đơn</a>
+    </div>
+    <p class="text-muted">Hủy đơn sẽ hoàn lại tồn kho cho các sản phẩm trong đơn.</p>
 </form>
-<p class="text-muted mt">Hủy đơn sẽ hoàn lại tồn kho cho các sản phẩm trong đơn.</p>
 
 @* SEC-02 + SEC-04 — Mã tra cứu đơn khách vãng lai: chỉ hiện cho đơn vãng lai.
    DB chi luu SHA-256 hash nen KHONG hien duoc ma goc; chi hien trang thai
@@ -56,30 +87,31 @@
    gui tu dong. *@
 @if (Model.UserId is null)
 {
-    <hr />
-    <h2>Mã tra cứu (khách vãng lai)</h2>
-    <p>
-        Mã tra cứu: <strong>@(string.IsNullOrEmpty(Model.GuestToken) ? "chưa có (đơn cũ — chỉ cấp khi khách yêu cầu)" : "đã đặt (lưu dạng hash SHA-256, không hiển thị được mã gốc)")</strong>
-        @if (Model.GuestTokenHetHan.HasValue)
-        {
-            <span>• Hạn dùng: @Model.GuestTokenHetHan.Value.ToString("dd/MM/yyyy HH:mm")</span>
-        }
-        @if (Model.GuestTokenKhoaDen.HasValue && Model.GuestTokenKhoaDen.Value > DateTime.Now)
-        {
-            <span>• Đang khóa tra cứu đến @Model.GuestTokenKhoaDen.Value.ToString("dd/MM/yyyy HH:mm") (nhập sai 5 lần)</span>
-        }
-    </p>
-    <form asp-action="CapLaiMaTraCuu" method="post" class="mt">
-        <input type="hidden" name="id" value="@Model.Id" />
-        <div class="form-group">
-            <label for="hoTenDoiChieu">Họ tên người nhận (khách cung cấp — phải khớp đơn)</label>
-            <input type="text" name="hoTenDoiChieu" id="hoTenDoiChieu" class="form-control" required />
-        </div>
-        <div class="form-group">
-            <label for="soDienThoaiDoiChieu">Số điện thoại đặt hàng (khách cung cấp — phải khớp đơn)</label>
-            <input type="text" name="soDienThoaiDoiChieu" id="soDienThoaiDoiChieu" class="form-control" required />
-        </div>
-        <button type="submit" class="btn btn-warning" onclick="return confirm('Cấp mã mới sẽ vô hiệu mã cũ ngay lập tức. Đã đối chiếu họ tên + SĐT với đơn chưa?');">Cấp lại mã tra cứu</button>
-    </form>
-    <p class="text-muted mt">Chỉ cấp lại khi khách mất mã và đã xác minh đúng người đặt (họ tên + SĐT trên đơn). Mã mới hiện 1 lần trong thông báo sau khi cấp — gửi cho khách qua kênh đã xác minh.</p>
+    <section class="card mt">
+        <h2>Mã tra cứu (khách vãng lai)</h2>
+        <p>
+            Mã tra cứu: <strong>@(string.IsNullOrEmpty(Model.GuestToken) ? "chưa có (đơn cũ — chỉ cấp khi khách yêu cầu)" : "đã đặt (lưu dạng hash SHA-256, không hiển thị được mã gốc)")</strong>
+            @if (Model.GuestTokenHetHan.HasValue)
+            {
+                <span>• Hạn dùng: @Model.GuestTokenHetHan.Value.ToString("dd/MM/yyyy HH:mm")</span>
+            }
+            @if (Model.GuestTokenKhoaDen.HasValue && Model.GuestTokenKhoaDen.Value > DateTime.Now)
+            {
+                <span>• Đang khóa tra cứu đến @Model.GuestTokenKhoaDen.Value.ToString("dd/MM/yyyy HH:mm") (nhập sai 5 lần)</span>
+            }
+        </p>
+        <form asp-action="CapLaiMaTraCuu" method="post" class="mt">
+            <input type="hidden" name="id" value="@Model.Id" />
+            <div class="form-group">
+                <label for="hoTenDoiChieu">Họ tên người nhận (khách cung cấp — phải khớp đơn)</label>
+                <input type="text" name="hoTenDoiChieu" id="hoTenDoiChieu" class="form-control" required />
+            </div>
+            <div class="form-group">
+                <label for="soDienThoaiDoiChieu">Số điện thoại đặt hàng (khách cung cấp — phải khớp đơn)</label>
+                <input type="text" name="soDienThoaiDoiChieu" id="soDienThoaiDoiChieu" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-warning" onclick="return confirm('Cấp mã mới sẽ vô hiệu mã cũ ngay lập tức. Đã đối chiếu họ tên + SĐT với đơn chưa?');">Cấp lại mã tra cứu</button>
+        </form>
+        <p class="text-muted mt">Chỉ cấp lại khi khách mất mã và đã xác minh đúng người đặt (họ tên + SĐT trên đơn). Mã mới hiện 1 lần trong thông báo sau khi cấp — gửi cho khách qua kênh đã xác minh.</p>
+    </section>
 }

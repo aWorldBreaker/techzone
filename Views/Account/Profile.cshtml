@@ -20,33 +20,46 @@
         : (int)Math.Min(100, tongChiTieu / mucTiepTheo * 100);
 }
 
-<h1>Tài khoản của tôi</h1>
+<header class="market-heading">
+    <nav class="market-path" aria-label="Đường dẫn"><a asp-controller="Home" asp-action="Index">Trang chủ</a><span aria-hidden="true">/</span><span aria-current="page">Tài khoản</span></nav>
+    <h1>Tài khoản của tôi</h1>
+    <p>Xin chào, @Model.HoTen</p>
+</header>
 
-<section class="profile-info" aria-label="Thông tin tài khoản">
-    <p><strong>Họ tên:</strong> @Model.HoTen</p>
-    <p><strong>Email:</strong> @Model.Email</p>
-    <p><strong>Số điện thoại:</strong> @(string.IsNullOrEmpty(Model.SoDienThoai) ? "Chưa cập nhật" : Model.SoDienThoai)</p>
-</section>
+<div class="profile-grid">
 
-<section class="profile-loyalty mt" aria-label="Hạng thành viên và điểm">
-    <h2>Hạng thành viên</h2>
-    <p>
-        <span class="tier-badge @lopHang">Hạng @hang</span>
-        <span class="points-display">@tongDiem.ToString("N0") điểm</span>
-    </p>
-    <p class="text-muted">Tổng chi tiêu hợp lệ (đơn không hủy, đã trừ tiền hoàn): @tongChiTieu.ToString("N0")đ — 1 điểm = 1.000đ khi đổi.</p>
-    @if (hangTiepTheo is not null)
-    {
-        <p>Còn <strong>@conThieu.ToString("N0")đ</strong> nữa lên hạng @hangTiepTheo.</p>
-        <progress class="tier-progress-bar" max="100" value="@phanTram" aria-label="Tiến độ lên hạng @hangTiepTheo">@phanTram%</progress>
-    }
-    else
-    {
-        <p>Bạn đang ở hạng cao nhất — hạng Bạch kim (giảm thêm 2% + miễn phí ship).</p>
-    }
-</section>
+    <section class="card member-card" aria-label="Hạng thành viên và điểm">
+        <h2>Hạng thành viên</h2>
+        <p>
+            <span class="tier-badge @lopHang">Hạng @hang</span>
+            <span class="points-display">@tongDiem.ToString("N0") điểm</span>
+        </p>
+        <p class="text-muted">Tổng chi tiêu hợp lệ (đơn không hủy, đã trừ tiền hoàn): @tongChiTieu.ToString("N0")đ — 1 điểm = 1.000đ khi đổi.</p>
+        @if (hangTiepTheo is not null)
+        {
+            <p>Còn <strong>@conThieu.ToString("N0")đ</strong> nữa lên hạng @hangTiepTheo.</p>
+            <progress class="tier-progress-bar" max="100" value="@phanTram" aria-label="Tiến độ lên hạng @hangTiepTheo">@phanTram%</progress>
+        }
+        else
+        {
+            <p>Bạn đang ở hạng cao nhất — hạng Bạch kim (giảm thêm 2% + miễn phí ship).</p>
+        }
+    </section>
+    <section class="card customer-services" aria-labelledby="customer-services-title">
+        <h2 id="customer-services-title">Dịch vụ khách hàng</h2>
+        <a asp-controller="Orders" asp-action="MyOrders">Theo dõi đơn hàng <span aria-hidden="true">→</span></a>
+        <a asp-controller="Addresses" asp-action="Index">Sổ địa chỉ giao hàng <span aria-hidden="true">→</span></a>
+        <a asp-controller="Returns" asp-action="Index">Đổi trả và bảo hành <span aria-hidden="true">→</span></a>
+    </section>
+    <section class="card profile-info" aria-label="Thông tin tài khoản">
+        <h2>Thông tin cá nhân</h2>
+        <p><strong>Họ tên:</strong> @Model.HoTen</p>
+        <p><strong>Email:</strong> @Model.Email</p>
+        <p><strong>Số điện thoại:</strong> @(string.IsNullOrEmpty(Model.SoDienThoai) ? "Chưa cập nhật" : Model.SoDienThoai)</p>
+    </section>
+</div>
 
-<section class="mt" aria-label="Lịch sử điểm">
+<section class="card mt" aria-label="Lịch sử điểm">
     <h2>Lịch sử điểm</h2>
     @if (!lichSu.Any())
     {
@@ -54,7 +67,7 @@
     }
     else
     {
-        <table class="table">
+        <div class="table-wrap" tabindex="0" role="region" aria-label="Lịch sử điểm thành viên"><table class="table">
             <thead>
                 <tr>
                     <th>Ngày</th>
@@ -74,6 +87,10 @@
                     </tr>
                 }
             </tbody>
-        </table>
+        </table></div>
     }
 </section>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/profile.css" asp-append-version="true" />
+}

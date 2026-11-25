@@ -5,7 +5,7 @@
     var slotTiepTheo = ViewBag.SlotTiepTheo as FlashSaleSlot;
 }
 
-<section class="section slot-section reveal" aria-label="Flash Sale theo khung giờ">
+<section class="section slot-section" id="flash-sale" aria-label="Flash Sale theo khung giờ">
     <div class="section-head">
         <h2>Flash Sale theo khung giờ</h2>
     </div>
@@ -30,7 +30,7 @@
                         <div class="product-info">
                             <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@item.Product.Ten</a></h3>
                             <p class="product-price">
-                                <strong>@item.GiaSale.ToString("N0")đ</strong>
+                                <strong class="price-amount">@item.GiaSale.ToString("N0")đ</strong>
                                 <s>@item.Product.GiaBan.ToString("N0")đ</s>
                             </p>
                         </div>

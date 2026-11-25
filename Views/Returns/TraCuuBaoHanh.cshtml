@@ -3,47 +3,70 @@
     ViewData["Title"] = "Tra cứu bảo hành";
 }
 
-<h1>Tra cứu bảo hành</h1>
-<p>Nhập mã đơn hàng để xem thời hạn bảo hành (24 tháng kể từ ngày đặt hàng).</p>
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <a asp-action="Index">Yêu cầu của tôi</a>
+        }
+        else
+        {
+            <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+        }
+        <span aria-hidden="true">/</span><span aria-current="page">Tra cứu bảo hành</span>
+    </nav>
+    <h1>Tra cứu bảo hành</h1>
+    <p>Kiểm tra thời hạn bảo hành theo mã đơn hàng.</p>
+</header>
 
-<form asp-action="TraCuu" method="post" class="warranty-lookup">
-    <div class="form-group">
-        <label for="maDon">Mã đơn hàng</label>
-        <input type="number" name="maDon" id="maDon" class="form-control input-narrow" min="1" required />
-    </div>
-    <div class="form-group">
-        <label for="token">Mã tra cứu (chỉ cần cho đơn khách vãng lai)</label>
-        <input type="text" name="token" id="token" class="form-control input-narrow" autocomplete="off" />
-        <small>Mã tra cứu được hiển thị ngay sau khi đặt hàng — đơn của tài khoản đã đăng nhập thì không cần nhập.</small>
-    </div>
-    <button type="submit" class="btn btn-primary">Tra cứu</button>
-</form>
-
-@if (Model is not null)
-{
-    var hanBaoHanh = Model.NgayDat.AddMonths(24);
-    var conLai = (hanBaoHanh.Date - DateTime.Now.Date).Days;
-    var conBaoHanh = conLai >= 0;
-    <h2>Đơn #@Model.Id — Ngày đặt: @Model.NgayDat.ToString("dd/MM/yyyy")</h2>
-    <table class="table">
-        <thead>
-            <tr><th>Sản phẩm</th><th>Số lượng</th><th>Hạn bảo hành</th><th>Còn lại</th><th>Trạng thái</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var d in Model.ChiTiet)
-            {
-                <tr>
-                    <td>@d.Product.Ten</td>
-                    <td>@d.SoLuong</td>
-                    <td>@hanBaoHanh.ToString("dd/MM/yyyy")</td>
-                    <td>@(conBaoHanh ? $"{conLai} ngày" : "—")</td>
-                    <td>@(conBaoHanh ? "Còn bảo hành" : "Hết bảo hành")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    @if (User.Identity?.IsAuthenticated == true)
+<div class="lookup-layout service-lookup">
+    @if (Model is not null)
     {
-        <p><a asp-action="Create" asp-route-orderId="@Model.Id">Gửi yêu cầu đổi trả / bảo hành cho đơn này</a></p>
+        var hanBaoHanh = Model.NgayDat.AddMonths(24);
+        var conLai = (hanBaoHanh.Date - DateTime.Now.Date).Days;
+        var conBaoHanh = conLai >= 0;
+        <section class="card market-receipt lookup-receipt service-card">
+            <h2>Kết quả đơn #@Model.Id</h2>
+            <div class="section-head">
+                <p>Hạn đến <strong>@hanBaoHanh.ToString("dd/MM/yyyy")</strong></p>
+                <span class="badge @(conBaoHanh ? "badge-xong" : "badge-huy")">@(conBaoHanh ? $"Còn bảo hành · {conLai} ngày" : "Hết bảo hành")</span>
+            </div>
+            <p class="text-muted">Ngày đặt @Model.NgayDat.ToString("dd/MM/yyyy")</p>
+            <h3>Sản phẩm trong đơn</h3>
+            <ul class="order-lines" role="list">
+                @foreach (var dong in Model.ChiTiet)
+                {
+                    <li class="service-line">
+                        <img src="@dong.Product.AnhDaiDien" alt="" width="56" height="56" loading="lazy" />
+                        <div>
+                            <strong>@dong.Product.Ten</strong>
+                            <span class="text-muted">Số lượng @dong.SoLuong</span>
+                        </div>
+                    </li>
+                }
+            </ul>
+            @if (User.Identity?.IsAuthenticated == true && Model.UserId is not null)
+            {
+                <a asp-controller="Orders" asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary">Xem đơn hàng</a>
+            }
+        </section>
     }
+    <form asp-action="TraCuu" method="post" class="card tracking-card service-card">
+        <h2>@(Model is null ? "Thông tin tra cứu" : "Tra cứu đơn khác")</h2>
+        <p class="text-muted">Thời hạn bảo hành là 24 tháng kể từ ngày đặt hàng.</p>
+        <div class="form-group">
+            <label for="maDon">Mã đơn hàng</label>
+            <input type="number" name="maDon" id="maDon" class="form-control" inputmode="numeric" min="1" required />
+        </div>
+        <div class="form-group">
+            <label for="token">Mã tra cứu</label>
+            <input type="text" name="token" id="token" class="form-control" autocomplete="off" aria-describedby="warranty-token-help" />
+            <small id="warranty-token-help" class="text-muted">Đơn khách vãng lai cần mã tra cứu hiển thị sau khi đặt hàng.</small>
+        </div>
+        <div class="service-actions"><button type="submit" class="btn btn-primary">Tra cứu</button></div>
+    </form>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

@@ -855,6 +855,84 @@ public class CheckoutTamperingTests
         Assert.Equal(30_000m, don.PhiShip);
     }
 
+    [Fact]
+    public async Task Checkout_ChiNapDiaChiChuTaiKhoan_VaGiuThongTinNhapKhiPostLoi()
+    {
+        using var h = new Harness();
+        var productId = await SeedProductAsync(h.Services, "Sản phẩm thử", 100_000, tonKho: 5);
+        await SeedUserAsync(h.Services, "buyer", "buyer-test");
+        await SeedUserAsync(h.Services, "other", "other-test");
+        await MutateAsync(h.Services, db =>
+        {
+            db.Addresses.AddRange(
+                new Address { UserId = "buyer", HoTenNhan = "Người nhận", SoDienThoai = "0912345678", DiaChi = "Địa chỉ đã lưu", MacDinh = true },
+                new Address { UserId = "other", HoTenNhan = "Khách khác", SoDienThoai = "0901234567", DiaChi = "Địa chỉ riêng", MacDinh = true });
+            return Task.CompletedTask;
+        });
+        h.DangNhap("buyer-test");
+        DatGioVaoSession(h, productId);
+
+        var model = await GetCheckoutAsync(h);
+        Assert.Equal("Địa chỉ đã lưu", model.DiaChi);
+        Assert.Equal("0912345678", model.SoDienThoai);
+        model.DiaChi = "Địa chỉ nhập tay";
+        using var request = h.NewRequest();
+        request.Controller.ModelState.AddModelError(nameof(model.HoTenNhan), "Lỗi kiểm thử");
+        var view = Assert.IsType<ViewResult>(await request.Controller.Checkout(model));
+        Assert.Equal("Địa chỉ nhập tay", Assert.IsType<CheckoutViewModel>(view.Model).DiaChi);
+        var saved = Assert.IsType<List<Address>>(view.ViewData["DiaChiDaLuu"]);
+        Assert.Equal("buyer", Assert.Single(saved).UserId);
+    }
+
+    [Fact]
+    public async Task MyOrders_LocMaVaTrangThaiTrongDonCuaNguoiDangNhap()
+    {
+        using var h = new Harness();
+        await SeedUserAsync(h.Services, "buyer", "buyer-test");
+        await SeedUserAsync(h.Services, "other", "other-test");
+        var ownId = await SeedOrderAsync(h.Services, "buyer", 100_000);
+        var otherId = await SeedOrderAsync(h.Services, "other", 100_000);
+        h.DangNhap("buyer-test");
+        using var request = h.NewRequest();
+        var ctrl = request.Controller;
+
+        var match = Assert.IsType<ViewResult>(await ctrl.MyOrders($"#{ownId}", OrderStatus.ChoXacNhan));
+        Assert.Equal(ownId, Assert.Single(Assert.IsType<List<Order>>(match.Model)).Id);
+        var wrongStatus = Assert.IsType<ViewResult>(await ctrl.MyOrders($"#{ownId}", OrderStatus.DaGiao));
+        Assert.Empty(Assert.IsType<List<Order>>(wrongStatus.Model));
+        var foreign = Assert.IsType<ViewResult>(await ctrl.MyOrders($"#{otherId}"));
+        Assert.Empty(Assert.IsType<List<Order>>(foreign.Model));
+    }
+
+    [Fact]
+    public async Task CheckoutVangLai_ChiHienMaMotLanTrenDungDonVuaDat()
+    {
+        using var h = new Harness();
+        var productId = await SeedProductAsync(h.Services, "Sản phẩm thử", 100_000, tonKho: 5);
+        DatGioVaoSession(h, productId);
+        var model = await GetCheckoutAsync(h);
+        var (result, tempData) = await PostCheckoutAsync(h, ModelDatHang(model));
+        var redirect = Assert.IsType<RedirectToActionResult>(result);
+        var orderId = Assert.IsType<int>(redirect.RouteValues!["id"]);
+
+        using var other = h.NewRequest();
+        other.Controller.TempData = tempData;
+        var otherOrder = Assert.IsType<ViewResult>(await other.Controller.Details(int.MaxValue));
+        Assert.Null(otherOrder.ViewData["GuestTokenMoi"]);
+
+        using var first = h.NewRequest();
+        first.Controller.TempData = tempData;
+        var confirmation = Assert.IsType<ViewResult>(await first.Controller.Details(orderId));
+        Assert.True(Assert.IsType<bool>(confirmation.ViewData["OrderJustPlaced"]));
+        Assert.Equal(32, Assert.IsType<string>(confirmation.ViewData["GuestTokenMoi"]).Length);
+
+        using var again = h.NewRequest();
+        again.Controller.TempData = tempData;
+        var lookup = Assert.IsType<ViewResult>(await again.Controller.Details(orderId));
+        Assert.Null(lookup.ViewData["GuestTokenMoi"]);
+        Assert.Null(lookup.ViewData["OrderJustPlaced"]);
+    }
+
     // ================= Helpers =================
 
     /// <summary>

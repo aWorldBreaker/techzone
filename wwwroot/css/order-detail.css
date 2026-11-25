@@ -1,0 +1,60 @@
+.timeline { list-style: none; margin: var(--space-md) 0 var(--space-lg); padding: 0 0 0 var(--space-sm); border-left: 2px solid var(--color-border); }
+.timeline-step { position: relative; padding: 0 0 var(--space-md) var(--space-lg); color: var(--color-muted-foreground); }
+.timeline-step:last-child { padding-bottom: 0; }
+.timeline-dot { position: absolute; left: -1rem; top: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--color-card); border: 2px solid var(--color-border); }
+.timeline-step.done { color: var(--color-foreground); }
+.timeline-step.done .timeline-dot { background: var(--color-primary); border-color: var(--color-primary); }
+.timeline-step.current { color: var(--color-foreground); font-weight: 700; }
+.timeline-step.current .timeline-dot { background: var(--color-accent); border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-primary-ring); }
+.timeline-ten { display: block; }
+.timeline-moc { display: block; font-size: .85rem; font-weight: 400; color: var(--color-muted-foreground); font-variant-numeric: tabular-nums; }
+.order-confirmation { display: inline-block; margin: 0 0 .75rem; padding: .25rem .65rem; border-radius: var(--radius); background: var(--market-yellow); color: var(--market-ink); font-weight: 800; }
+.order-help, .order-list-footer { display: flex; flex-wrap: wrap; gap: .75rem 1rem; align-items: center; }
+.order-help { margin-block-end: var(--space-md); }
+.order-list { display: grid; gap: var(--space-md); grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr)); }
+.order-list-card, .tracking-card { border-block-start: .25rem solid var(--color-primary); }
+.order-list-card h2 { font-size: 1.25rem; }
+.order-list-card .section-head p { margin-block-start: .25rem; font-size: .875rem; }
+.order-preview { padding-inline-start: 1.25rem; }
+.order-list-footer { border-block-start: 1px dashed var(--color-control-border); padding-block-start: .75rem; }
+.order-list-footer .price-amount { margin-inline-end: auto; }
+.tracking-card .timeline { margin-block-end: 0; }
+.order-layout, .order-column, .lookup-layout { display: grid; gap: var(--space-md); align-items: start; }
+.order-column { min-width: 0; }
+.order-lines { list-style: none; margin: 0; padding: 0; }
+.order-lines li { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) auto; align-items: start; gap: .75rem; padding-block: .75rem; border-block-start: 1px solid var(--color-border); }
+.order-lines img { inline-size: 3.5rem; block-size: 3.5rem; object-fit: contain; border-radius: var(--radius); background: var(--market-photo); }
+.order-lines :is(span, small) { display: block; }
+.order-lines li > strong { justify-self: end; font-size: .95rem; }
+.order-receipt .summary { max-inline-size: none; padding: 0; border: 0; }
+.order-receipt .summary-row > :last-child { white-space: nowrap; }
+.address-change summary { font-weight: 750; color: var(--color-primary-text); cursor: pointer; }
+.lookup-receipt .lookup-token { display: block; overflow-wrap: anywhere; font-family: ui-monospace, monospace; user-select: all; }
+.lookup-form { max-inline-size: 37.5rem; }
+@media (max-width: 480px) {
+  .order-lines li { grid-template-columns: 3rem minmax(0, 1fr); }
+  .order-lines img { inline-size: 3rem; block-size: 3rem; }
+  .order-lines li > strong { grid-column: 2; justify-self: start; }
+}
+@media (min-width: 820px) {
+  .order-layout { grid-template-columns: minmax(0, 1.55fr) minmax(17rem, 1fr); }
+  .lookup-layout:has(.lookup-receipt) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1025px) {
+  .timeline { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border: 0; padding: 0; }
+  .timeline-step { padding: 1rem .5rem 0 0; border-block-start: 2px solid var(--color-border); }
+  .timeline-dot { inset: -.5rem auto auto 0; }
+}
+.service-list { list-style: none; margin: 0; padding: 0; }
+.service-card { min-inline-size: 0; overflow-wrap: anywhere; }
+.service-card .section-head h3 { margin: 0; }
+.service-card .section-head .badge { white-space: nowrap; }
+.service-description { white-space: pre-wrap; }
+.service-attachment { max-inline-size: 100%; max-block-size: 26rem; object-fit: contain; border-radius: var(--radius); }
+.service-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.order-lines .service-line { grid-template-columns: clamp(3rem, 8vw, 3.5rem) minmax(0, 1fr); }
+.service-line .service-actions { margin-block-start: .5rem; }
+.service-lookup:not(:has(.lookup-receipt)) { max-inline-size: 40rem; }
+@media (max-width: 480px) {
+  .service-actions .btn, .service-card .order-list-footer .btn { flex: 1 1 100%; min-block-size: 2.75rem; }
+}

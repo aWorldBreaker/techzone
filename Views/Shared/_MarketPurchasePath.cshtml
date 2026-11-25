@@ -1,0 +1,15 @@
+@model bool
+<nav class="market-path" aria-label="Tiến trình mua hàng">
+    <a asp-controller="Products" asp-action="Index">Ngành hàng</a>
+    <span aria-hidden="true">/</span>
+    @if (Model)
+    {
+        <a asp-controller="Cart" asp-action="Index">Giỏ hàng</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="step">Thanh toán</span>
+    }
+    else
+    {
+        <span aria-current="step">Giỏ hàng</span>
+    }
+</nav>

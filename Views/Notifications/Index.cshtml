@@ -1,37 +1,51 @@
 @model List<TechZone.Models.Notification>
 @{
     ViewData["Title"] = "Thông báo";
+    var coChuaDoc = Model.Any(n => !n.DaDoc);
 }
 
-<h1>Thông báo</h1>
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
+        <span aria-hidden="true">/</span><span aria-current="page">Thông báo</span>
+    </nav>
+    <div class="section-head">
+        <h1>Thông báo</h1>
+        @if (coChuaDoc)
+        {
+            <form asp-action="DanhDauDaDoc" method="post" class="notif-mark-read">
+                <button type="submit" class="btn hero-buy">Đánh dấu tất cả đã đọc</button>
+            </form>
+        }
+    </div>
+    <p>Cập nhật về đơn hàng, ưu đãi và nhắc hẹn Flash Sale.</p>
+</header>
 
-@* TempData Success/Error da duoc _Layout hien. *@
-
-@if (Model.Any(n => !n.DaDoc))
+@if (Model.Count == 0)
 {
-    <form asp-action="DanhDauDaDoc" method="post" class="mt">
-        @Html.AntiForgeryToken()
-        <button type="submit" class="btn btn-secondary btn-sm">Đánh dấu tất cả đã đọc</button>
-    </form>
-}
-
-@if (!Model.Any())
-{
-    <p class="text-muted mt">Bạn chưa có thông báo nào.</p>
+    <p class="empty-state">Bạn chưa có thông báo nào.</p>
 }
 else
 {
-    <ul class="notif-list mt">
+    <ul class="notif-list" role="list" aria-label="Thông báo mới nhất">
         @foreach (var n in Model)
         {
-            <li class="notif-item @(n.DaDoc ? "" : "notif-unread")">
-                <strong>@n.TieuDe</strong>
-                @if (!string.IsNullOrEmpty(n.NoiDung))
+            var ngay = n.NgayTao.ToLocalTime();
+            <li class="card notif-item @(n.DaDoc ? "" : "notif-unread")">
+                <div class="section-head">
+                    <h2>@n.TieuDe</h2>
+                    <span class="badge @(n.DaDoc ? "badge-tat" : "badge-cho")">@(n.DaDoc ? "Đã đọc" : "Chưa đọc")</span>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(n.NoiDung))
                 {
                     <p>@n.NoiDung</p>
                 }
-                <span class="text-muted">@n.NgayTao.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</span>
+                <time class="text-muted" datetime="@ngay.ToString("o")">@ngay.ToString("dd/MM/yyyy HH:mm")</time>
             </li>
         }
     </ul>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/notifications.css" asp-append-version="true" />
 }

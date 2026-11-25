@@ -6,46 +6,46 @@
     var conLai = (hanBaoHanh.Date - DateTime.Now.Date).Days;
 }
 
-<h1>Yêu cầu bảo hành</h1>
-<p>Đơn #@order.Id • Ngày đặt: @order.NgayDat.ToString("dd/MM/yyyy HH:mm") • Hạn bảo hành: @hanBaoHanh.ToString("dd/MM/yyyy") (@(conLai >= 0 ? $"còn {conLai} ngày" : "đã hết hạn"))</p>
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">Đơn #@order.Id</a>
+        <span aria-hidden="true">/</span><span aria-current="page">Bảo hành</span>
+    </nav>
+    <h1>Yêu cầu bảo hành</h1>
+    <p>Ngày đặt @order.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+</header>
 
-@if (Model.ProductId == 0)
-{
-    <p>Chọn sản phẩm trong đơn cần bảo hành:</p>
-    <table class="table">
-        <thead>
-            <tr><th>Sản phẩm</th><th>Số lượng</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var d in order.ChiTiet)
-            {
-                <tr>
-                    <td>@d.Product.Ten</td>
-                    <td>@d.SoLuong</td>
-                    <td>
-                        <a asp-action="Warranty" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Bảo hành</a>
-                        |
-                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-orderDetailId="@d.Id">Đổi trả</a>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
-    <p><a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id">← Về đơn hàng</a></p>
-}
-else
-{
-    var product = (TechZone.Models.Product)ViewBag.Product;
-    <p>Sản phẩm: <strong>@product.Ten</strong></p>
-    <form asp-action="Warranty" method="post" class="return-form">
-        <input type="hidden" asp-for="OrderId" />
-        <input type="hidden" asp-for="ProductId" />
-        <div class="form-group">
-            <label asp-for="MoTaLoi">Mô tả lỗi</label>
-            <textarea asp-for="MoTaLoi" class="form-control" rows="4" required></textarea>
-            <span asp-validation-for="MoTaLoi" class="text-danger"></span>
-        </div>
-        <button type="submit" class="btn btn-primary">Gửi yêu cầu bảo hành</button>
-        <a asp-controller="Orders" asp-action="Details" asp-route-id="@order.Id" class="btn btn-secondary">Quay lại đơn hàng</a>
-    </form>
+<div class="order-layout">
+    @if (Model.ProductId == 0)
+    {
+        <partial name="_ChonSanPham" model="(order, true)" />
+    }
+    else
+    {
+        var product = (TechZone.Models.Product)ViewBag.Product;
+        <form asp-action="Warranty" method="post" class="card tracking-card service-card">
+            <h2>Thông tin bảo hành</h2>
+            <p><strong>@product.Ten</strong></p>
+            <input type="hidden" asp-for="OrderId" />
+            <input type="hidden" asp-for="ProductId" />
+            <div class="form-group">
+                <label asp-for="MoTaLoi">Mô tả lỗi</label>
+                <textarea asp-for="MoTaLoi" class="form-control" rows="4" required></textarea>
+                <span asp-validation-for="MoTaLoi" class="text-danger"></span>
+            </div>
+            <div class="service-actions">
+                <button type="submit" class="btn btn-primary">Gửi yêu cầu bảo hành</button>
+                <a asp-action="Warranty" asp-route-orderId="@order.Id" class="btn btn-secondary">Chọn sản phẩm khác</a>
+            </div>
+        </form>
+    }
+    <aside class="card market-receipt service-card">
+        <h2>Thời hạn bảo hành</h2>
+        <p>Hạn đến <strong>@hanBaoHanh.ToString("dd/MM/yyyy")</strong></p>
+        <span class="badge @(conLai >= 0 ? "badge-xong" : "badge-huy")">@(conLai >= 0 ? $"Còn {conLai} ngày" : "Đã hết hạn")</span>
+    </aside>
+</div>
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

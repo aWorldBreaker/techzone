@@ -403,8 +403,8 @@ public static class SeedData
         // --- Banner trang chu (nhom D) ---
         if (!await context.Banners.AnyAsync())
             context.Banners.AddRange(
-            new Banner { TieuDe = "Flash Sale 12h — Giảm tới 30%", AnhUrl = "/images/xiaomi15.png", LinkUrl = "/Products", ThuTu = 1, IsActive = true },
-            new Banner { TieuDe = "Trả góp 0% — Xiaomi 15 chỉ 2.165.000đ/tháng", AnhUrl = "/images/iphone15pro.jpg", LinkUrl = "/Products/Details/1", ThuTu = 2, IsActive = true }
+            new Banner { TieuDe = "Ưu đãi điện thoại", AnhUrl = "/images/iphone15pro.jpg", LinkUrl = "/Products?CategoryId=1", ThuTu = 1, IsActive = true },
+            new Banner { TieuDe = "Xiaomi 15 — Xem trả góp 0% (giả lập)", AnhUrl = "/images/xiaomi15.png", LinkUrl = "/Products/Details/1", ThuTu = 2, IsActive = true }
         );
 
         // --- Lich su trang thai don mau (nhom C): timeline theo doi don ---

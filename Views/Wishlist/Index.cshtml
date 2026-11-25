@@ -3,42 +3,64 @@
     ViewData["Title"] = "Sản phẩm yêu thích";
 }
 
-<h1>Sản phẩm yêu thích</h1>
+<header class="market-heading order-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Account" asp-action="Profile">Tài khoản</a>
+        <span aria-hidden="true">/</span><span aria-current="page">Yêu thích</span>
+    </nav>
+    <div class="section-head">
+        <h1>Sản phẩm yêu thích</h1>
+        <a class="btn hero-buy" asp-controller="Products" asp-action="Index">Khám phá sản phẩm</a>
+    </div>
+    @if (Model.Count > 0)
+    {
+        <p>Đã lưu @Model.Count sản phẩm</p>
+    }
+</header>
 
-@if (!Model.Any())
+@if (Model.Count == 0)
 {
-    <p class="text-muted">Bạn chưa có sản phẩm yêu thích nào.</p>
-    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Khám phá sản phẩm</a>
+    <p class="empty-state">Bạn chưa có sản phẩm yêu thích nào. Bấm nút trái tim trên sản phẩm để lưu vào danh sách này.</p>
 }
 else
 {
-    <p class="text-muted">@Model.Count sản phẩm</p>
-    <div class="wishlist-list">
+    <ul class="wishlist-list" role="list">
         @foreach (var item in Model)
         {
-            <article class="wishlist-item">
+            var sanPham = item.Product;
+            <li class="card wishlist-item">
                 <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="wishlist-thumb">
-                    <img src="@item.Product.AnhDaiDien" alt="@item.Product.Ten" loading="lazy" />
+                    <img src="@sanPham.AnhDaiDien" alt="@sanPham.Ten" width="112" height="112" loading="lazy" />
                 </a>
                 <div class="wishlist-info">
-                    <h3>
-                        <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@item.Product.Ten</a>
-                    </h3>
-                    <p class="product-price"><strong>@item.Product.GiaBan.ToString("N0")đ</strong></p>
-                    <p class="text-muted">Đã lưu @item.NgayTao.ToString("dd/MM/yyyy")</p>
+                    <h2><a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@sanPham.Ten</a></h2>
+                    <p class="wishlist-price">
+                        <strong class="price-amount">@sanPham.GiaBan.ToString("N0")đ</strong>
+                        @if (sanPham.GiaBan < sanPham.Gia)
+                        {
+                            <s class="text-muted">@sanPham.Gia.ToString("N0")đ</s>
+                        }
+                    </p>
+                    <p><partial name="_StockStatus" model="sanPham.TonKho" /></p>
+                    <p class="text-muted">Đã lưu <time datetime="@item.NgayTao.ToString("yyyy-MM-dd")">@item.NgayTao.ToString("dd/MM/yyyy")</time></p>
                 </div>
                 <div class="wishlist-actions">
                     <form asp-controller="Cart" asp-action="Add" method="post">
                         <input type="hidden" name="productId" value="@item.ProductId" />
                         <input type="hidden" name="soLuong" value="1" />
-                        <button type="submit" class="btn btn-primary btn-sm">Thêm vào giỏ</button>
+                        <button type="submit" class="btn btn-primary btn-block" disabled="@(sanPham.TonKho <= 0)"
+                                aria-label="@(sanPham.TonKho <= 0 ? null : $"Thêm vào giỏ: {sanPham.Ten}")">@(sanPham.TonKho <= 0 ? "Hết hàng" : "Thêm vào giỏ")</button>
                     </form>
-                    <form asp-controller="Wishlist" asp-action="Remove" method="post">
+                    <form asp-action="Remove" method="post">
                         <input type="hidden" name="productId" value="@item.ProductId" />
-                        <button type="submit" class="btn btn-secondary btn-sm">Bỏ yêu thích</button>
+                        <button type="submit" class="btn btn-secondary btn-block" aria-label="Bỏ yêu thích: @sanPham.Ten">Bỏ yêu thích</button>
                     </form>
                 </div>
-            </article>
+            </li>
         }
-    </div>
+    </ul>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/wishlist.css" asp-append-version="true" />
 }

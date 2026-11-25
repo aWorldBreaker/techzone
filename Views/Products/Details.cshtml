@@ -25,14 +25,18 @@
     var giaTheoVariant = ViewBag.GiaTheoVariant as Dictionary<int, TechZone.Services.GiaApDungResult>;
 }
 
-<nav aria-label="Breadcrumb">
-    <a asp-controller="Home" asp-action="Index">Trang chủ</a> &gt;
-    <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@Model.CategoryId">@Model.Category.Ten</a> &gt;
-    @Model.Ten
-</nav>
+<header class="market-heading detail-heading">
+    <nav class="market-path" aria-label="Đường dẫn">
+        <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+        <span aria-hidden="true">/</span>
+        <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@Model.CategoryId">@Model.Category.Ten</a>
+    </nav>
+    <h1>@Model.Ten</h1>
+</header>
 
 <div class="detail-layout mt">
     <div class="detail-image">
+        <h2 class="gallery-title">Hình ảnh sản phẩm</h2>
         @* Sprint 5 — viewer 3D dung chung (map Product3dModels): chi SP co model
            moi render khoi nay. Model la minh hoa generic, khong phai thiet ke
            chinh xac cua hang. GLB chi tai khi bam Xem 3D (xem product-3d.js). *@
@@ -85,8 +89,8 @@
         }
     </div>
 
-    <div>
-        <h1>@Model.Ten</h1>
+    <div class="detail-buy card">
+        <h2>Thông tin mua hàng</h2>
         @* M4-1: diem sao hien thi TINH TU danh gia da duyet dang co (Model.Reviews
            da loc IsApproved o controller), khong dung Model.DanhGiaTB (gia tri
            seed cu, lech khoi TB that: VD Id 1 seed 4.8 trong khi 2 review 5+4
@@ -97,9 +101,9 @@
             var soDanhGia = Model.Reviews.Count;
             var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
         }
-        <p>@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan • @(Model.TonKho > 0 ? $"Còn {Model.TonKho} trong kho" : "Hết hàng")</p>
-        <p>
-            <span class="price-big">@giaHienThi.ToString("N0")đ</span>
+        <p>@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan • <partial name="_StockStatus" model="Model.TonKho" /></p>
+        <div class="detail-price" aria-live="polite">
+            <span class="price-big price-amount">@giaHienThi.ToString("N0")đ</span>
             @if (giaHienThi < giaGoc)
             {
                 <s class="price-old">@giaGoc.ToString("N0")đ</s>
@@ -116,13 +120,18 @@
             {
                 <span class="badge">@tenKhuyenMai</span>
             }
-        </p>
-        <p class="text-muted">Trả góp 0% (giả lập) • Bảo hành 24 tháng • Miễn phí ship đơn từ 2.000.000đ • Đổi trả online</p>
+        </div>
+
+        <div class="buy-policy">
+            <span>Bảo hành 24 tháng</span>
+            <span>Miễn phí ship từ 2.000.000đ</span>
+            <span>Đổi trả online</span>
+        </div>
         <partial name="_InstallmentBadge" model="giaHienThi" />
 
         @if (Model.Variants.Any())
         {
-            <form asp-controller="Cart" asp-action="Add" method="post">
+            <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add">
                 <input type="hidden" name="productId" value="@Model.Id" />
                 <div class="form-group">
                     <label for="variantId">Phiên bản</label>
@@ -149,30 +158,32 @@
         }
         else
         {
-            <form asp-controller="Cart" asp-action="Add" method="post">
+            <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add">
                 <input type="hidden" name="productId" value="@Model.Id" />
                 <input type="hidden" name="soLuong" value="1" />
                 <button type="submit" class="btn btn-primary" @(Model.TonKho == 0 ? "disabled" : "")>Thêm vào giỏ</button>
             </form>
         }
-        <form asp-controller="Compare" asp-action="Add" method="post" class="mt">
-            <input type="hidden" name="productId" value="@Model.Id" />
-            <button type="submit" class="btn btn-secondary">＋ So sánh</button>
-        </form>
-        @if (daYeuThich)
-        {
-            <form asp-controller="Wishlist" asp-action="Remove" method="post" class="mt wishlist-form">
+        <div class="detail-actions">
+            <form asp-controller="Compare" asp-action="Add" method="post">
                 <input type="hidden" name="productId" value="@Model.Id" />
-                <button type="submit" class="btn btn-secondary wishlist-btn wishlist-btn-active">♥ Đã yêu thích</button>
+                <button type="submit" class="btn btn-secondary">＋ So sánh</button>
             </form>
-        }
-        else
-        {
-            <form asp-controller="Wishlist" asp-action="Add" method="post" class="mt wishlist-form">
-                <input type="hidden" name="productId" value="@Model.Id" />
-                <button type="submit" class="btn btn-secondary wishlist-btn">♡ Yêu thích</button>
-            </form>
-        }
+            @if (daYeuThich)
+            {
+                <form asp-controller="Wishlist" asp-action="Remove" method="post" class="wishlist-form">
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-secondary wishlist-btn wishlist-btn-active">♥ Đã yêu thích</button>
+                </form>
+            }
+            else
+            {
+                <form asp-controller="Wishlist" asp-action="Add" method="post" class="wishlist-form">
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <button type="submit" class="btn btn-secondary wishlist-btn">♡ Yêu thích</button>
+                </form>
+            }
+        </div>
     </div>
 </div>
 
@@ -252,7 +263,7 @@
     </section>
 }
 
-<section class="section">
+<section class="section detail-section">
     <h2>Thông số kỹ thuật</h2>
     @if (Model.Specs is not null)
     {
@@ -280,7 +291,7 @@
     }
 </section>
 
-<section class="section">
+<section class="section detail-section">
     <h2>Đánh giá (@Model.Reviews.Count)</h2>
     @if (!Model.Reviews.Any())
     {
@@ -323,7 +334,7 @@
     }
 </section>
 
-<section class="section qa-block">
+<section class="section detail-section qa-block">
     <h2>Hỏi &amp; đáp (@cauHoi.Count)</h2>
     @if (!cauHoi.Any())
     {
@@ -364,7 +375,7 @@
 
 @if (tuongTu.Any())
 {
-    <section class="section">
+    <section class="section detail-section">
         <div class="section-head">
             <h2>Sản phẩm tương tự</h2>
             <a asp-action="Index" asp-route-CategoryId="@Model.CategoryId">Xem tất cả →</a>
@@ -384,10 +395,19 @@
    moi trang Details; model-viewer + product-3d.js chi khi co viewer 3D
    (Sprint 5 Mang 2: trang khong co model khong tai thua ~955KB). *@
 @section Scripts {
-    <script src="~/js/product-detail.js"></script>
+    <script src="~/js/product-detail.js" asp-append-version="true"></script>
     @if (model3d is not null)
     {
-        <script type="module" src="~/js/model-viewer.min.js"></script>
-        <script src="~/js/product-3d.js"></script>
+        <script type="module" src="~/js/model-viewer.min.js" asp-append-version="true"></script>
+        <script src="~/js/product-3d.js" asp-append-version="true"></script>
+    }
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/product-cards.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/product-details.css" asp-append-version="true" />
+    @if (model3d is not null)
+    {
+        <link rel="stylesheet" href="~/css/product-viewer.css" asp-append-version="true" />
     }
 }

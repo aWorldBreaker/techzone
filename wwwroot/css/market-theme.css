@@ -1,0 +1,95 @@
+/* Palette shared by the store and customer account. */
+:is(.storefront, .admin-body) {
+  --market-green: #12392f;
+  --market-yellow: #ffd27a;
+  --market-canopy: #245949;
+  --market-moss: #bcd4bc;
+  --market-photo: #edf2e7;
+  --market-photo-warm: #f7ebcf;
+  --market-ink: #20362a;
+  --market-on-canopy: #f7f4e5;
+  --market-on-canopy-muted: #d2e1d0;
+  --market-ticket: #f6edcf;
+  --market-rail: linear-gradient(110deg, var(--market-green), var(--market-canopy));
+  --color-primary: #17613d;
+  --color-primary-hover: #104b2f;
+  --color-primary-text: #17613d;
+  --color-primary-ghost: #e9f3e9;
+  --color-primary-ring: #b9dbc2;
+  --color-focus: #17613d;
+  --color-background: #f7f5eb;
+  --color-foreground: #202a22;
+  --color-muted: #eef2e9;
+  --color-muted-foreground: #48584a;
+  --color-border: #d5decf;
+  --color-control-border: #748478;
+  --color-accent: #963c26;
+  --color-accent-bg: #f4db9d;
+  --color-on-accent: #672d1b;
+  --color-accent-hover: #f9e5b6;
+  --color-destructive: #993f36;
+  --color-info-bg: #e1ece4;
+  --color-info-fg: #30533c;
+  --color-info-border: #acc9b3;
+  --color-success-bg: #e5eee1;
+  --color-success-fg: #2d5138;
+  --color-success-border: #b6cdb6;
+  --color-error-bg: #f8e7de;
+  --color-error-fg: #7a352b;
+  --color-error-border: #d9a89a;
+  --color-warning-bg: #f7ebcf;
+  --color-warning-fg: #694a21;
+  --color-warning-border: #d6bb82;
+  --radius-panel: .875rem;
+}
+[data-theme="dark"] :is(.storefront, .admin-body) {
+  --market-ticket: #332e20;
+  --color-primary: #a9dfb3;
+  --color-primary-hover: #c4edcb;
+  --color-primary-text: #a9dfb3;
+  --color-on-primary: #142b1c;
+  --color-primary-ghost: #263c2e;
+  --color-primary-ring: #355442;
+  --color-focus: #a9dfb3;
+  --color-background: #131a16;
+  --color-card: #1d2821;
+  --color-foreground: #f1f5ed;
+  --color-muted: #26362c;
+  --color-muted-foreground: #c0cec2;
+  --color-border: #3d5345;
+  --color-control-border: #839889;
+  --color-accent: #ffcf82;
+  --color-accent-bg: #ffcf82;
+  --color-on-accent: #462c1c;
+  --color-destructive: #f3aaa1;
+  --color-info-bg: #233b31;
+  --color-info-fg: #c5dfcc;
+  --color-info-border: #476858;
+  --color-success-bg: #233a2d;
+  --color-success-fg: #c2ddbf;
+  --color-success-border: #496c54;
+  --color-error-bg: #412823;
+  --color-error-fg: #f4c3b5;
+  --color-error-border: #82554a;
+  --color-warning-bg: #392e20;
+  --color-warning-fg: #f0d4a3;
+  --color-warning-border: #7b6139;
+}
+
+.market-heading {
+  margin-block-end: var(--space-lg); padding: clamp(1rem, 3vw, 1.75rem);
+  border-radius: var(--radius-panel); color: var(--market-on-canopy);
+  background: radial-gradient(ellipse at 100% 0, var(--market-canopy), transparent 68%), var(--market-green);
+}
+.market-heading h1 { margin: 0; font-weight: 850; }
+.market-heading .section-head { margin: 0; }
+.order-heading > p:last-child { color: var(--market-on-canopy-muted); margin: .6rem 0 0; }
+.market-heading a { color: var(--market-on-canopy); }
+.market-heading a:focus-visible { outline-color: var(--market-yellow); }
+.market-path { display: flex; align-items: baseline; flex-wrap: wrap; gap: .35rem .65rem; margin-block-end: .75rem; color: var(--color-muted-foreground); font-size: .875rem; }
+.market-heading .market-path { color: var(--market-on-canopy-muted); }
+.market-heading .market-path [aria-current] { color: var(--market-yellow); font-weight: 750; }
+
+.hero-buy, .market-heading .hero-buy { background: var(--market-yellow); color: var(--market-ink); font-weight: 800; }
+.hero-buy:hover, .market-heading .hero-buy:hover { background: #ffe287; }
+.hero-buy:focus-visible { outline-color: var(--market-yellow); }

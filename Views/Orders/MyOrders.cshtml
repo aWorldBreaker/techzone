@@ -1,46 +1,97 @@
 @model List<TechZone.Models.Order>
 @{
     ViewData["Title"] = "Đơn hàng của tôi";
+    var maDon = ViewData["MaDon"] as string;
+    var trangThai = ViewData["TrangThai"] as string;
+    var dangLoc = !string.IsNullOrEmpty(maDon) || trangThai is not null;
 }
 
-<h1>Đơn hàng của tôi</h1>
-<p><a asp-controller="Returns" asp-action="Index">Yêu cầu của tôi</a> (đổi trả / bảo hành) • <a asp-controller="Returns" asp-action="TraCuu">Tra cứu bảo hành</a></p>
+<header class="market-heading">
+    <nav class="market-path" aria-label="Đường dẫn"><a asp-controller="Account" asp-action="Profile">Tài khoản</a><span aria-hidden="true">/</span><span aria-current="page">Đơn hàng</span></nav>
+    <h1>Đơn hàng của tôi</h1>
+</header>
+<nav class="order-help" aria-label="Hậu mãi">
+    <a asp-controller="Returns" asp-action="Index">Yêu cầu đổi trả và bảo hành</a>
+    <a asp-controller="Returns" asp-action="TraCuu">Tra cứu bảo hành</a>
+</nav>
+
+@if (Model.Count > 0 || dangLoc)
+{
+    <form asp-action="MyOrders" method="get" class="filter-bar" aria-label="Lọc đơn hàng">
+        <div class="form-group">
+            <label for="maDon">Mã đơn</label>
+            <input id="maDon" name="maDon" type="search" inputmode="numeric" maxlength="11" value="@maDon" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label for="trangThai">Trạng thái</label>
+            <select id="trangThai" name="trangThai" class="form-control"
+                    asp-items="@(new SelectList(TechZone.Models.OrderStatus.ChuyenTrangThaiHopLe.Keys, trangThai))">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Lọc</button>
+        @if (dangLoc)
+        {
+            <a asp-action="MyOrders" class="btn btn-secondary">Xóa lọc</a>
+        }
+    </form>
+}
 
 @if (!Model.Any())
 {
-    <p>Bạn chưa có đơn hàng nào.</p>
-    <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Mua sắm ngay</a>
+    if (dangLoc)
+    {
+        <p class="empty-state">Không có đơn hàng phù hợp với bộ lọc.</p>
+    }
+    else
+    {
+        <p>Bạn chưa có đơn hàng nào.</p>
+        <a class="btn btn-primary" asp-controller="Products" asp-action="Index">Mua sắm ngay</a>
+    }
 }
 else
 {
-    <div class="table-wrap"><table class="table">
-        <thead>
-            <tr><th>Mã đơn</th><th>Ngày đặt</th><th>Sản phẩm</th><th>Tổng tiền</th><th>Trạng thái</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var o in Model)
-            {
-                <tr>
-                    <td>#@o.Id</td>
-                    <td>@o.NgayDat.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@string.Join(", ", o.ChiTiet.Select(d => d.Product.Ten + " × " + d.SoLuong))</td>
-                    <td>@o.ThanhToan.ToString("N0")đ</td>
-                    <td>@o.TrangThai</td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@o.Id">Xem</a>
-                        <a asp-controller="Returns" asp-action="Create" asp-route-orderId="@o.Id">Đổi trả / Bảo hành</a>
-                        @if (o.TrangThai == TechZone.Models.OrderStatus.ChoXacNhan
-                            || o.TrangThai == TechZone.Models.OrderStatus.DaXacNhan
-                            || o.TrangThai == TechZone.Models.OrderStatus.DangDongGoi)
-                        {
-                            <form asp-action="Huy" method="post" class="inline-form">
-                                <input type="hidden" name="id" value="@o.Id" />
-                                <button type="submit" class="link-button" onclick="return confirm('Hủy đơn #@o.Id?');">Hủy đơn</button>
-                            </form>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table></div>
+    <div class="order-list">
+        @foreach (var order in Model)
+        {
+            <article class="card order-list-card">
+                <header class="section-head">
+                    <div>
+                        <h2>Đơn #@order.Id</h2>
+                        <p class="text-muted">@order.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                    <partial name="_TrangThaiBadge" model="order.TrangThai" />
+                </header>
+                <ul class="order-preview">
+                    @foreach (var line in order.ChiTiet)
+                    {
+                        <li>@line.Product.Ten × @line.SoLuong</li>
+                    }
+                </ul>
+                <div class="order-list-footer">
+                    <strong class="price-amount">@order.ThanhToan.ToString("N0")đ</strong>
+                    <a asp-action="Details" asp-route-id="@order.Id" class="btn btn-primary btn-sm">Xem chi tiết</a>
+                    @if (order.TrangThai is OrderStatus.DangGiao or OrderStatus.DaGiao)
+                    {
+                        <a asp-controller="Returns" asp-action="Create" asp-route-orderId="@order.Id">Đổi trả</a>
+                    }
+                    @if (order.TrangThai == OrderStatus.DaGiao)
+                    {
+                        <a asp-controller="Returns" asp-action="Warranty" asp-route-orderId="@order.Id">Bảo hành</a>
+                    }
+                    @if (OrderStatus.CoTheHuy(order.TrangThai))
+                    {
+                        <form asp-action="Huy" method="post" class="inline-form" onsubmit="return confirm('Hủy đơn #@order.Id?');">
+                            <input type="hidden" name="id" value="@order.Id" />
+                            <button type="submit" class="link-button">Hủy đơn</button>
+                        </form>
+                    }
+                </div>
+            </article>
+        }
+    </div>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

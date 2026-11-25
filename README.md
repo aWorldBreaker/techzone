@@ -175,14 +175,20 @@ Xiaomi Buds 5 giá 1.090.000đ. Giá hiển thị ở trang chi tiết dùng chu
 - 3D viewer (`model-viewer`) cho Xiaomi 15 / TUF F15 / WH-CH520; 4 file GLB
   trong `wwwroot/models/` (gamepad chưa map vì seed chưa có SP tay cầm).
 - Dark mode (toggle header, lưu localStorage, mặc định theo hệ thống).
+- Sổ địa chỉ trong Tài khoản: thêm, sửa, xóa và chọn địa chỉ mặc định
+  để điền khi đặt hàng. Đơn hàng của tôi lọc theo mã đơn và trạng thái.
 
 ## Thiết kế
 
-Minimalism & Swiss Style (UI UX Pro Max). **Palette đã duyệt:**
-xanh điện `#2563EB`, cam san hô `#FF6B35` (giá/badge sale), teal `#0EA5A4`,
-nền trắng, chữ `#0F172A`, font **Be Vietnam Pro** (1 stack duy nhất),
-bo góc tối đa 8px. Token chuẩn duy nhất: `wwwroot/css/design-tokens.css`
-(bản sao ở `design-system/techzone/`).
+TechZone dùng indigo cho hành động chính, amber cho giá khuyến mãi và
+Noto Sans Variable tự phục vụ cho chữ Latin và tiếng Việt. Màu sáng/tối,
+khoảng cách, bo góc và font được định nghĩa trong `wwwroot/css/design-tokens.css`.
+
+Ba layout Razor tải token, `common.css` và CSS của từng layout theo thứ tự đó.
+Đặt style dùng lại của nút, form, bảng và trạng thái trong `common.css`.
+Khai báo CSS của các trang cần tính năng riêng qua section `Styles` với
+`asp-append-version="true"`. CSS của drawer đơn hàng nằm trong `admin.css`
+để dùng được khi nội dung được tải động.
 
 ## Cơ sở dữ liệu — 35 bảng, 5 migrations
 

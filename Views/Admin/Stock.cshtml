@@ -3,10 +3,10 @@
     ViewData["Title"] = "Admin — Quản lý kho";
     var nhapGanDay = ViewBag.NhapGanDay as List<TechZone.Models.StockIn> ?? new List<TechZone.Models.StockIn>();
 }
-<h1>Quản lý kho</h1>
-
-@* Dot 3 (B3): xuat CSV kho (ten / ton / da ban / gia ban). *@
-<p><a class="btn btn-secondary" asp-action="XuatCsvKho">⬇ Xuất CSV kho (@Model.Count sản phẩm)</a></p>
+<header class="section-head">
+    <h1>Quản lý kho</h1>
+    <a class="btn btn-secondary" asp-action="XuatCsvKho">Xuất CSV kho (@Model.Count sản phẩm)</a>
+</header>
 
 <div class="table-wrap"><table class="table">
     <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>

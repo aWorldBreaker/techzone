@@ -27,7 +27,10 @@
     Func<decimal, string> rutGonTien = v => v >= 1_000_000 ? (v / 1_000_000).ToString("0.#", viVn) + "tr" : v >= 1_000 ? (v / 1_000).ToString("0.#", viVn) + "k" : v.ToString("N0", viVn);
     var max30Ngay = Model.DoanhThu30Ngay.Any() ? Model.DoanhThu30Ngay.Max(d => d.DoanhThu) : 0;
 }
-<h1>Dashboard</h1>
+<div class="section-head">
+    <h1>Dashboard</h1>
+    <a asp-action="TongQuan">Mở trang tổng hợp</a>
+</div>
 
 <div class="stat-grid">
     <div class="stat-card stat-card--tien"><div class="stat-icon" aria-hidden="true">💰</div><div class="value">@Model.DoanhThuThang.ToString("N0")đ</div><div class="label">Doanh thu tháng này</div>@if (deltaThangText is not null) { <div class="stat-delta @deltaThangClass">@deltaThangText</div> }</div>

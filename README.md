@@ -73,6 +73,16 @@
 > kiểm chứng độc lập qua action: 13 SP / 4 voucher / 1 banner / 3 flash
 > slot / 0 review / 0 đơn; xem `TEST-REPORT.md` §29).
 
+## Hai trang quản trị
+
+- `/Admin/Dashboard` hiển thị KPI, biểu đồ doanh thu, đơn gần đây và tồn kho thấp.
+- `/Admin/TongQuan` mở trang thao tác nhanh. Mỗi mục có URL riêng, ví dụ
+  `/Admin/TongQuan?muc=orders`, và chỉ tải dữ liệu của mục đó. Các trang quản lý
+  chuyên biệt vẫn có tìm kiếm, phân trang hoặc công cụ xử lý đầy đủ.
+- Với đơn COD đã giao, Admin ghi nhận tiền đã thu trong chi tiết đơn để hệ thống
+  có thể ghi hoàn tiền khi duyệt đổi trả. Yêu cầu đổi trả mới gắn với dòng hàng và
+  biến thể đã chọn. Migration chỉ gắn tự động yêu cầu cũ khi tìm được đúng một dòng.
+
 ## Chạy
 
 ```bash

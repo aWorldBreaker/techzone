@@ -75,6 +75,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(w => new { w.UserId, w.ProductId })
             .IsUnique();
 
+        builder.Entity<Order>().HasIndex(o => o.NgayDat);
+
         // Order.IdempotencyKey: chong dat don trung (Sprint 1). SQLite cho phep
         // nhieu NULL trong unique index nen don cu/seed (NULL) khong vi pham.
         builder.Entity<Order>()
@@ -88,6 +90,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(d => d.FlashSaleId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<ReturnRequest>()
+            .HasOne(r => r.OrderDetail)
+            .WithMany()
+            .HasForeignKey(r => r.OrderDetailId)
+            .OnDelete(DeleteBehavior.NoAction);
 
         // RefundRecord: bang hoan tien (Sprint 2 — Mang 4, B-9). Chi luu Id
         // (OrderId/ReturnRequestId), khong dat FK constraint de giu lich su

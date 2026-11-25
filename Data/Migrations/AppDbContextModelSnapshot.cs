@@ -652,6 +652,8 @@ namespace TechZone.Data.Migrations
                     b.HasIndex("IdempotencyKey")
                         .IsUnique();
 
+                    b.HasIndex("NgayDat");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Orders");
@@ -1008,6 +1010,9 @@ namespace TechZone.Data.Migrations
                     b.Property<DateTime>("NgayTao")
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("OrderDetailId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("INTEGER");
 
@@ -1026,6 +1031,8 @@ namespace TechZone.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderDetailId");
 
                     b.HasIndex("OrderId");
 
@@ -1531,6 +1538,11 @@ namespace TechZone.Data.Migrations
 
             modelBuilder.Entity("TechZone.Models.ReturnRequest", b =>
                 {
+                    b.HasOne("TechZone.Models.OrderDetail", "OrderDetail")
+                        .WithMany()
+                        .HasForeignKey("OrderDetailId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
                     b.HasOne("TechZone.Models.Order", "Order")
                         .WithMany()
                         .HasForeignKey("OrderId")
@@ -1548,6 +1560,8 @@ namespace TechZone.Data.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("Order");
+
+                    b.Navigation("OrderDetail");
 
                     b.Navigation("Product");
 

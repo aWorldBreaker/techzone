@@ -52,21 +52,7 @@ public class ProductsController : Controller
 
     public async Task<IActionResult> Index(ProductFilterViewModel filter)
     {
-        var query = _db.Products
-            .Include(p => p.Images)
-            .Include(p => p.Category)
-            .Include(p => p.Brand)
-            .Include(p => p.Specs)
-            // M4-3: _ProductCard tinh sao tu Reviews da duyet (giong
-            // Details) nen Listing phai nap Reviews — chi review da duyet.
-            .Include(p => p.Reviews.Where(r => r.IsApproved))
-            // AsNoTracking: Index chi doc; cuoi ham co the gan de
-            // GiaKhuyenMai cua SP trong trang hien tai ve gia hieu dung
-            // (de _ProductCard hien gia thuc tra) ma khong lo vo tinh
-            // luu xuong DB (khong co SaveChanges nao o day).
-            .AsNoTracking()
-            .AsQueryable();
-
+        var query = _db.Products.AsNoTracking();
         if (filter.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == filter.CategoryId.Value);
         if (filter.BrandId.HasValue)
@@ -87,78 +73,62 @@ public class ProductsController : Controller
             query = query.Where(p => p.Ten.Contains(kw) || (p.MoTa != null && p.MoTa.Contains(kw)));
         }
 
-        // Sprint 6 Module 3 — sort theo GIA HIEU DUNG (decimal, khong ep
-        // kieu so thuc nua: SQLite khong ORDER BY duoc cot decimal nen sort
-        // chuyen sang memory sau khi loc).
-        // Thu tu: loc DB -> tinh gia hieu dung batch -> loc gia -> sort
-        // decimal -> phan trang trong memory. Filter gia chay TRUOC
-        // pagination nen TongSo/TongTrang tinh tren tap da loc gia.
-        // GIOI HAN SCALE: catalog hien 13 SP; batch in-memory phu hop toi
-        // vai tram SP. Vuot ~500 SP thi do lai latency listing truoc khi
-        // mo rong (xem EffectivePriceCalculator).
-        var daLoc = await query.ToListAsync();
+        var xepTheoGia = filter.SapXep is "gia-tang" or "gia-giam";
+        var locTheoGia = filter.GiaTu.HasValue || filter.GiaDen.HasValue;
+        var canTinhGiaTruocPhanTrang = xepTheoGia || locTheoGia;
+        List<int> idsTrang;
         var now = DateTime.Now;
-        var ids = daLoc.Select(p => p.Id).ToList();
-        // 2 query gop duy nhat cho toan bo SP da loc (khong N+1, khong goi
-        // TinhGiaAsync tung SP — ham do lam 2 query/SP).
-        var flashSales = ids.Count == 0
-            ? new List<FlashSale>()
-            : await _db.FlashSales.AsNoTracking()
-                .Where(f => ids.Contains(f.ProductId)).ToListAsync();
-        var slotItems = ids.Count == 0
-            ? new List<FlashSaleSlotItem>()
-            : await _db.FlashSaleSlotItems.AsNoTracking()
-                .Include(i => i.Slot)
-                .Where(i => ids.Contains(i.ProductId)).ToListAsync();
-        var giaHieuDung = EffectivePriceCalculator.TinhBatch(daLoc, flashSales, slotItems, now);
-
-        // Loc khoang gia tren gia hieu dung (cung gia voi sort + hien thi).
-        IEnumerable<Product> daLocGia = daLoc;
-        if (filter.GiaTu.HasValue)
-            daLocGia = daLocGia.Where(p => giaHieuDung[p.Id] >= filter.GiaTu.Value);
-        if (filter.GiaDen.HasValue)
-            daLocGia = daLocGia.Where(p => giaHieuDung[p.Id] <= filter.GiaDen.Value);
-
-        // Sort decimal + tie-breaker ThenBy(Id) o MOI nhanh: SP dong gia
-        // (vd Reno11 = iPad = 9.990.000d) co thu tu on dinh, khong trung/
-        // mat SP o bien trang.
-        var daSapXep = (filter.SapXep switch
+        if (canTinhGiaTruocPhanTrang)
         {
-            "gia-tang" => daLocGia.OrderBy(p => giaHieuDung[p.Id]).ThenBy(p => p.Id),
-            "gia-giam" => daLocGia.OrderByDescending(p => giaHieuDung[p.Id]).ThenBy(p => p.Id),
-            "ban-chay" => daLocGia.OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id),
-            "moi-nhat" => daLocGia.OrderByDescending(p => p.NgayTao).ThenBy(p => p.Id),
-            _ => daLocGia.OrderByDescending(p => p.LaNoiBat).ThenByDescending(p => p.LuotBan).ThenBy(p => p.Id),
-        }).ToList();
+            // Chỉ đọc cột dùng để tính giá và sắp xếp. Ảnh/đánh giá nạp theo trang.
+            var sanPham = await query.Select(p => new Product
+            {
+                Id = p.Id, Gia = p.Gia, GiaKhuyenMai = p.GiaKhuyenMai,
+                NgayTao = p.NgayTao, LuotBan = p.LuotBan, LaNoiBat = p.LaNoiBat,
+            }).ToListAsync();
+            var gia = await TinhGiaDanhMucAsync(sanPham, now);
+            var phuHop = sanPham.Where(p =>
+                (!filter.GiaTu.HasValue || gia[p.Id] >= filter.GiaTu.Value)
+                && (!filter.GiaDen.HasValue || gia[p.Id] <= filter.GiaDen.Value));
+            var daXep = filter.SapXep switch
+            {
+                "gia-tang" => phuHop.OrderBy(p => gia[p.Id]).ThenBy(p => p.Id),
+                "gia-giam" => phuHop.OrderByDescending(p => gia[p.Id]).ThenBy(p => p.Id),
+                "ban-chay" => phuHop.OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+                "moi-nhat" => phuHop.OrderByDescending(p => p.NgayTao).ThenBy(p => p.Id),
+                _ => phuHop.OrderByDescending(p => p.LaNoiBat).ThenByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+            };
+            var ids = daXep.Select(p => p.Id).ToList();
+            filter.GiaHieuDung = ids.ToDictionary(id => id, id => gia[id]);
+            CapNhatTrang(filter, ids.Count);
+            idsTrang = ids.Skip((filter.Trang - 1) * ProductFilterViewModel.SoMoiTrang)
+                .Take(ProductFilterViewModel.SoMoiTrang).ToList();
+        }
+        else
+        {
+            CapNhatTrang(filter, await query.CountAsync());
+            var daXep = filter.SapXep switch
+            {
+                "ban-chay" => query.OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+                "moi-nhat" => query.OrderByDescending(p => p.NgayTao).ThenBy(p => p.Id),
+                _ => query.OrderByDescending(p => p.LaNoiBat).ThenByDescending(p => p.LuotBan).ThenBy(p => p.Id),
+            };
+            idsTrang = await daXep.Skip((filter.Trang - 1) * ProductFilterViewModel.SoMoiTrang)
+                .Take(ProductFilterViewModel.SoMoiTrang).Select(p => p.Id).ToListAsync();
+        }
 
-        filter.TongSo = daSapXep.Count;
-        filter.GiaHieuDung = daSapXep.ToDictionary(p => p.Id, p => giaHieuDung[p.Id]);
+        var trang = await _db.Products.AsNoTracking().AsSplitQuery()
+            .Where(p => idsTrang.Contains(p.Id))
+            .Include(p => p.Images).Include(p => p.Category).Include(p => p.Brand)
+            .Include(p => p.Specs).Include(p => p.Reviews.Where(r => r.IsApproved))
+            .ToDictionaryAsync(p => p.Id);
+        filter.KetQua = idsTrang.Where(trang.ContainsKey).Select(id => trang[id]).ToList();
+        if (!canTinhGiaTruocPhanTrang)
+            filter.GiaHieuDung = await TinhGiaDanhMucAsync(filter.KetQua, now);
 
-        // Pagination: clamp Trang ve trang cuoi khi vuot TongTrang
-        // (TongTrang > 0); giu clamp Trang=0/am ve 1. TrangVuotGioiHan de
-        // view hien thong bao phan biet (khong phai "khong tim thay SP").
-        var tongTrang = filter.TongTrang;
-        filter.TrangVuotGioiHan = tongTrang > 0 && filter.Trang > tongTrang;
-        filter.TrangYeuCau = filter.Trang;
-        var trang = filter.Trang;
-        if (trang < 1) trang = 1;
-        else if (tongTrang == 0) trang = 1;
-        else if (trang > tongTrang) trang = tongTrang;
-        filter.Trang = trang;
-        var ketQuaTrang = daSapXep
-            .Skip((trang - 1) * ProductFilterViewModel.SoMoiTrang)
-            .Take(ProductFilterViewModel.SoMoiTrang)
-            .ToList();
-
-        // Gia listing hien thi = gia hieu dung: gan de GiaKhuyenMai cua SP
-        // trong trang hien tai (entity AsNoTracking, khong luu DB). Khi do
-        // _ProductCard hien GiaBan = gia hieu dung, gach Gia goc, badge -%
-        // tinh theo gia hieu dung — khop sort + loc gia + gia checkout.
-        // Gia hieu dung khong bao gio vuot GiaBan nen chi gan khi lech.
-        foreach (var p in ketQuaTrang)
-            if (giaHieuDung[p.Id] != p.GiaBan)
-                p.GiaKhuyenMai = giaHieuDung[p.Id];
-        filter.KetQua = ketQuaTrang;
+        foreach (var p in filter.KetQua)
+            if (filter.GiaHieuDung[p.Id] != p.GiaBan)
+                p.GiaKhuyenMai = filter.GiaHieuDung[p.Id];
 
         filter.DanhMuc = await _db.Categories.OrderBy(c => c.Ten).ToListAsync();
         filter.ThuongHieu = await _db.Brands.OrderBy(b => b.Ten).ToListAsync();
@@ -170,6 +140,26 @@ public class ProductsController : Controller
             .Where(s => s.Rom != null).Select(s => s.Rom!).Distinct().OrderBy(c => c).ToListAsync();
 
         return View(filter);
+    }
+
+    private static void CapNhatTrang(ProductFilterViewModel filter, int tongSo)
+    {
+        filter.TongSo = tongSo;
+        filter.TrangYeuCau = filter.Trang;
+        filter.TrangVuotGioiHan = filter.TongTrang > 0 && filter.Trang > filter.TongTrang;
+        filter.Trang = Math.Clamp(filter.Trang, 1, Math.Max(1, filter.TongTrang));
+    }
+
+    private async Task<Dictionary<int, decimal>> TinhGiaDanhMucAsync(List<Product> sanPham, DateTime now)
+    {
+        if (sanPham.Count == 0) return new Dictionary<int, decimal>();
+        var ids = sanPham.Select(p => p.Id).ToList();
+        var flashSales = await _db.FlashSales.AsNoTracking()
+            .Where(f => ids.Contains(f.ProductId) && f.BatDau <= now && f.KetThuc >= now).ToListAsync();
+        var slotItems = await _db.FlashSaleSlotItems.AsNoTracking().Include(i => i.Slot)
+            .Where(i => ids.Contains(i.ProductId) && i.Slot.IsActive
+                && now.Hour >= i.Slot.GioBatDau && now.Hour < i.Slot.GioKetThuc).ToListAsync();
+        return EffectivePriceCalculator.TinhBatch(sanPham, flashSales, slotItems, now);
     }
 
     public async Task<IActionResult> Details(int id)

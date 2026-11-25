@@ -8,7 +8,7 @@
 @if (Model is TechZone.Models.ReturnRequest r)
 {
     <p>Loại: <strong>Đổi trả</strong> • Mã yêu cầu: #@r.Id • Trạng thái: <strong>@r.TrangThai</strong></p>
-    <p>Đơn: <a asp-controller="Orders" asp-action="Details" asp-route-id="@r.OrderId">#@r.OrderId</a> • Sản phẩm: <strong>@r.Product.Ten</strong></p>
+    <p>Đơn: <a asp-controller="Orders" asp-action="Details" asp-route-id="@r.OrderId">#@r.OrderId</a> • Sản phẩm: <strong>@r.Product.Ten @r.OrderDetail?.Variant?.TenBienThe</strong></p>
     <p>Ngày tạo: @r.NgayTao.ToString("dd/MM/yyyy HH:mm")</p>
     <p>Lý do: @r.LyDo</p>
     @if (!string.IsNullOrEmpty(r.AnhUrl))

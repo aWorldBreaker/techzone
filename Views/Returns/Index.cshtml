@@ -24,7 +24,7 @@ else
                 <tr>
                     <td>#@r.Id</td>
                     <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@r.OrderId">#@r.OrderId</a></td>
-                    <td>@r.Product.Ten</td>
+                    <td>@r.Product.Ten @r.OrderDetail?.Variant?.TenBienThe</td>
                     <td>@r.LyDo</td>
                     <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                     <td>@r.TrangThai</td>

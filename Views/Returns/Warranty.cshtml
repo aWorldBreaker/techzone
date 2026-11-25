@@ -25,7 +25,7 @@
                     <td>
                         <a asp-action="Warranty" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Bảo hành</a>
                         |
-                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Đổi trả</a>
+                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-orderDetailId="@d.Id">Đổi trả</a>
                     </td>
                 </tr>
             }

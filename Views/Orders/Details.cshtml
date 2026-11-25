@@ -23,10 +23,10 @@
     <p>Trả góp 0% (giả lập): @Model.TienGopMoiThang.ToString("N0")đ/tháng × @Model.InstallmentMonths tháng</p>
 }
 
+<p>Trạng thái thanh toán: <strong>@(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</strong></p>
 @if (laVi)
 {
-    <p>Trạng thái thanh toán: <strong>@(Model.DaThanhToan ? "Đã thanh toán" : "Chưa thanh toán")</strong></p>
-    @if (!Model.DaThanhToan && laChuDon)
+    @if (!Model.DaThanhToan && laChuDon && Model.TrangThai != OrderStatus.DaHuy)
     {
         <form asp-action="XacNhanThanhToan" method="post" class="inline-form">
             <input type="hidden" name="id" value="@Model.Id" />

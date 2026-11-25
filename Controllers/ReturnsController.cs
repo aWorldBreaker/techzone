@@ -67,7 +67,7 @@ public class ReturnsController : Controller
             try
             {
                 if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
-                    return RedirectToAction("TongQuan", "Admin");
+                    return RedirectToAction("TongQuan", "Admin", new { muc = "returns" });
             }
             catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
         }
@@ -82,8 +82,21 @@ public class ReturnsController : Controller
 
     /// <summary>Don cua user hien tai kem chi tiet (de kiem tra SP co trong don).</summary>
     private Task<Order?> LayDonCuaUserAsync(int orderId, string? userId) =>
-        _db.Orders.Include(o => o.ChiTiet).ThenInclude(d => d.Product)
-            .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+        userId is null
+            ? Task.FromResult<Order?>(null)
+            : _db.Orders.Include(o => o.ChiTiet).ThenInclude(d => d.Product)
+                .Include(o => o.ChiTiet).ThenInclude(d => d.Variant)
+                .FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+
+    private static OrderDetail? ChonDongDoiTra(Order order, int productId, int? orderDetailId)
+    {
+        if (orderDetailId.HasValue)
+            return order.ChiTiet.FirstOrDefault(d => d.Id == orderDetailId.Value
+                && (productId == 0 || d.ProductId == productId));
+
+        var dong = order.ChiTiet.Where(d => d.ProductId == productId).Take(2).ToArray();
+        return dong.Length == 1 ? dong[0] : null;
+    }
 
     /// <summary>
     /// Sprint 3 — Admin: chi doi tra don DangGiao / DaGiao (giong dieu kien
@@ -104,7 +117,7 @@ public class ReturnsController : Controller
             .Where(w => w.UserId == userId)
             .OrderByDescending(w => w.NgayTao).ToListAsync();
         var list = await _db.ReturnRequests
-            .Include(r => r.Product).Include(r => r.Order)
+            .Include(r => r.Product).Include(r => r.OrderDetail).ThenInclude(d => d!.Variant).Include(r => r.Order)
             .Where(r => r.UserId == userId)
             .OrderByDescending(r => r.NgayTao).ToListAsync();
         return View(list);
@@ -113,7 +126,7 @@ public class ReturnsController : Controller
     // --- Doi tra ---
     [HttpGet]
     [Authorize]
-    public async Task<IActionResult> Create(int orderId, int productId = 0)
+    public async Task<IActionResult> Create(int orderId, int productId = 0, int? orderDetailId = null)
     {
         var order = await LayDonCuaUserAsync(orderId, LayUserIdHienTai());
         if (order is null) return NotFound();
@@ -136,22 +149,27 @@ public class ReturnsController : Controller
             return RedirectToAction(nameof(Index));
         }
         // Chua chon SP: view hien danh sach SP trong don de chon.
-        if (productId == 0)
+        if (productId == 0 && orderDetailId is null)
         {
             ViewBag.Order = order;
             return View(new ReturnRequest { OrderId = orderId });
         }
-        var detail = order.ChiTiet.FirstOrDefault(d => d.ProductId == productId);
-        if (detail is null) return NotFound();
+        var detail = ChonDongDoiTra(order, productId, orderDetailId);
+        if (detail is null)
+        {
+            if (orderDetailId is null && order.ChiTiet.Any(d => d.ProductId == productId))
+                return RedirectToAction(nameof(Create), new { orderId });
+            return NotFound();
+        }
         ViewBag.Order = order;
-        ViewBag.Product = detail.Product;
-        return View(new ReturnRequest { OrderId = orderId, ProductId = productId });
+        ViewBag.OrderDetail = detail;
+        return View(new ReturnRequest { OrderId = orderId, ProductId = detail.ProductId, OrderDetailId = detail.Id });
     }
 
     [HttpPost]
     [Authorize]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(int orderId, int productId, string lyDo, IFormFile? anhKem)
+    public async Task<IActionResult> Create(int orderId, int productId, string lyDo, IFormFile? anhKem, int? orderDetailId = null)
     {
         var userId = LayUserIdHienTai();
         var order = await LayDonCuaUserAsync(orderId, userId);
@@ -163,11 +181,12 @@ public class ReturnsController : Controller
                 : $"Chỉ đổi trả được đơn đang giao hoặc đã giao (đơn hiện “{order.TrangThai}”). Đơn chưa giao thì hủy đơn thay vì đổi trả.";
             return RedirectToAction("Details", "Orders", new { id = orderId });
         }
-        if (!order.ChiTiet.Any(d => d.ProductId == productId)) return NotFound();
-        if (string.IsNullOrWhiteSpace(lyDo))
+        var detail = ChonDongDoiTra(order, productId, orderDetailId);
+        if (detail is null) return NotFound();
+        if (string.IsNullOrWhiteSpace(lyDo) || lyDo.Trim().Length > 1000)
         {
-            TempData["Error"] = "Vui lòng nhập lý do đổi trả.";
-            return RedirectToAction(nameof(Create), new { orderId, productId });
+            TempData["Error"] = "Vui lòng nhập lý do đổi trả (tối đa 1.000 ký tự).";
+            return RedirectToAction(nameof(Create), new { orderId, orderDetailId = detail.Id });
         }
         // Step 4 — chong trung: da co yeu cau doi tra dang mo cho don nay
         // ("Chờ duyệt" / "Đã duyệt") thi chan, ke ca SP khac trong cung
@@ -188,12 +207,12 @@ public class ReturnsController : Controller
             if (!duoiHopLe.Contains(duoi))
             {
                 TempData["Error"] = "Chỉ nhận ảnh .jpg, .jpeg, .png hoặc .webp.";
-                return RedirectToAction(nameof(Create), new { orderId, productId });
+                return RedirectToAction(nameof(Create), new { orderId, orderDetailId = detail.Id });
             }
             if (anhKem.Length > 5 * 1024 * 1024)
             {
                 TempData["Error"] = "Ảnh tối đa 5MB.";
-                return RedirectToAction(nameof(Create), new { orderId, productId });
+                return RedirectToAction(nameof(Create), new { orderId, orderDetailId = detail.Id });
             }
             var tenFile = $"{Guid.NewGuid():N}{duoi}";
             var thuMuc = Path.Combine(_env.WebRootPath, "images");
@@ -206,7 +225,8 @@ public class ReturnsController : Controller
         _db.ReturnRequests.Add(new ReturnRequest
         {
             OrderId = orderId,
-            ProductId = productId,
+            ProductId = detail.ProductId,
+            OrderDetailId = detail.Id,
             UserId = userId,
             LyDo = lyDo.Trim(),
             AnhUrl = anhUrl,
@@ -326,7 +346,7 @@ public class ReturnsController : Controller
             return View((object)claim);
         }
         var yeuCau = await _db.ReturnRequests
-            .Include(r => r.Product).Include(r => r.Order)
+            .Include(r => r.Product).Include(r => r.OrderDetail).ThenInclude(d => d!.Variant).Include(r => r.Order)
             .FirstOrDefaultAsync(r => r.Id == id);
         if (yeuCau is null) return NotFound();
         // SEC-05: nhu tren — Forbid() -> NotFound().
@@ -341,7 +361,7 @@ public class ReturnsController : Controller
     {
         ViewBag.TrangThai = trangThai;
         var queryDoiTra = _db.ReturnRequests
-            .Include(r => r.Product).Include(r => r.Order).Include(r => r.User)
+            .Include(r => r.Product).Include(r => r.OrderDetail).ThenInclude(d => d!.Variant).Include(r => r.Order).Include(r => r.User)
             .AsQueryable();
         var queryBaoHanh = _db.WarrantyClaims
             .Include(w => w.Product).Include(w => w.Order).Include(w => w.User)

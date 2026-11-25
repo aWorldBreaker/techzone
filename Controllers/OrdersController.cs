@@ -429,7 +429,8 @@ public class OrdersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Huy(int id)
     {
-        var userId = _db.Users.FirstOrDefault(u => u.UserName == User.Identity!.Name)?.Id;
+        var userId = LayUserIdHienTai();
+        if (userId is null) return Challenge();
         var order = await _db.Orders
             .AsNoTracking()
             .FirstOrDefaultAsync(o => o.Id == id && o.UserId == userId);
@@ -452,7 +453,8 @@ public class OrdersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DoiDiaChi(int id, string hoTenNhan, string soDienThoai, string diaChi)
     {
-        var userId = _db.Users.FirstOrDefault(u => u.UserName == User.Identity!.Name)?.Id;
+        var userId = LayUserIdHienTai();
+        if (userId is null) return Challenge();
         var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id && o.UserId == userId);
         if (order is null) return NotFound();
         if (order.TrangThai is not (OrderStatus.ChoXacNhan or OrderStatus.DaXacNhan))
@@ -466,8 +468,15 @@ public class OrdersController : Controller
             TempData["Error"] = "Vui lòng nhập đủ họ tên, số điện thoại và địa chỉ.";
             return RedirectToAction(nameof(Details), new { id });
         }
-        order.DiaChiGiao = $"{hoTenNhan.Trim()}, {soDienThoai.Trim()}, {diaChi.Trim()}";
-        await _db.SaveChangesAsync();
+        var diaChiMoi = $"{hoTenNhan.Trim()}, {soDienThoai.Trim()}, {diaChi.Trim()}";
+        var capNhat = await _db.Orders.Where(o => o.Id == id && o.UserId == userId
+                && (o.TrangThai == OrderStatus.ChoXacNhan || o.TrangThai == OrderStatus.DaXacNhan))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.DiaChiGiao, diaChiMoi));
+        if (capNhat == 0)
+        {
+            TempData["Error"] = "Đơn đã chuyển trạng thái. Vui lòng tải lại.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
         TempData["Success"] = "Đã cập nhật địa chỉ giao hàng.";
         return RedirectToAction(nameof(Details), new { id });
     }
@@ -544,17 +553,24 @@ public class OrdersController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> XacNhanThanhToan(int id)
     {
-        var userId = _db.Users.FirstOrDefault(u => u.UserName == User.Identity!.Name)?.Id;
+        var userId = LayUserIdHienTai();
+        if (userId is null) return Challenge();
         var order = await _db.Orders.FirstOrDefaultAsync(o => o.Id == id && o.UserId == userId);
         if (order is null) return NotFound();
         var laVi = new[] { "MoMo", "ZaloPay", "VNPay" }.Contains(order.PhuongThucTT);
-        if (!laVi || order.DaThanhToan)
+        if (!laVi || order.DaThanhToan || order.TrangThai == OrderStatus.DaHuy)
         {
             TempData["Error"] = "Chỉ xác nhận được thanh toán ví (MoMo/ZaloPay/VNPay) chưa thanh toán.";
             return RedirectToAction(nameof(Details), new { id });
         }
-        order.DaThanhToan = true;
-        await _db.SaveChangesAsync();
+        var soDong = await _db.Orders
+            .Where(o => o.Id == id && !o.DaThanhToan && o.TrangThai != OrderStatus.DaHuy)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.DaThanhToan, true));
+        if (soDong == 0)
+        {
+            TempData["Error"] = "Trạng thái thanh toán hoặc trạng thái đơn vừa thay đổi.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
         TempData["Success"] = $"Đã ghi nhận thanh toán {order.PhuongThucTT} cho đơn #{id} (giả lập).";
         return RedirectToAction(nameof(Details), new { id });
     }

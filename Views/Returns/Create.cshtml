@@ -7,7 +7,7 @@
 <h1>Yêu cầu đổi trả</h1>
 <p>Đơn #@order.Id • Ngày đặt: @order.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
 
-@if (Model.ProductId == 0)
+@if (Model.OrderDetailId is null)
 {
     <p>Chọn sản phẩm trong đơn cần đổi trả:</p>
     <table class="table">
@@ -18,10 +18,10 @@
             @foreach (var d in order.ChiTiet)
             {
                 <tr>
-                    <td>@d.Product.Ten</td>
+                    <td>@d.Product.Ten @d.Variant?.TenBienThe</td>
                     <td>@d.SoLuong</td>
                     <td>
-                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Đổi trả</a>
+                        <a asp-action="Create" asp-route-orderId="@order.Id" asp-route-orderDetailId="@d.Id">Đổi trả</a>
                         |
                         <a asp-action="Warranty" asp-route-orderId="@order.Id" asp-route-productId="@d.ProductId">Bảo hành</a>
                     </td>
@@ -33,14 +33,14 @@
 }
 else
 {
-    var product = (TechZone.Models.Product)ViewBag.Product;
-    <p>Sản phẩm: <strong>@product.Ten</strong></p>
+    var detail = (TechZone.Models.OrderDetail)ViewBag.OrderDetail;
+    <p>Sản phẩm: <strong>@detail.Product.Ten @detail.Variant?.TenBienThe</strong></p>
     <form asp-action="Create" method="post" enctype="multipart/form-data" class="return-form">
         <input type="hidden" asp-for="OrderId" />
-        <input type="hidden" asp-for="ProductId" />
+        <input type="hidden" asp-for="OrderDetailId" />
         <div class="form-group">
             <label asp-for="LyDo">Lý do đổi trả</label>
-            <textarea asp-for="LyDo" class="form-control" rows="4" required></textarea>
+            <textarea asp-for="LyDo" class="form-control" rows="4" maxlength="1000" required></textarea>
             <span asp-validation-for="LyDo" class="text-danger"></span>
         </div>
         <div class="form-group">

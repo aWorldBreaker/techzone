@@ -193,12 +193,12 @@ public class AdminWave1Tests
         // C6: panel TongQuan het `hidden` cung; JS an sau khi load.
         var tq = Doc("Views", "Admin", "TongQuan.cshtml");
         Assert.DoesNotContain("role=\"tabpanel\" aria-label=\"Sản phẩm\" hidden", tq);
-        Assert.Contains("stat-delta", tq);
-        Assert.Contains("DonChoXuLy", tq);
-        Assert.Contains("DonDaHuy", tq);
+        Assert.DoesNotContain("stat-delta", tq);
+        Assert.DoesNotContain("DonChoXuLy", tq);
+        Assert.DoesNotContain("DonDaHuy", tq);
         var js = Doc("wwwroot", "js", "admin.js");
         Assert.Contains("toggle.focus()", js);
-        Assert.Contains("chonTab('dashboard')", js);
+        Assert.Contains("asp-route-muc=", tq);
 
         // A5: bo cot Phien ban trong o OrderDetails.
         Assert.DoesNotContain("Phiên bản", Doc("Views", "Admin", "OrderDetails.cshtml"));

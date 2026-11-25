@@ -297,6 +297,86 @@ public class RollbackTests
     // ============ Tra het don (2 dong, 2 yeu cau): hoan voucher o lan duyet cuoi ============
 
     [Fact]
+    public async Task DoiTra_HaiBienTheCungSanPham_HoanDungDongVaPhiShipKhiTraHet()
+    {
+        var db = TempDbPath();
+        try
+        {
+            var services = BuildServices(db);
+            var productId = await SeedProductAsync(services, "Điện thoại", "Test", 500_000, tonKho: 10);
+            await SeedUserAsync(services, "user-variants");
+            int orderId;
+            int dongCoBan;
+            int dongNangCap;
+            using (var scope = services.CreateScope())
+            {
+                var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var coBan = new ProductVariant { ProductId = productId, TenBienThe = "128 GB" };
+                var nangCap = new ProductVariant { ProductId = productId, TenBienThe = "256 GB", GiaThem = 200_000 };
+                ctx.ProductVariants.AddRange(coBan, nangCap);
+                await ctx.SaveChangesAsync();
+                var result = await scope.ServiceProvider.GetRequiredService<CheckoutService>().DatHangAsync(new CheckoutInput
+                {
+                    UserId = "user-variants", HoTenNhan = "Test", SoDienThoai = "0900000000",
+                    DiaChi = "Test", PhuongThucTT = "COD", IdempotencyKey = "return-two-variants",
+                    Lines = new()
+                    {
+                        new(productId, coBan.Id, 1, 500_000),
+                        new(productId, nangCap.Id, 2, 700_000),
+                    },
+                });
+                Assert.True(result.ThanhCong, result.Loi);
+                var order = result.DonHang!;
+                orderId = order.Id;
+                Assert.Equal(30_000, order.PhiShip);
+                dongCoBan = Assert.Single(order.ChiTiet, d => d.VariantId == coBan.Id).Id;
+                dongNangCap = Assert.Single(order.ChiTiet, d => d.VariantId == nangCap.Id).Id;
+            }
+
+            using (var scope = services.CreateScope())
+            {
+                var admin = new TechZone.Controllers.AdminController(
+                    scope.ServiceProvider.GetRequiredService<AppDbContext>(), null!,
+                    scope.ServiceProvider.GetRequiredService<OrderService>());
+                admin.TempData = new Microsoft.AspNetCore.Mvc.ViewFeatures.TempDataDictionary(
+                    new Microsoft.AspNetCore.Http.DefaultHttpContext(),
+                    new LuuTempDataTrongTest());
+                await admin.XacNhanThuCod(orderId);
+                Assert.False(await scope.ServiceProvider.GetRequiredService<AppDbContext>()
+                    .Orders.Where(o => o.Id == orderId).Select(o => o.DaThanhToan).SingleAsync());
+                await ChuyenDenDaGiaoAsync(services, orderId);
+                await admin.XacNhanThuCod(orderId);
+                Assert.True(await scope.ServiceProvider.GetRequiredService<AppDbContext>()
+                    .Orders.Where(o => o.Id == orderId).Select(o => o.DaThanhToan).SingleAsync());
+            }
+
+            var yeuCauCu = await TaoYeuCauAsync(services, orderId, productId, "user-variants", "Thiếu dòng");
+            Assert.False((await DuyetAsync(services, yeuCauCu, "Đã duyệt")).ThanhCong);
+
+            var ycNangCap = await TaoYeuCauAsync(services, orderId, productId, "user-variants", "Trả 256 GB", dongNangCap);
+            var kqNangCap = await DuyetAsync(services, ycNangCap, "Đã duyệt");
+            Assert.True(kqNangCap.ThanhCong, kqNangCap.Loi);
+            Assert.Equal(9, await GetTonKhoAsync(services, productId));
+            Assert.Equal(1_400_000, Assert.Single(await LayHoanAsync(services, orderId)).SoTien);
+
+            var ycCoBan = await TaoYeuCauAsync(services, orderId, productId, "user-variants", "Trả 128 GB", dongCoBan);
+            var kqCoBan = await DuyetAsync(services, ycCoBan, "Đã duyệt");
+            Assert.True(kqCoBan.ThanhCong, kqCoBan.Loi);
+            Assert.Equal(10, await GetTonKhoAsync(services, productId));
+            Assert.Equal(1_930_000, (await LayHoanAsync(services, orderId)).Sum(h => h.SoTien));
+        }
+        finally { DeleteDb(db); }
+    }
+
+    private sealed class LuuTempDataTrongTest : Microsoft.AspNetCore.Mvc.ViewFeatures.ITempDataProvider
+    {
+        public IDictionary<string, object> LoadTempData(Microsoft.AspNetCore.Http.HttpContext context) =>
+            new Dictionary<string, object>();
+
+        public void SaveTempData(Microsoft.AspNetCore.Http.HttpContext context, IDictionary<string, object> values) { }
+    }
+
+    [Fact]
     public async Task DoiTra_TraHetDon_HoanVoucher_TongHoanDungTongTien()
     {
         var db = TempDbPath();
@@ -629,7 +709,7 @@ public class RollbackTests
     }
 
     private static async Task<int> TaoYeuCauAsync(ServiceProvider services, int orderId,
-        int productId, string userId, string lyDo)
+        int productId, string userId, string lyDo, int? orderDetailId = null)
     {
         using var scope = services.CreateScope();
         var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -637,6 +717,7 @@ public class RollbackTests
         {
             OrderId = orderId,
             ProductId = productId,
+            OrderDetailId = orderDetailId,
             UserId = userId,
             LyDo = lyDo,
             TrangThai = "Chờ duyệt",

@@ -13,6 +13,8 @@ public class ReturnRequest
     public Order Order { get; set; } = null!;
     public int ProductId { get; set; }
     public Product Product { get; set; } = null!;
+    public int? OrderDetailId { get; set; }
+    public OrderDetail? OrderDetail { get; set; }
 
     public string? UserId { get; set; }
     public ApplicationUser? User { get; set; }

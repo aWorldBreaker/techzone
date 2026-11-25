@@ -45,7 +45,7 @@ public class AdminWave3Tests
                 await ctx.Database.MigrateAsync();
                 ctx.Orders.AddRange(
                     new Order { TrangThai = OrderStatus.DaGiao, NgayDat = new DateTime(2026, 11, 12, 9, 15, 0), TongTien = 1_000_000, PhiShip = 20_000, DiaChiGiao = "Nguyễn Test, 0901111222, Hà Nội" },
-                    new Order { TrangThai = OrderStatus.ChoXacNhan, NgayDat = new DateTime(2026, 11, 12, 10, 30, 0), TongTien = 500_000, PhiShip = 0, DiaChiGiao = "Trần Test, 0901333444, TP.HCM" },
+                    new Order { TrangThai = OrderStatus.ChoXacNhan, NgayDat = new DateTime(2026, 11, 12, 10, 30, 0), TongTien = 500_000, PhiShip = 0, DiaChiGiao = "+Trần Test, 0901333444, TP.HCM" },
                     // Ten khach co dau " — phai escape thanh "" trong CSV.
                     new Order { TrangThai = OrderStatus.DaGiao, NgayDat = new DateTime(2026, 11, 11, 8, 0, 0), TongTien = 300_000, PhiShip = 0, DiaChiGiao = "Lê \"Biệt danh\" Test, 0901555666, Đà Nẵng" });
                 await ctx.SaveChangesAsync();
@@ -67,7 +67,7 @@ public class AdminWave3Tests
                 Assert.Equal("Mã đơn,Ngày đặt,Khách hàng,Trạng thái,Tổng tiền (đ)", dong[0].Trim());
                 // Don moi nhat len dau (Tran 10:30), roi Nguyen (09:15);
                 // tong Nguyen = TongTien + PhiShip = 1.020.000.
-                Assert.Contains("Trần Test", dong[1]);
+                Assert.Contains(",'+Trần Test,", dong[1]);
                 Assert.Contains(",500000", dong[1]);
                 Assert.Contains("Nguyễn Test", dong[2]);
                 Assert.Contains(",1020000", dong[2]);
@@ -310,23 +310,18 @@ public class AdminWave3Tests
         Assert.Contains("OrderDetails", js);
         Assert.Contains("querySelectorAll('form')", js);
 
-        // C1: tablist ARIA + roving tabindex + focus panel.
-        Assert.Contains("aria-controls=\"tq-dashboard\"", tq);
-        Assert.Contains("aria-labelledby=\"tq-tab-dashboard\"", tq);
-        Assert.Contains("tabindex=\"-1\"", tq);
-        Assert.Contains("tabindex=\"0\"", tq);
-        Assert.Contains("ArrowRight", js);
-        Assert.Contains("Home", js);
-        Assert.Contains("tabIndex = active ? 0 : -1", js);
-        Assert.Contains("focusPanel", js);
+        // Các mục thao tác là liên kết có URL riêng và dùng được khi tắt JavaScript.
+        Assert.Contains("asp-route-muc=", tq);
+        Assert.Contains("aria-current=", tq);
+        Assert.DoesNotContain("role=\"tablist\"", tq);
 
-        // C3: bang 30 ngay o ca 2 chart.
+        // Bảng số liệu 30 ngày thuộc Dashboard.
         var dash = Doc("Views", "Admin", "Dashboard.cshtml");
         Assert.Contains("chart-data-table", dash);
         Assert.Contains("DoanhThu30Ngay", dash);
         Assert.Contains("Doanh thu từng ngày", dash);
-        Assert.Contains("chart-data-table", tq);
-        Assert.Contains("Doanh thu từng ngày", tq);
+        Assert.DoesNotContain("chart-data-table", tq);
+        Assert.DoesNotContain("Doanh thu từng ngày", tq);
         Assert.Contains("tabindex=\"0\"", dash); // chart Dashboard goc (A4 Dot 2) van con
 
         // C4 + C5: CSS co cham 44px + card mobile + tab cuon + chart vua 390.

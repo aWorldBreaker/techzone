@@ -43,109 +43,71 @@ public class AdminTongQuanTests
 
     public AdminTongQuanTests(ITestOutputHelper output) => _out = output;
 
-    // ============ (a) TongQuan: du 12 section, du lieu that tu seed ============
-
     [Fact]
-    public async Task TongQuan_SeedDayDu_TraVeDu12Section_VoiDuLieuThat()
+    public async Task TongQuan_TaiRiengTungMucVaGioiHanXemNhanh()
     {
         var db = TempDbPath();
         try
         {
             var services = BuildServices(db);
             await SeedFullAsync(services);
+            using var scope = services.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var admin = new AdminController(ctx, null!, scope.ServiceProvider.GetRequiredService<OrderService>());
+            async Task<TongQuanViewModel> Load(string? muc = null) =>
+                Assert.IsType<TongQuanViewModel>(Assert.IsType<ViewResult>(await admin.TongQuan(muc)).Model);
 
-            TongQuanViewModel vm;
-            using (var scope = services.CreateScope())
-            {
-                var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                var orders = scope.ServiceProvider.GetRequiredService<OrderService>();
-                var admin = new AdminController(ctx, null!, orders);
-                GanTempData(admin);
-                var ketQua = await admin.TongQuan();
-                var view = Assert.IsType<ViewResult>(ketQua);
-                Assert.True(view.ViewName is null or "TongQuan");
-                vm = Assert.IsType<TongQuanViewModel>(view.Model);
-            }
+            var products = await Load();
+            Assert.Equal("products", products.Muc);
+            Assert.Equal(13, products.Products.Count);
+            Assert.Empty(products.DonGanDay);
+            Assert.Empty(products.Vouchers);
+            Assert.Equal(12_990_000, Assert.Single(products.Products, p => p.Ten == "Xiaomi 15 5G").GiaBan);
+            Assert.Equal("products", (await Load("unknown")).Muc);
 
-            // 1. Dashboard (dung helper chung) + don gan nhat.
-            Assert.NotNull(vm.Dashboard);
-            Assert.Equal(3, vm.Dashboard.TongDon);
-            Assert.Equal(13, vm.Dashboard.TongSanPham);
-            Assert.Equal(30, vm.Dashboard.DoanhThu30Ngay.Count);
-            Assert.NotNull(vm.Dashboard.TopBanChay);
-            Assert.NotNull(vm.Dashboard.SapHetHang);
-            Assert.Equal(3, vm.DonGanDay.Count);
-            Assert.Equal(3, vm.DonTheoTrangThai.Values.Sum());
+            var orders = await Load("orders");
+            Assert.Equal(3, orders.DonGanDay.Count);
+            Assert.Empty(orders.Products);
+            Assert.Equal("khach@techzone.vn", Assert.Single((await Load("customers")).KhachHang).User.Email);
+            Assert.Contains((await Load("vouchers")).Vouchers, v => v.Ma == "TECHZONE500");
+            Assert.Equal(2, (await Load("combos")).Combos.Count);
+            Assert.Equal(3, (await Load("flashsale")).FlashSaleSlots.Count);
+            Assert.Equal(2, (await Load("banners")).Banners.Count);
+            var reviews = await Load("reviews");
+            Assert.Empty(reviews.ReviewsChoDuyet);
+            Assert.Equal(4, reviews.ReviewsDaDuyetGanDay.Count);
+            Assert.Single(reviews.CauHoiChuaTraLoi);
+            var stock = await Load("stock");
+            Assert.Equal(13, stock.SanPhamKho.Count);
+            Assert.Equal(3, stock.NhapKhoGanDay.Count);
+            var notifications = await Load("notifications");
+            Assert.Equal(2, notifications.ThongBaoGanDay.Count);
+            Assert.Single(notifications.NguoiNhanThongBao);
+            var returns = await Load("returns");
+            Assert.Equal("Chờ duyệt", Assert.Single(returns.DoiTraChoDuyet).TrangThai);
+            Assert.Empty(returns.BaoHanhChoDuyet);
 
-            // 2. San pham: SP that + gia that (GiaKhuyenMai ?? Gia).
-            Assert.Equal(13, vm.Products.Count);
-            var xiaomi = Assert.Single(vm.Products, p => p.Ten == "Xiaomi 15 5G");
-            Assert.Equal(12_990_000, xiaomi.GiaBan);
-            Assert.Equal(15_990_000, xiaomi.Gia);
-            Assert.Equal(24, xiaomi.TonKho);
-
-            // 3-4. Don hang + khach hang (tru admin).
-            Assert.Equal(3, vm.DonGanDay.Count);
-            Assert.Single(vm.KhachHang);
-            Assert.Equal("khach@techzone.vn", vm.KhachHang[0].User.Email);
-
-            // 5-8. Voucher / Combo / Flash Sale / Banner.
-            Assert.Equal(5, vm.Vouchers.Count);
-            Assert.Contains(vm.Vouchers, v => v.Ma == "TECHZONE500");
-            Assert.Equal(2, vm.Combos.Count);
-            Assert.Equal(3, vm.FlashSaleSlots.Count);
-            Assert.Equal(2, vm.Banners.Count);
-
-            // 9. Danh gia & hoi dap: seed co 0 cho duyet (empty state) + 4 da duyet + 1 cau hoi chua tra loi.
-            Assert.Empty(vm.ReviewsChoDuyet);
-            Assert.Equal(4, vm.ReviewsDaDuyetGanDay.Count);
-            Assert.Single(vm.CauHoiChuaTraLoi);
-
-            // 10. Kho: 13 SP sap theo ten + 3 lan nhap kho mau.
-            Assert.Equal(13, vm.SanPhamKho.Count);
-            Assert.Equal(3, vm.NhapKhoGanDay.Count);
-
-            // 11. Thong bao: 2 thong bao mau + 1 nguoi nhan (tru admin).
-            Assert.Equal(2, vm.ThongBaoGanDay.Count);
-            Assert.Single(vm.NguoiNhanThongBao);
-
-            // 12. Doi tra / Bao hanh: 1 doi tra cho duyet, 0 bao hanh.
-            Assert.Single(vm.DoiTraChoDuyet);
-            Assert.Equal("Chờ duyệt", vm.DoiTraChoDuyet[0].TrangThai);
-            Assert.Empty(vm.BaoHanhChoDuyet);
+            for (var i = 0; i < 25; i++)
+                ctx.Banners.Add(new Banner { TieuDe = $"Banner {i}" });
+            await ctx.SaveChangesAsync();
+            Assert.Equal(25, (await Load("banners")).Banners.Count);
         }
         finally { DeleteDb(db); }
     }
 
-    // ============ (a2) View .cshtml: du 12 section, khong du lieu gia ============
-
     [Fact]
-    public void TongQuan_View_Du12Section_KhongDuLieuGia_KhongGoiYDemo()
+    public void TongQuan_CoLienKetMucVaGiuMucSauKhiGuiForm()
     {
         var projectDir = Path.GetDirectoryName(FindTechZoneProject())!;
         var view = File.ReadAllText(Path.Combine(projectDir, "Views", "Admin", "TongQuan.cshtml"));
 
         Assert.Contains("Trang tổng hợp", view);
-        foreach (var tieuDe in new[]
-        {
-            "Dashboard", "Sản phẩm", "Đơn hàng", "Khách hàng", "Voucher", "Combo",
-            "Flash Sale", "Banner", "Đánh giá", "Kho", "Thông báo", "Đổi trả / Bảo hành",
-        })
-            Assert.Contains(tieuDe, view);
-
-        // Dung 12 panel (data-tongquan-panel) + 12 tab.
-        Assert.Equal(12, Regex.Matches(view, "data-tongquan-panel=").Count);
-        Assert.Equal(12, Regex.Matches(view, "data-tongquan-tab=").Count);
-
-        // Moi form thao tac nhanh deu kem hidden tuTrang=TongQuan.
-        Assert.True(Regex.Matches(view, "name=\"tuTrang\" value=\"TongQuan\"").Count >= 10,
-            "Thieu hidden tuTrang=TongQuan o form thao tac nhanh.");
-
-        // Du lieu that lay tu DB qua model — view khong hard-code ten/gia SP, khong goi y demo.
+        Assert.Contains("asp-route-muc=", view);
+        Assert.Contains("aria-current=", view);
+        Assert.Equal(11, Regex.Matches(view, "<section class=").Count);
+        Assert.True(Regex.Matches(view, "name=\"muc\"").Count >= 10);
+        Assert.DoesNotContain("chart-data-table", view);
         Assert.DoesNotContain("Xiaomi 15", view);
-        Assert.DoesNotContain("12.990.000", view);
-        Assert.DoesNotContain("demo", view, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("admin@techzone.vn", view);
     }
 
     // ============ (b)/(c) Auth: chi role Admin (reflection) ============
@@ -328,13 +290,9 @@ public class AdminTongQuanTests
             Assert.Equal(3, dash.TongDon);
             Assert.Equal(13, dash.TongSanPham);
 
-            var tongQuanKetQua = await admin.TongQuan();
+            var tongQuanKetQua = await admin.TongQuan("customers");
             var tongQuan = Assert.IsType<TongQuanViewModel>(
                 Assert.IsType<ViewResult>(tongQuanKetQua).Model);
-            Assert.Equal(tongQuan.Dashboard.TongDon, dash.TongDon);
-            Assert.Equal(tongQuan.Dashboard.TongSanPham, dash.TongSanPham);
-            Assert.Equal(tongQuan.Dashboard.DonMoi, dash.DonMoi);
-            Assert.Equal(tongQuan.Dashboard.DoanhThuThang, dash.DoanhThuThang);
 
             var khKetQua = await admin.KhachHang();
             var khView = Assert.IsType<ViewResult>(khKetQua);
@@ -421,6 +379,17 @@ public class AdminTongQuanTests
             Assert.True(body.Contains("12.990.000") || body.Contains("12,990,000"),
                 "Khong thay gia that cua Xiaomi 15 (12.990.000 / 12,990,000) trong HTML TongQuan.");
             _out.WriteLine("admin /Admin/TongQuan -> 200, du tieu de + Xiaomi 15 + 12.990.000");
+            Assert.Contains("id=\"tq-products\"", body);
+            Assert.DoesNotContain("id=\"tq-orders\"", body);
+            Assert.DoesNotContain("chart-data-table", body);
+            var orderBody = await CurlBodyAsync(port, "/Admin/TongQuan?muc=orders", jarAdmin);
+            Assert.NotNull(orderBody);
+            Assert.Contains("id=\"tq-orders\"", orderBody);
+            Assert.DoesNotContain("id=\"tq-products\"", orderBody);
+            var dashboardBody = await CurlBodyAsync(port, "/Admin/Dashboard", jarAdmin);
+            Assert.NotNull(dashboardBody);
+            Assert.Contains("chart-data-table", dashboardBody);
+            Assert.DoesNotContain("id=\"tq-orders\"", dashboardBody);
 
             // (c) Login khach (non-admin) -> GET /Admin/TongQuan 302 ve /Account/Login.
             await LoginAsync(port, jarKhach, "khach@techzone.vn", "KhachTest123", "/");
@@ -675,7 +644,7 @@ public class AdminTongQuanTests
 
     private static async Task<string?> CurlStatusAsync(int port, string path)
     {
-        var raw = await CurlRawAsync("-s", "-o", "/dev/null", "-w", "%{http_code}",
+        var raw = await CurlRawAsync("-s", "-o", OperatingSystem.IsWindows() ? "NUL" : "/dev/null", "-w", "%{http_code}",
             "--max-time", "10", $"http://127.0.0.1:{port}{path}");
         var code = raw?.Trim();
         return code is not null && code.Length == 3 ? code : null;
@@ -684,7 +653,7 @@ public class AdminTongQuanTests
     private static async Task<(string? Code, string Redirect)> CurlStatusRedirectAsync(
         int port, string path, string? cookieJar = null)
     {
-        var args = new List<string> { "-s", "-o", "/dev/null", "-w", "%{http_code}|%{redirect_url}",
+        var args = new List<string> { "-s", "-o", OperatingSystem.IsWindows() ? "NUL" : "/dev/null", "-w", "%{http_code}|%{redirect_url}",
             "--max-time", "10" };
         if (cookieJar is not null) args.AddRange(new[] { "-b", cookieJar });
         args.Add($"http://127.0.0.1:{port}{path}");
@@ -714,7 +683,7 @@ public class AdminTongQuanTests
         Assert.False(string.IsNullOrEmpty(token), "Khong lay duoc antiforgery token o trang Login.");
 
         // POST login (dung lai cookie jar: ca cookie antiforgery + session).
-        var args = new List<string> { "-s", "-o", "/dev/null", "-w", "%{http_code}|%{redirect_url}",
+        var args = new List<string> { "-s", "-o", OperatingSystem.IsWindows() ? "NUL" : "/dev/null", "-w", "%{http_code}|%{redirect_url}",
             "--max-time", "15", "-b", jar, "-c", jar,
             "--data-urlencode", $"Email={email}",
             "--data-urlencode", $"MatKhau={password}",

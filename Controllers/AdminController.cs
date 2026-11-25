@@ -12,7 +12,7 @@ namespace TechZone.Controllers;
 
 /// <summary>Quan tri: chi role Admin. Dashboard + quan ly san pham / don / voucher.</summary>
 [Authorize(Roles = "Admin")]
-public class AdminController : Controller
+public partial class AdminController : Controller
 {
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _env;
@@ -26,9 +26,6 @@ public class AdminController : Controller
         _orders = orders;
     }
 
-    public async Task<IActionResult> Dashboard() =>
-        View(await TaiDuLieuDashboardAsync());
-
     /// <summary>
     /// Helper VeTrangSauTacVu: form tu trang TongQuan gui kem hidden
     /// tuTrang=TongQuan thi quay lai TongQuan; form tu Dashboard (nhap kho
@@ -37,188 +34,23 @@ public class AdminController : Controller
     /// truoc — hanh vi cu giu nguyen 100%. Request.Form chi doc khi co form
     /// content-type (test goi truc tiep khong co form thi khong nem loi).
     /// </summary>
-    private IActionResult VeTrangSauTacVu(string actionMacDinh)
+    private IActionResult VeTrangSauTacVu(string actionMacDinh, object? routeValues = null)
     {
         if (Request.HasFormContentType)
         {
             try
             {
-                if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
-                    return RedirectToAction(nameof(TongQuan));
-                if (Request.Form.TryGetValue("tuTrang", out var t2) && t2 == "Dashboard")
-                    return RedirectToAction(nameof(Dashboard));
+                if (Request.Form.TryGetValue("tuTrang", out var trang))
+                {
+                    if (trang == "TongQuan")
+                        return RedirectToAction(nameof(TongQuan), new { muc = Request.Form["muc"].ToString() });
+                    if (trang == "Dashboard")
+                        return RedirectToAction(nameof(Dashboard));
+                }
             }
-            catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
-        }
-        return RedirectToAction(actionMacDinh);
-    }
-
-    /// <summary>VeTrangSauTacVu kem route values (vd OrderDetails can id).</summary>
-    private IActionResult VeTrangSauTacVu(string actionMacDinh, object routeValues)
-    {
-        if (Request.HasFormContentType)
-        {
-            try
-            {
-                if (Request.Form.TryGetValue("tuTrang", out var t) && t == "TongQuan")
-                    return RedirectToAction(nameof(TongQuan));
-                if (Request.Form.TryGetValue("tuTrang", out var t2) && t2 == "Dashboard")
-                    return RedirectToAction(nameof(Dashboard));
-            }
-            catch (InvalidOperationException) { /* khong co form hop le: ve mac dinh */ }
+            catch (InvalidOperationException) { /* Form không đọc được, quay về trang tác vụ. */ }
         }
         return RedirectToAction(actionMacDinh, routeValues);
-    }
-
-    /// <summary>
-    /// Trang tong hop: 12 section trong 1 trang. Load dung query/logic
-    /// cua tung action goc; Dashboard + KhachHang dung helper chung.
-    /// </summary>
-    public async Task<IActionResult> TongQuan()
-    {
-        var dashboard = await TaiDuLieuDashboardAsync();
-        var vm = new TongQuanViewModel
-        {
-            Dashboard = dashboard,
-            Products = await _db.Products
-                .Include(p => p.Category).Include(p => p.Brand).Include(p => p.Images)
-                .OrderByDescending(p => p.NgayTao).ToListAsync(),
-            DonGanDay = await _db.Orders
-                .Include(o => o.ChiTiet)
-                .OrderByDescending(o => o.NgayDat).Take(10).ToListAsync(),
-            DonTheoTrangThai = dashboard.DonTheoTrangThai,
-            KhachHang = await TaiDuLieuKhachHangAsync(),
-            Vouchers = await _db.Vouchers.OrderByDescending(v => v.NgayHetHan).ToListAsync(),
-            Combos = await _db.Combos
-                .Include(c => c.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
-                .OrderByDescending(c => c.Id).ToListAsync(),
-            FlashSaleSlots = await _db.FlashSaleSlots
-                .Include(s => s.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
-                .OrderBy(s => s.GioBatDau).ToListAsync(),
-            Banners = await _db.Banners.OrderBy(b => b.ThuTu).ToListAsync(),
-            ReviewsChoDuyet = await _db.Reviews
-                .Include(r => r.Product).Include(r => r.User)
-                .Where(r => !r.IsApproved)
-                .OrderBy(r => r.NgayDanhGia).ToListAsync(),
-            ReviewsDaDuyetGanDay = await _db.Reviews
-                .Include(r => r.Product).Include(r => r.User)
-                .Where(r => r.IsApproved)
-                .OrderByDescending(r => r.NgayDanhGia).Take(10).ToListAsync(),
-            CauHoiChuaTraLoi = await _db.ProductQuestions
-                .Include(q => q.Product).Include(q => q.User)
-                .Where(q => q.TraLoi == null)
-                .OrderBy(q => q.NgayHoi).ToListAsync(),
-            SanPhamKho = await _db.Products.Include(p => p.Images).OrderBy(p => p.Ten).ToListAsync(),
-            NhapKhoGanDay = await _db.StockIns
-                .Include(s => s.Product)
-                .OrderByDescending(s => s.NgayNhap).Take(10).ToListAsync(),
-            ThongBaoGanDay = await _db.Notifications
-                .Include(n => n.User)
-                .OrderByDescending(n => n.NgayTao).Take(20).ToListAsync(),
-            NguoiNhanThongBao = await _db.Users
-                .Where(u => u.Email != "admin@techzone.vn")
-                .OrderBy(u => u.HoTen).ToListAsync(),
-            DoiTraChoDuyet = await _db.ReturnRequests
-                .Include(r => r.Product).Include(r => r.Order).Include(r => r.User)
-                .Where(r => r.TrangThai == "Chờ duyệt")
-                .OrderByDescending(r => r.NgayTao).ToListAsync(),
-            BaoHanhChoDuyet = await _db.WarrantyClaims
-                .Include(w => w.Product).Include(w => w.Order).Include(w => w.User)
-                .Where(w => w.TrangThai == "Chờ duyệt")
-                .OrderByDescending(w => w.NgayTao).ToListAsync(),
-        };
-        return View(vm);
-    }
-
-    /// <summary>Logic load Dashboard goc, tach ra de Dashboard() + TongQuan() dung chung.</summary>
-    private async Task<DashboardViewModel> TaiDuLieuDashboardAsync()
-    {
-        var thangNay = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
-
-        var donThang = await _db.Orders
-            .Where(o => o.NgayDat >= thangNay && o.TrangThai != OrderStatus.DaHuy)
-            .ToListAsync();
-
-        var doanhThu30Ngay = new List<(string Ngay, decimal DoanhThu)>();
-        for (var d = DateTime.Today.AddDays(-29); d <= DateTime.Today; d = d.AddDays(1))
-        {
-            // SQLite khong dich duoc Sum tren decimal -> lay ve roi cong o client.
-            var tong = (await _db.Orders
-                .Where(o => o.NgayDat.Date == d && o.TrangThai != OrderStatus.DaHuy)
-                .Select(o => o.TongTien)
-                .ToListAsync()).Sum();
-            doanhThu30Ngay.Add((d.ToString("dd/MM"), tong));
-        }
-        // 7 ngay gan nhat la 7 muc cuoi cua bang 30 ngay.
-        var doanhThu7Ngay = doanhThu30Ngay.TakeLast(7).ToList();
-
-        var donTheoTrangThai = await _db.Orders
-            .GroupBy(o => o.TrangThai)
-            .Select(g => new { TrangThai = g.Key, SoLuong = g.Count() })
-            .ToDictionaryAsync(g => g.TrangThai, g => g.SoLuong);
-
-        // Uoc luong khach moi trong thang: dem tai khoan tao trong thang nay,
-        // tru tai khoan admin. AdminController chi co _db nen dung NgayTao
-        // cua AspNetUsers lam moc; khong co bang log dang ky rieng.
-        var khachMoiThang = await _db.Users.CountAsync(u =>
-            u.NgayTao >= thangNay && u.Email != "admin@techzone.vn");
-
-        // Dot 1 Admin-enhance (A3): chi so moi chi doc, tinh tu 2 tap da load
-        // o tren (DoanhThu30Ngay + DonTheoTrangThai) — khong them query.
-        // Tuan truoc = 7 muc ngay truoc 7 ngay gan nhat (ngay -14..-8).
-        var doanhThuTuan = doanhThu7Ngay.Sum(d => d.DoanhThu);
-        var doanhThuTuanTruoc = doanhThu30Ngay.TakeLast(14).Take(7).Sum(d => d.DoanhThu);
-        int DemTrangThai(string tt) => donTheoTrangThai.TryGetValue(tt, out var n) ? n : 0;
-
-        // Dot 2 (B5): doanh thu thang truoc (don khong huy, thang truoc) —
-        // query moi chi doc, Sum o client nhu vong 30 ngay (SQLite khong
-        // dich duoc Sum tren decimal).
-        var thangTruoc = thangNay.AddMonths(-1);
-        var doanhThuThangTruoc = (await _db.Orders
-            .Where(o => o.NgayDat >= thangTruoc && o.NgayDat < thangNay && o.TrangThai != OrderStatus.DaHuy)
-            .Select(o => o.TongTien)
-            .ToListAsync()).Sum();
-        // Dot 2 (B5): chi so moi chi doc — het hang + doi tra cho duyet la
-        // Count moi chi doc; gia tri ton kho tinh theo GIA BAN tu projection
-        // chi doc (GiaKhuyenMai ?? Gia) * TonKho, khong phai gia von.
-        var tongDon = await _db.Orders.CountAsync();
-        var doiTraChoDuyet = await _db.ReturnRequests.CountAsync(r => r.TrangThai == "Chờ duyệt");
-        var sanPhamHetHang = await _db.Products.CountAsync(p => p.TonKho == 0);
-        var giaTriTonKho = (await _db.Products
-            .Select(p => new { p.Gia, p.GiaKhuyenMai, p.TonKho })
-            .ToListAsync()).Sum(p => (p.GiaKhuyenMai ?? p.Gia) * p.TonKho);
-
-        return new DashboardViewModel
-        {
-            DoanhThuThang = donThang.Sum(o => o.TongTien),
-            DonMoi = await _db.Orders.CountAsync(o => o.TrangThai == OrderStatus.ChoXacNhan),
-            TongDon = tongDon,
-            TongSanPham = await _db.Products.CountAsync(),
-            TopBanChay = await _db.Products.Include(p => p.Images).OrderByDescending(p => p.LuotBan).Take(5).ToListAsync(),
-            SapHetHang = await _db.Products.Include(p => p.Images).Where(p => p.TonKho <= 10).OrderBy(p => p.TonKho).Take(5).ToListAsync(),
-            DonGanDay = await _db.Orders
-                .Include(o => o.ChiTiet)
-                .OrderByDescending(o => o.NgayDat).Take(8).ToListAsync(),
-            DoanhThu7Ngay = doanhThu7Ngay,
-            DoanhThu30Ngay = doanhThu30Ngay,
-            DoanhThuTuan = doanhThuTuan,
-            DonTheoTrangThai = donTheoTrangThai,
-            KhachMoiThang = khachMoiThang,
-            DoanhThuTuanTruoc = doanhThuTuanTruoc,
-            TiLeDoiTuan = doanhThuTuanTruoc == 0 ? null : (doanhThuTuan - doanhThuTuanTruoc) / doanhThuTuanTruoc,
-            DonChoXuLy = DemTrangThai(OrderStatus.ChoXacNhan) + DemTrangThai(OrderStatus.DaXacNhan) + DemTrangThai(OrderStatus.DangDongGoi),
-            DonDaHuy = DemTrangThai(OrderStatus.DaHuy),
-            // Dot 2 (B5): doanh thu hom nay = muc cuoi cua bang 30 ngay (da
-            // co san, khong them query); gia tri don TB tu donThang da load.
-            DoanhThuHomNay = doanhThu30Ngay.Count > 0 ? doanhThu30Ngay[^1].DoanhThu : 0,
-            GiaTriDonTrungBinh = donThang.Count > 0 ? donThang.Sum(o => o.TongTien) / donThang.Count : 0,
-            TiLeHuy = tongDon > 0 ? (decimal)DemTrangThai(OrderStatus.DaHuy) / tongDon : 0,
-            DoiTraChoDuyet = doiTraChoDuyet,
-            SanPhamHetHang = sanPhamHetHang,
-            GiaTriTonKho = giaTriTonKho,
-            DoanhThuThangTruoc = doanhThuThangTruoc,
-            TiLeDoiThang = doanhThuThangTruoc == 0 ? null : (donThang.Sum(o => o.TongTien) - doanhThuThangTruoc) / doanhThuThangTruoc
-        };
     }
 
     // --- San pham ---
@@ -400,8 +232,21 @@ public class AdminController : Controller
             TempData["Error"] = "Sản phẩm đã có trong đơn hàng, không xóa được. Hãy để tồn kho = 0 để ngừng bán.";
             return RedirectToAction(nameof(Products));
         }
+        if (await _db.ComboItems.AnyAsync(i => i.ProductId == id))
+        {
+            TempData["Error"] = "Hãy gỡ sản phẩm khỏi các combo trước khi xóa.";
+            return RedirectToAction(nameof(Products));
+        }
         _db.Products.Remove(product);
-        await _db.SaveChangesAsync();
+        try
+        {
+            await _db.SaveChangesAsync();
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is Microsoft.Data.Sqlite.SqliteException { SqliteErrorCode: 19 })
+        {
+            TempData["Error"] = "Sản phẩm còn được sử dụng trong đơn hàng hoặc combo.";
+            return RedirectToAction(nameof(Products));
+        }
         TempData["Success"] = "Đã xóa sản phẩm.";
         return RedirectToAction(nameof(Products));
     }
@@ -440,7 +285,7 @@ public class AdminController : Controller
             sb.AppendLine(string.Join(",",
                 Csv(o.Id.ToString()),
                 Csv(o.NgayDat.ToString("yyyy-MM-dd HH:mm")),
-                Csv(khach),
+                CsvText(khach),
                 Csv(o.TrangThai),
                 Csv((o.TongTien + o.PhiShip).ToString("0", System.Globalization.CultureInfo.InvariantCulture))));
         }
@@ -461,7 +306,7 @@ public class AdminController : Controller
         foreach (var p in list)
         {
             sb.AppendLine(string.Join(",",
-                Csv(p.Ten),
+                CsvText(p.Ten),
                 Csv(p.TonKho.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 Csv(p.LuotBan.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 Csv(p.GiaBan.ToString("0", System.Globalization.CultureInfo.InvariantCulture))));
@@ -478,6 +323,15 @@ public class AdminController : Controller
     }
 
     /// <summary>Dot 3 (B3): escape 1 o CSV (quote khi co , " xuong dong).</summary>
+    private static string CsvText(string value)
+    {
+        var text = value.TrimStart();
+        if (value.StartsWith('\t') || value.StartsWith('\r') || value.StartsWith('\n')
+            || (text.Length > 0 && text[0] is '=' or '+' or '-' or '@' or '＝' or '＋' or '－' or '＠'))
+            value = "'" + value;
+        return Csv(value);
+    }
+
     private static string Csv(string s)
     {
         if (s.IndexOfAny(new[] { ',', '"', '\n', '\r' }) < 0) return s;
@@ -614,6 +468,22 @@ public class AdminController : Controller
             ? $"Đơn #{id} đã ở trạng thái: {trangThaiMoi}."
             : $"Đơn #{id} đã chuyển sang: {trangThaiMoi}.";
         return VeTrangSauTacVu(nameof(OrderDetails), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> XacNhanThuCod(int id)
+    {
+        var soDong = await _db.Orders
+            .Where(o => o.Id == id && o.PhuongThucTT == "COD"
+                && o.TrangThai == OrderStatus.DaGiao && !o.DaThanhToan)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.DaThanhToan, true));
+
+        if (soDong > 0)
+            TempData["Success"] = "Đã ghi nhận thu tiền COD.";
+        else
+            TempData["Error"] = "Chỉ ghi nhận COD cho đơn đã giao và chưa thanh toán.";
+        return RedirectToAction(nameof(OrderDetails), new { id });
     }
 
     // --- Voucher ---
@@ -931,48 +801,55 @@ public class AdminController : Controller
     }
 
     // --- Khach hang (nhom D) ---
-    /// <summary>
-    /// Dot 2 (B1): tim kiem + phan trang server 10/trang. Tong chi tieu
-    /// van tinh in-memory nhu cu (TaiDuLieuKhachHangAsync) — chi them tim
-    /// (ten/email/SDT, khong phan biet hoa/thuong) + phan trang tren ket
-    /// qua da co, khong doi cach tinh.
-    /// </summary>
     public async Task<IActionResult> KhachHang(string? tuKhoa = null, int page = 1)
     {
-        if (page < 1) page = 1;
+        page = Math.Max(1, page);
         tuKhoa = string.IsNullOrWhiteSpace(tuKhoa) ? null : tuKhoa.Trim();
-        var list = await TaiDuLieuKhachHangAsync();
+        IQueryable<ApplicationUser> query = KhachHangTheoNgay();
         if (tuKhoa is not null)
         {
-            list = list.Where(k =>
-                (k.User.HoTen ?? string.Empty).Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)
-                || (k.User.Email ?? string.Empty).Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)
-                || (k.User.SoDienThoai ?? string.Empty).Contains(tuKhoa, StringComparison.OrdinalIgnoreCase)).ToList();
+            // SQLite NOCASE chỉ hỗ trợ ASCII. Giữ tìm kiếm tên tiếng Việt
+            // bằng cách lọc trên các cột tìm kiếm, rồi đọc chi tiết riêng.
+            var ungVien = await query.Select(u => new { u.Id, u.HoTen, u.Email, u.SoDienThoai }).ToListAsync();
+            var ids = ungVien.Where(u =>
+                (u.HoTen?.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (u.Email?.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ?? false)
+                || (u.SoDienThoai?.Contains(tuKhoa, StringComparison.OrdinalIgnoreCase) ?? false))
+                .Select(u => u.Id).ToList();
+            query = query.Where(u => ids.Contains(u.Id));
         }
-        var tong = list.Count;
+        var tong = await query.CountAsync();
         var tongTrang = Math.Max(1, (int)Math.Ceiling(tong / (double)SoMucMoiTrang));
-        if (page > tongTrang) page = tongTrang;
+        page = Math.Min(page, tongTrang);
         ViewBag.TuKhoa = tuKhoa;
         ViewBag.TrangHienTai = page;
         ViewBag.TongTrang = tongTrang;
         ViewBag.TongMuc = tong;
-        return View("Customers", list.Skip((page - 1) * SoMucMoiTrang).Take(SoMucMoiTrang).ToList());
+        return View("Customers", await TaiDuLieuKhachHangAsync(
+            query.Skip((page - 1) * SoMucMoiTrang).Take(SoMucMoiTrang)));
     }
 
-    /// <summary>Logic load KhachHang goc, tach ra de KhachHang() + TongQuan() dung chung.</summary>
-    private async Task<List<(ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)>> TaiDuLieuKhachHangAsync()
+    private IQueryable<ApplicationUser> KhachHangQuery() =>
+        _db.Users.AsNoTracking().Where(u => !_db.UserRoles.Any(ur => ur.UserId == u.Id
+            && _db.Roles.Any(role => role.Id == ur.RoleId && role.NormalizedName == "ADMIN")));
+
+    private IOrderedQueryable<ApplicationUser> KhachHangTheoNgay() =>
+        KhachHangQuery().OrderByDescending(u => u.NgayTao).ThenBy(u => u.Id);
+
+    private async Task<List<(ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)>> TaiDuLieuKhachHangAsync(
+        IQueryable<ApplicationUser> query)
     {
-        var users = await _db.Users
-            .Where(u => u.Email != "admin@techzone.vn")
-            .OrderByDescending(u => u.NgayTao).ToListAsync();
+        var users = await query.ToListAsync();
+        var userIds = users.Select(u => u.Id).ToList();
 
         // Tong chi tieu HOP LE (cung dinh nghia LoyaltyService.TongChiTieuAsync):
         // don khong huy, tru so tien da hoan theo tung don, kep moi don >= 0.
         var donHopLe = await _db.Orders
-            .Where(o => o.TrangThai != OrderStatus.DaHuy && o.UserId != null)
+            .Where(o => o.TrangThai != OrderStatus.DaHuy && o.UserId != null && userIds.Contains(o.UserId))
             .Select(o => new { o.Id, UserId = o.UserId!, o.TongTien })
             .ToListAsync();
         var hoanTheoDon = (await _db.Refunds
+                .Where(r => _db.Orders.Any(o => o.Id == r.OrderId && o.UserId != null && userIds.Contains(o.UserId)))
                 .Select(r => new { r.OrderId, r.SoTien })
                 .ToListAsync())
             .GroupBy(r => r.OrderId)
@@ -984,6 +861,7 @@ public class AdminController : Controller
 
         // Diem hien tai: tong Earn tru tong Spend, gom theo UserId.
         var diem = await _db.PointTransactions
+            .Where(p => userIds.Contains(p.UserId))
             .GroupBy(p => p.UserId)
             .ToDictionaryAsync(g => g.Key,
                 g => g.Sum(p => p.Loai == "Earn" ? p.Diem : -p.Diem));
@@ -1256,8 +1134,7 @@ public class AdminController : Controller
     // --- Thong bao (nhom D) ---
     public async Task<IActionResult> ThongBao()
     {
-        ViewBag.Users = await _db.Users
-            .Where(u => u.Email != "admin@techzone.vn")
+        ViewBag.Users = await KhachHangQuery()
             .OrderBy(u => u.HoTen).ToListAsync();
         return View("Notifications", await _db.Notifications
             .Include(n => n.User)
@@ -1280,13 +1157,12 @@ public class AdminController : Controller
         }
         if (userId == "all")
         {
-            var users = await _db.Users
-                .Where(u => u.Email != "admin@techzone.vn").ToListAsync();
-            foreach (var u in users)
+            var users = await KhachHangQuery().Select(u => u.Id).ToListAsync();
+            foreach (var id in users)
             {
                 _db.Notifications.Add(new Notification
                 {
-                    UserId = u.Id,
+                    UserId = id,
                     TieuDe = tieuDe.Trim(),
                     NoiDung = noiDung,
                     NgayTao = DateTime.Now

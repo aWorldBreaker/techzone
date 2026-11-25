@@ -215,18 +215,13 @@ public class DashboardViewModel
     public decimal? TiLeDoiThang { get; set; }
 }
 
-/// <summary>
-/// Trang Admin tong hop: gom toan bo du lieu cac trang Admin rieng le
-/// de hien trong 1 trang duy nhat, chuyen section bang tab JS.
-/// Du lieu lay dung query/logic cua tung action goc (xem AdminController.TongQuan).
-/// </summary>
+/// <summary>Dữ liệu xem nhanh của mục quản trị đang mở.</summary>
 public class TongQuanViewModel
 {
-    public DashboardViewModel Dashboard { get; set; } = new();
+    public string Muc { get; set; } = "products";
     public List<Product> Products { get; set; } = new();
     /// <summary>10 don gan nhat (Dashboard chi lay 8).</summary>
     public List<Order> DonGanDay { get; set; } = new();
-    public Dictionary<string, int> DonTheoTrangThai { get; set; } = new();
     public List<(ApplicationUser User, decimal TongChiTieu, string Hang, int Diem)> KhachHang { get; set; } = new();
     public List<Voucher> Vouchers { get; set; } = new();
     public List<Combo> Combos { get; set; } = new();

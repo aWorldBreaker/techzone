@@ -42,7 +42,7 @@ else
                     <td>#@r.Id</td>
                     <td>@r.User?.HoTen (@r.User?.UserName)</td>
                     <td><a asp-controller="Admin" asp-action="OrderDetails" asp-route-id="@r.OrderId">#@r.OrderId</a></td>
-                    <td>@r.Product.Ten</td>
+                    <td>@r.Product.Ten @r.OrderDetail?.Variant?.TenBienThe</td>
                     <td>@r.LyDo</td>
                     <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
                     <td><partial name="_TrangThaiBadge" model="r.TrangThai" /></td>

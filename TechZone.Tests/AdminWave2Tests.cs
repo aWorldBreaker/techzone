@@ -450,9 +450,9 @@ public class AdminWave2Tests
         Assert.Contains("Giá trị tồn kho (theo giá bán)", dash);
         Assert.Contains("so với tháng trước", dash);
         var tq = Doc("Views", "Admin", "TongQuan.cshtml");
-        Assert.Contains("Doanh thu hôm nay", tq);
-        Assert.Contains("Giá trị tồn kho (theo giá bán)", tq);
-        Assert.Contains("so với tháng trước", tq);
+        Assert.DoesNotContain("Doanh thu hôm nay", tq);
+        Assert.DoesNotContain("Giá trị tồn kho (theo giá bán)", tq);
+        Assert.DoesNotContain("so với tháng trước", tq);
 
         // B1: param tuKhoa/sort + form tim kiem o 4 view.
         var ctrl = Doc("Controllers", "AdminController.cs");
@@ -492,8 +492,8 @@ public class AdminWave2Tests
         Assert.Contains("chart-yaxis", dash);
         Assert.Contains("chart-value", dash);
         Assert.Contains("chart-col--max", dash);
-        Assert.Contains("chart-yaxis", tq);
-        Assert.Contains("chart-value", tq);
+        Assert.DoesNotContain("chart-yaxis", tq);
+        Assert.DoesNotContain("chart-value", tq);
         Assert.Contains("tabindex=\"0\"", dash);
 
         // B7: dem + empty state o admin.js + o loc 3 tab moi o TongQuan.

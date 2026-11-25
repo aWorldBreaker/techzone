@@ -52,6 +52,7 @@ public class MigrationTests
         ("OrderDetails", "GiaGoc"), ("OrderDetails", "TenKhuyenMai"),
         ("OrderDetails", "FlashSaleId"),
         ("ReturnRequests", "SoLuong"),
+        ("ReturnRequests", "OrderDetailId"),
         ("Reviews", "ImageUrl"), ("Reviews", "IsApproved"),
         ("Vouchers", "BrandId"), ("Vouchers", "CategoryId"),
         ("Vouchers", "MinTier"), ("Vouchers", "FreeShip"),
@@ -330,13 +331,13 @@ public class MigrationTests
         var indexesToDrop = new List<string>();
         foreach (var (table, column) in NewColumns)
         {
-            cmd.CommandText = $"SELECT name FROM pragma_index_list(\"{table}\")";
+            cmd.CommandText = $"SELECT name FROM pragma_index_list('{table}')";
             var idxNames = new List<string>();
             using (var r = cmd.ExecuteReader())
                 while (r.Read()) idxNames.Add(r.GetString(0)); // SELECT name -> chi 1 cot
             foreach (var idx in idxNames)
             {
-                cmd.CommandText = $"SELECT name FROM pragma_index_info(\"{idx}\")";
+                cmd.CommandText = $"SELECT name FROM pragma_index_info('{idx}')";
                 using var r = cmd.ExecuteReader();
                 while (r.Read())
                     if (r.GetString(0) == column) indexesToDrop.Add(idx);
@@ -674,7 +675,7 @@ public class MigrationTests
             var psi = new ProcessStartInfo
             {
                 FileName = "curl",
-                ArgumentList = { "-s", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", "10",
+                ArgumentList = { "-s", "-o", OperatingSystem.IsWindows() ? "NUL" : "/dev/null", "-w", "%{http_code}", "--max-time", "10",
                     $"http://127.0.0.1:{port}{path}" },
                 RedirectStandardOutput = true,
                 UseShellExecute = false,

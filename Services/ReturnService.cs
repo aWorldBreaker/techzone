@@ -135,16 +135,19 @@ public class ReturnService
                     return DuyetDoiTraResult.ThatBai(
                         $"Chỉ đổi trả được đơn đang giao hoặc đã giao (đơn hiện “{order.TrangThai}”).");
                 }
-                detail = order.ChiTiet.FirstOrDefault(d => d.ProductId == yeuCau.ProductId);
+                var dongPhuHop = order.ChiTiet.Where(d => d.ProductId == yeuCau.ProductId
+                    && (yeuCau.OrderDetailId == null || d.Id == yeuCau.OrderDetailId)).Take(2).ToArray();
+                detail = dongPhuHop.Length == 1 ? dongPhuHop[0] : null;
                 if (detail is null)
                 {
                     await tx.RollbackAsync();
-                    return DuyetDoiTraResult.ThatBai("Sản phẩm đổi trả không còn trong đơn hàng.");
+                    return DuyetDoiTraResult.ThatBai("Không xác định được dòng đổi trả. Kiểm tra biến thể và tạo lại yêu cầu nếu cần.");
                 }
                 // Dong nay da co yeu cau khac duoc duyet truoc do -> khong
                 // hoan tac 2 lan cho cung 1 dong.
                 var daTraDongNay = await _db.ReturnRequests.AsNoTracking()
                     .AnyAsync(r => r.OrderId == yeuCau.OrderId && r.ProductId == yeuCau.ProductId
+                        && (r.OrderDetailId == null || r.OrderDetailId == detail.Id)
                         && r.Id != yeuCau.Id && r.TrangThai != "Chờ duyệt" && r.TrangThai != "Từ chối");
                 if (daTraDongNay)
                 {
@@ -201,9 +204,13 @@ public class ReturnService
                 var dongDaDuyet = await _db.ReturnRequests.AsNoTracking()
                     .Where(r => r.OrderId == order.Id
                         && r.TrangThai != "Chờ duyệt" && r.TrangThai != "Từ chối")
-                    .Select(r => r.ProductId)
+                    .Select(r => new { r.ProductId, r.OrderDetailId })
                     .ToListAsync();
-                var traHetDon = order.ChiTiet.All(d => dongDaDuyet.Contains(d.ProductId));
+                var sanPhamMotDong = order.ChiTiet.GroupBy(d => d.ProductId)
+                    .Where(g => g.Count() == 1).Select(g => g.Key).ToHashSet();
+                var traHetDon = order.ChiTiet.All(d => dongDaDuyet.Any(r =>
+                    r.OrderDetailId == d.Id || (r.OrderDetailId == null && r.ProductId == d.ProductId
+                        && sanPhamMotDong.Contains(d.ProductId))));
 
                 if (order.UserId is not null)
                 {

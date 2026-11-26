@@ -140,7 +140,7 @@
                                class="spec-zone @(selectedFields.Contains(row.Key) ? "spec-highlight" : "")" style="--i:@(row.Number - 1)">
                                 <path class="drawing-leader" d="@($"M{row.X} {row.Y} H{edge}")" pathLength="1" />
                                 <circle class="drawing-zone" cx="@row.X" cy="@row.Y" r="14" pathLength="1" />
-                                <text class="drawing-note" x="@row.X" y="@row.Y" text-anchor="middle" dominant-baseline="central">@row.Number</text>
+                                <circle class="drawing-zone drawing-center" cx="@row.X" cy="@row.Y" r="2.5" pathLength="1" />
                             </g>
                         }
                     </svg>
@@ -183,7 +183,7 @@
                 }
             </div>
         }
-        @if (specRows.Count > 0)
+        @if (hasPhoto && specRows.Count > 0)
         {
             <form class="annotation-needs choice-row" method="get" aria-label="Làm nổi thông số theo nhu cầu" data-annotation-needs>
                 <button class="chip @(need is null ? "chip-active" : "")" name="NhuCau" value="" aria-pressed="@(need is null ? "true" : "false")">Tất cả</button>
@@ -201,9 +201,12 @@
                         <dt>
                             @if (row.Number > 0)
                             {
-                                <a class="spec-number" data-spec-target="@row.Number" href="#spec-zone-@row.Number" aria-label="Định vị chú thích @row.Number, @row.Label">@row.Number</a>
+                                <a data-spec-target="@row.Number" href="#spec-zone-@row.Number" aria-label="Định vị @row.Label trên ảnh">@row.Label</a>
                             }
-                            @row.Label
+                            else
+                            {
+                                @row.Label
+                            }
                         </dt>
                         <dd>@row.Value @if (row.Number == 0) { <small>(chỉ trong danh sách)</small> }</dd>
                     </div>

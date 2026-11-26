@@ -10,6 +10,10 @@
     const sections = links.map(link => document.getElementById(link.hash.slice(1)));
 
     if (needForm) {
+        const photoUrl = panel.querySelector('#product-image').getAttribute('src');
+        const primaryThumb = Array.from(panel.querySelectorAll('.thumb-btn[data-full]'))
+            .find(thumb => thumb.dataset.full === photoUrl);
+
         needForm.addEventListener('submit', event => {
             const choice = event.submitter;
             if (!choice) return;
@@ -26,11 +30,14 @@
             history.replaceState(history.state, '', url);
         });
         panel.addEventListener('click', event => {
+            const thumb = event.target.closest('.thumb-btn[data-full]');
+            if (thumb) panel.classList.toggle('alternate-photo', thumb.dataset.full !== photoUrl);
             const row = event.target.closest('.spec-note');
             const link = row?.querySelector('[data-spec-target]');
             const zone = link && document.getElementById(link.hash.slice(1));
             if (!zone) return;
             event.preventDefault();
+            if (panel.classList.contains('alternate-photo')) primaryThumb?.click();
             panel.querySelectorAll('.spec-located').forEach(item => item.classList.remove('spec-located'));
             const imageButton = document.getElementById('btn-3d-hide');
             if (imageButton && !imageButton.hidden) imageButton.click();

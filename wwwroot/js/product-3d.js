@@ -40,8 +40,13 @@
     var initialFov = viewer.getAttribute('field-of-view') || '45deg';
 
     // Ton trong reduced-motion: tat tu xoay ngay tu dau.
-    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion) viewer.removeAttribute('auto-rotate');
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function syncMotion() {
+        if (reduceMotion.matches) viewer.removeAttribute('auto-rotate');
+        updateRotateBtn();
+    }
+    if (reduceMotion.addEventListener) reduceMotion.addEventListener('change', syncMotion);
+    else reduceMotion.addListener(syncMotion);
 
     function updateRotateBtn() {
         if (!btnRotate) return;
@@ -93,7 +98,7 @@
     });
     if (btnRotate) btnRotate.addEventListener('click', function () {
         if (viewer.hasAttribute('auto-rotate')) viewer.removeAttribute('auto-rotate');
-        else viewer.setAttribute('auto-rotate', '');
+        else if (!reduceMotion.matches) viewer.setAttribute('auto-rotate', '');
         updateRotateBtn();
     });
     if (btnFull) btnFull.addEventListener('click', function () {
@@ -117,5 +122,5 @@
             btnShow.title = '';
         }).catch(function () { /* giữ nút tắt, user vẫn xem được ảnh */ });
     }
-    updateRotateBtn();
+    syncMotion();
 })();

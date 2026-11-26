@@ -36,7 +36,7 @@
 }
 @media (min-width: 768px) {
   .hero-drawing { width: 70%; margin-inline: auto; }
-  .hero-annotations { position: absolute; inset: 0; margin: 0; grid-template-rows: repeat(2, 1fr); align-items: center; pointer-events: none; }
+  .hero-annotations { position: absolute; inset: 0 0 1.5rem; margin: 0; grid-template-rows: repeat(2, 1fr); align-items: center; pointer-events: none; }
   .hero-annotations > div:nth-child(odd) { max-inline-size: 25ch; justify-self: start; background: var(--color-background); }
   .hero-annotations > div:nth-child(even) { max-inline-size: 25ch; justify-self: end; text-align: end; background: var(--color-background); }
 }

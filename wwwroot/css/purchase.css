@@ -82,7 +82,7 @@
     background: var(--color-card); border-block-start: 1px solid var(--color-border); box-shadow: var(--shadow-md);
   }
   .cart-payment .summary-row.total { border: 0; margin: 0; padding: 0; flex-wrap: wrap; gap: .25rem .5rem; font-size: .95rem; }
-  .cart-payment .btn { padding-inline: .55rem; }
+  .cart-payment .btn { padding-inline: .55rem; font-size: .9rem; }
 }
 
 .payment-methods label input { flex: 0 0 auto; margin-block-start: .38rem; }

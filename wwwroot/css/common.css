@@ -155,13 +155,19 @@ input:is([type="radio"], [type="checkbox"]) { accent-color: var(--color-primary)
 .drawing-stroke, .drawing-leader, .drawing-zone { fill: none; stroke: var(--color-primary); stroke-width: 1.5; }
 .drawing-zone { fill: var(--color-background); }
 .drawing-center { fill: var(--color-primary); }
+.home-blueprint .choice-chip, .annotation-needs .chip { position: relative; isolation: isolate; }
 @media (prefers-reduced-motion: no-preference) {
   .is-drawing :is(.drawing-stroke, .drawing-leader) { stroke-dasharray: 1; }
   .is-drawing .drawing-stroke { animation: trace-drawing 760ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(var(--i) * 120ms); }
   .is-drawing .drawing-leader { animation: trace-drawing 700ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(420ms + var(--i) * 120ms); }
   .is-drawing :is(.drawing-zone, .drawing-note) { animation: reveal-note 220ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(940ms + var(--i) * 120ms); }
   .is-dropping .drawing-price { animation: drop-price 550ms cubic-bezier(.2,.8,.3,1.1) backwards 1400ms; }
-  .home-blueprint .choice-chip { transition: background-color 200ms, color 200ms, border-color 200ms; }
+  .home-blueprint .choice-chip:has(:checked)::after, .annotation-needs .chip-active::after {
+    content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+    background: var(--color-primary-hover); opacity: 0;
+    animation: choice-color 200ms cubic-bezier(.4,0,.2,1);
+  }
+  @keyframes choice-color { from { opacity: 1; } }
   @keyframes trace-drawing { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
   @keyframes reveal-note { from { opacity: 0; transform: translateX(8px); } }
   @keyframes drop-price { from { transform: translateY(-18px) rotate(-3deg); } }

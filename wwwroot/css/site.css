@@ -105,6 +105,6 @@
 }
 .market-receipt h2 { padding-block-end: .75rem; border-block-end: 1px dashed var(--color-control-border); }
 .market-receipt .total { border-block-start-style: dashed; }
-.market-receipt .total > :last-child { color: var(--color-accent); font-size: 1.25rem; }
+.market-receipt .total > :last-child { font-size: 1.25rem; }
 html:has(.site-header) { --sticky-offset: calc(var(--site-header-height, 7rem) + .75rem); }
 html[data-theme="light"] :is(.category-image img, .rank-thumb img, .cart-item img, .order-lines img, .receipt-items img, .gallery-stage #product-image) { mix-blend-mode: multiply; }

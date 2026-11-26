@@ -18,6 +18,7 @@
 .spec-zone:is(.spec-highlight, .spec-located, :target) text { fill: var(--color-on-primary); }
 .spec-zone:is(.spec-located, :target) circle { stroke: var(--color-foreground); stroke-width: 3; }
 .annotation-needs, .detail-thumbs { margin-block-start: .75rem; }
+.variant-choices .chip:not(.chip-active) { background: var(--color-card); }
 .annotation-needs .chip { font-size: .9rem; padding: .3rem .65rem; }
 .annotation-needs button:not(.chip-active) { background: var(--color-card); }
 .spec-notes { margin: .75rem 0 0; background: var(--color-background); }
@@ -91,7 +92,6 @@
   .detail-buy { grid-area: buy; }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .annotation-needs .chip { transition: background-color 200ms, color 200ms, border-color 200ms; }
   .spec-note.spec-highlight::before { animation: spec-highlight-in 200ms ease; }
   @keyframes spec-highlight-in { from { opacity: 0; } }
 }

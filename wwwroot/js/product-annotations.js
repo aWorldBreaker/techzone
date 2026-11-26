@@ -79,9 +79,12 @@
             discount.textContent = '−' + percent + '%';
         }
         select.after(choices);
-        select.classList.add('visually-hidden');
-        select.tabIndex = -1;
-        select.setAttribute('aria-hidden', 'true');
+        select.hidden = true;
+        const label = select.labels[0];
+        label.id = 'variant-label';
+        label.removeAttribute('for');
+        choices.setAttribute('aria-labelledby', 'variant-label');
+        choices.removeAttribute('aria-label');
         select.addEventListener('change', syncVariant);
         syncVariant();
     }

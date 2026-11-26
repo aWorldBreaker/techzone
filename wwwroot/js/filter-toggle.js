@@ -20,7 +20,15 @@
     function sync() {
         var open = !compact.matches || mobileOpen;
         panel.hidden = !open;
-        panel.classList.toggle('filter-drawer-open', compact.matches && mobileOpen);
+        var drawerOpen = compact.matches && mobileOpen;
+        panel.classList.toggle('filter-drawer-open', drawerOpen);
+        if (drawerOpen) {
+            panel.setAttribute('role', 'dialog');
+            panel.setAttribute('aria-modal', 'true');
+        } else {
+            panel.removeAttribute('role');
+            panel.removeAttribute('aria-modal');
+        }
         toggle.setAttribute('aria-expanded', String(open));
     }
     function close() {
@@ -42,7 +50,23 @@
     });
     closeButton.addEventListener('click', close);
     document.addEventListener('keydown', function (e) {
+        if (!compact.matches || !mobileOpen) return;
         if (e.key === 'Escape') close();
+        if (e.key !== 'Tab') return;
+        var controls = Array.from(panel.querySelectorAll('button, input, select, a[href]'))
+            .filter(function (control) {
+                return !control.disabled && control.getClientRects().length > 0 &&
+                    (control.type !== 'radio' || control.checked);
+            });
+        var first = controls[0];
+        var last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+        }
     });
     if (compact.addEventListener) compact.addEventListener('change', sync);
     else compact.addListener(sync);

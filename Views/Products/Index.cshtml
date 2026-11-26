@@ -127,7 +127,7 @@
                 <legend>@label</legend>
                 <div class="choice-row">
                     <label class="chip choice-chip">
-                        <input type="radio" name="@name" value="" checked="@string.IsNullOrWhiteSpace(selected)" />
+                        <input type="radio" name="@name" value="" checked="@(!options.Any(option => (option.Value ?? option.Text) == selected))" />
                         <span>Tất cả</span>
                     </label>
                     @foreach (var option in options)

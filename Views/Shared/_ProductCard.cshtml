@@ -14,12 +14,12 @@
         <img src="@Model.AnhDaiDien" alt="@Model.Ten" loading="lazy" />
         @if (giam > 0)
         {
-            <span class="badge-giam">-@giam%</span>
+            <span class="chip-giam">−@giam%</span>
         }
     </a>
     <div class="product-info">
         <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">@Model.Ten</a></h3>
-        <p class="product-price">
+        <p class="product-price price-tag">
             <strong class="price-amount">@giaBan.ToString("N0")đ</strong>
             @if (giaBan < Model.Gia)
             {
@@ -38,38 +38,41 @@
         </p>
         @if (specs.Length > 0)
         {
-            <p class="product-specs">@string.Join(" · ", specs)</p>
+            <ul class="product-specs">
+                @foreach (var spec in specs.Take(2))
+                {
+                    <li>@spec</li>
+                }
+            </ul>
         }
-        @* M4-3: diem sao tinh tu review da duyet (Model.Reviews da loc
-           IsApproved o controller), khong dung Model.DanhGiaTB (gia tri
-           seed cu — cung ho M4-1 o Details: VD Id 1 seed 4.8 trong khi
-           2 review 5+4 TB that 4.5; SP 0 review van hien "4.8 sao").
-           0 review -> "Chua co danh gia", khong hien so sao. Chi hien
-           thi, khong doi logic review/DanhGiaTB. LuotBan giu nguyen:
-           bo dem tich luy do Checkout tang / Huy-Tra hoan, seed la
-           tong lich su (khong phai so don trong DB) — xem TEST-REPORT §19. *@
         @{
-            var soDanhGia = Model.Reviews.Count;
-            var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
+            var reviews = Model.Reviews.Where(r => r.IsApproved).ToList();
+            var soDanhGia = reviews.Count;
+            var diemTB = soDanhGia > 0 ? Math.Round(reviews.Average(r => r.Sao), 1) : 0;
         }
-        <p class="product-meta">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") · Đã bán @Model.LuotBan</p>
-        <form asp-controller="Cart" asp-action="Add" method="post">
-            <input type="hidden" name="productId" value="@Model.Id" />
-            <input type="hidden" name="soLuong" value="1" />
-            <button type="submit" class="btn btn-primary btn-block" @(Model.TonKho <= 0 ? "disabled" : "")>@(Model.TonKho <= 0 ? "Hết hàng" : "Thêm vào giỏ")</button>
-        </form>
+        <p class="product-meta">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá")</p>
+        <p class="product-meta">Đã bán @Model.LuotBan</p>
         <div class="card-actions">
+            <form asp-controller="Cart" asp-action="Add" method="post">
+                <input type="hidden" name="productId" value="@Model.Id" />
+                <input type="hidden" name="soLuong" value="1" />
+                <button type="submit" class="btn btn-primary btn-block" @(Model.TonKho <= 0 ? "disabled" : "")>@(Model.TonKho <= 0 ? "Hết hàng" : "Thêm vào giỏ")</button>
+            </form>
             <form asp-controller="Compare" asp-action="Add" method="post" class="compare-form">
                 <input type="hidden" name="productId" value="@Model.Id" />
                 @if (compareReturnUrl is not null)
                 {
                     <input type="hidden" name="returnUrl" value="@compareReturnUrl" />
                 }
-                <button type="submit" class="btn btn-secondary btn-sm btn-block">＋ So sánh</button>
+                <button type="submit" class="btn btn-secondary" aria-label="So sánh @Model.Ten" title="So sánh">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v18M8 21h8M5 7h14M5 7l-3 7h6L5 7Zm14 0-3 7h6l-3-7Z"/></svg>
+                </button>
             </form>
             <form asp-controller="Wishlist" asp-action="Add" method="post" class="wishlist-form">
                 <input type="hidden" name="productId" value="@Model.Id" />
-                <button type="submit" class="btn btn-secondary btn-sm btn-block wishlist-btn" aria-label="Thêm @Model.Ten vào yêu thích">♡</button>
+                <button type="submit" class="btn btn-secondary wishlist-btn" aria-label="Thêm @Model.Ten vào yêu thích" title="Thêm vào yêu thích">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20 4.2 12.1a4.5 4.5 0 0 1 6.4-6.4L12 7.1l1.4-1.4a4.5 4.5 0 0 1 6.4 6.4L12 20Z"/></svg>
+                </button>
             </form>
         </div>
     </div>

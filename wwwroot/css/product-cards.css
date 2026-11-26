@@ -1,34 +1,22 @@
 /* Product cards shared by featured, catalog and related product lists. */
-.product-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: clamp(.75rem, 2vw, 1.25rem); }
-@media (min-width: 360px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 769px) { .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-@media (min-width: 1025px) { .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-.product-card {
-  min-inline-size: 0; display: flex; flex-direction: column; border: 1px solid var(--color-border);
-  border-radius: var(--radius-panel); background: var(--color-card); overflow: clip;
-  transition: border-color 160ms ease, box-shadow 160ms ease;
-}
-.product-card:is(:hover, :focus-within) { border-color: var(--color-control-border); box-shadow: var(--shadow-sm); }
-.product-image { position: relative; display: block; background: linear-gradient(140deg, var(--market-photo), var(--market-photo-warm)); aspect-ratio: 6 / 5; }
-.product-image img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: contain; padding: clamp(.625rem, 2vw, 1.5rem); mix-blend-mode: multiply; }
-.product-image:focus-visible { outline-offset: -.25rem; }
-.badge-giam {
-  position: absolute; inset: .5rem auto auto .5rem; background: var(--color-accent-bg); color: var(--color-on-accent);
-  font-size: .8rem; font-weight: 800; padding: .25rem .6rem; border-radius: .25rem .8rem .8rem .25rem;
-}
-.product-info { flex: 1; min-inline-size: 0; padding: clamp(.625rem, 1.4vw, 1.125rem); display: flex; flex-direction: column; gap: .45rem; }
+.product-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(.625rem, 2vw, 1.25rem); }
+@media (min-width: 768px) { .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .product-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.product-card { min-inline-size: 0; display: flex; flex-direction: column; gap: .65rem; }
+.product-image { position: relative; display: grid; place-items: center; aspect-ratio: 4 / 3; border-radius: 14px; background: var(--color-stage); }
+.product-image img { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; object-fit: contain; padding: clamp(.45rem, 2vw, 1.25rem); }
+.product-image .chip-giam { position: absolute; inset: .45rem auto auto .45rem; }
+.product-info { flex: 1; min-inline-size: 0; display: flex; flex-direction: column; align-items: start; gap: .4rem; }
 .product-info h3 { font-size: clamp(.94rem, .86rem + .3vw, 1.1rem); margin: 0; }
-.product-info h3 a { color: var(--color-foreground); text-decoration: none; }
+.product-info h3 a { color: var(--color-foreground); text-decoration: none; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .product-info h3 a:hover { text-decoration: underline; }
 .product-specs, .product-meta { color: var(--color-muted-foreground); font-size: .875rem; margin: 0; overflow-wrap: anywhere; }
+.product-specs { list-style: none; padding: 0; }
 .product-stock { margin: 0; font-size: .875rem; }
-.product-price { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .125rem .5rem; padding: .35rem .5rem; border-inline-start: .2rem solid var(--color-accent); background: var(--market-ticket); border-radius: .375rem; }
-.product-price strong { font-size: clamp(1.05rem, .94rem + .5vw, 1.25rem); }
-.product-price s { color: var(--color-muted-foreground); font-size: .85rem; }
-.product-info > form:first-of-type { margin-block-start: auto; }
-.product-info form .btn { min-block-size: 2.75rem; padding: .45rem .25rem; }
-.card-actions { display: grid; gap: var(--space-xs); }
-.card-actions form { min-inline-size: 0; margin: 0; }
-@media (min-width: 590px) { .card-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-
+.product-price { margin: 0; }
+.card-actions { margin-block-start: auto; display: flex; flex-wrap: wrap; gap: .35rem; width: 100%; }
+.card-actions form { margin: 0; }
+.card-actions form:first-child { flex: 1 0 min(100%, 8rem); }
+.card-actions .btn { min-block-size: 2.75rem; padding: .4rem .5rem; }
+.card-actions svg { display: block; inline-size: 1.2rem; block-size: 1.2rem; }
 .installment-badge { color: var(--color-teal); font-weight: 600; font-variant-numeric: tabular-nums; margin: var(--space-sm) 0 0; }

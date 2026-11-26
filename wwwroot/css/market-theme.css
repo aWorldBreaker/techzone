@@ -1,5 +1,5 @@
 /* Palette shared by the store and customer account. */
-:is(.storefront, .admin-body) {
+.admin-body {
   --market-green: #12392f;
   --market-yellow: #ffd27a;
   --market-canopy: #245949;
@@ -42,7 +42,7 @@
   --color-warning-border: #d6bb82;
   --radius-panel: .875rem;
 }
-[data-theme="dark"] :is(.storefront, .admin-body) {
+[data-theme="dark"] .admin-body {
   --market-ticket: #332e20;
   --color-primary: #a9dfb3;
   --color-primary-hover: #c4edcb;
@@ -76,10 +76,24 @@
   --color-warning-border: #7b6139;
 }
 
+.storefront {
+  --market-green: #0F6B5C;
+  --market-yellow: #EBF5F1;
+  --market-canopy: #0A5549;
+  --market-moss: var(--color-border);
+  --market-photo: var(--color-stage);
+  --market-photo-warm: var(--color-stage);
+  --market-ink: var(--color-foreground);
+  --market-on-canopy: #FFFFFF;
+  --market-on-canopy-muted: #E0EEE9;
+  --market-ticket: var(--color-primary-ghost);
+  --market-rail: var(--market-green);
+}
+
 .market-heading {
   margin-block-end: var(--space-lg); padding: clamp(1rem, 3vw, 1.75rem);
   border-radius: var(--radius-panel); color: var(--market-on-canopy);
-  background: radial-gradient(ellipse at 100% 0, var(--market-canopy), transparent 68%), var(--market-green);
+  background: var(--market-green);
 }
 .market-heading h1 { margin: 0; font-weight: 850; }
 .market-heading .section-head { margin: 0; }
@@ -91,5 +105,5 @@
 .market-heading .market-path [aria-current] { color: var(--market-yellow); font-weight: 750; }
 
 .hero-buy, .market-heading .hero-buy { background: var(--market-yellow); color: var(--market-ink); font-weight: 800; }
-.hero-buy:hover, .market-heading .hero-buy:hover { background: #ffe287; }
+.hero-buy:hover, .market-heading .hero-buy:hover { background: var(--color-accent-hover); }
 .hero-buy:focus-visible { outline-color: var(--market-yellow); }

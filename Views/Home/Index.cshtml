@@ -65,14 +65,20 @@
         {
             var slug = danhMuc.FirstOrDefault(c => c.Id == p.CategoryId)?.Slug;
             var spec = p.Specs;
-            var fields = slug switch
+            (string Label, string? Value, int X, int Y)[] fields = slug switch
             {
-                "laptop" or "tablet" => new[] { ("Màn hình", spec?.ManHinh), ("Chip", spec?.Chip), ("RAM", spec?.Ram), ("Pin", spec?.Pin) },
-                "tai-nghe" => new[] { ("Pin", spec?.Pin), ("Tính năng", spec?.ThongSoKhac?.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()) },
-                "dien-thoai" => new[] { ("Camera", spec?.Camera), ("Màn hình", spec?.ManHinh), ("Chip", spec?.Chip), ("Pin", spec?.Pin) },
-                _ => Array.Empty<(string, string?)>()
+                "laptop" => [("Màn hình", spec?.ManHinh, 300, 92), ("Chip", spec?.Chip, 433, 177),
+                    ("RAM", spec?.Ram, 282, 181), ("Pin", spec?.Pin, 390, 189)],
+                "tablet" => [("Màn hình", spec?.ManHinh, 295, 90), ("Chip", spec?.Chip, 423, 103),
+                    ("RAM", spec?.Ram, 293, 150), ("Pin", spec?.Pin, 424, 151)],
+                "tai-nghe" => [("Pin", spec?.Pin, 279, 166),
+                    ("Tính năng", spec?.ThongSoKhac?.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(), 446, 153)],
+                "dien-thoai" => [("Camera", spec?.Camera, 360, 31), ("Màn hình", spec?.ManHinh, 389, 80),
+                    ("Chip", spec?.Chip, 330, 141), ("Pin", spec?.Pin, 385, 177)],
+                _ => []
             };
-            var notes = fields.Where(f => !string.IsNullOrWhiteSpace(f.Item2)).ToList();
+            var notes = fields.Select((field, index) => (field.Label, field.Value, field.X, field.Y, Position: index))
+                .Where(field => !string.IsNullOrWhiteSpace(field.Value)).ToList();
             var shapes = slug switch
             {
                 "laptop" => new[] { "M248 35H472Q484 35 484 47V167H236V47Q236 35 248 35Z", "M248 48H472V154H248Z", "M236 167H484L522 197Q522 205 512 205H208Q198 205 198 197Z", "M329 185H391L401 194H319Z" },
@@ -86,7 +92,7 @@
                 <figure class="hero-figure">
                     @if (shapes.Length > 0)
                     {
-                        <svg class="hero-drawing" viewBox="0 0 720 230" role="img" aria-label="Bản vẽ minh họa @p.Ten. @string.Join(". ", notes.Select(n => $"{n.Item1}: {n.Item2}"))">
+                        <svg class="hero-drawing" viewBox="0 0 720 230" role="img" aria-label="Bản vẽ minh họa @p.Ten. @string.Join(". ", notes.Select(n => $"{n.Label}: {n.Value}"))">
                             @for (var i = 0; i < shapes.Length; i++)
                             {
                                 <path d="@shapes[i]" class="drawing-fill" />
@@ -94,13 +100,15 @@
                             }
                             @for (var i = 0; i < notes.Count; i++)
                             {
-                                var left = i % 2 == 0;
-                                var x = slug == "dien-thoai" ? (left ? 326 : 392) : (left ? 274 : 444);
-                                var y = i < 2 ? (slug == "dien-thoai" ? 58 : 78) : 164;
+                                var note = notes[i];
+                                var left = note.Position % 2 == 0;
+                                var endX = left ? 0 : 720;
+                                var bendX = left ? 170 : 550;
+                                var endY = note.Position < 2 ? 58 : 172;
                                 <g class="drawing-annotation" style="--i:@i">
-                                    <path class="drawing-leader" d="@($"M{(left ? 0 : 720)} {y} H{x}")" pathLength="1" />
-                                    <circle class="drawing-zone" cx="@x" cy="@y" r="14" pathLength="1" />
-                                    <circle class="drawing-zone drawing-center" cx="@x" cy="@y" r="2.5" pathLength="1" />
+                                    <path class="drawing-leader" d="@($"M{note.X} {note.Y} H{bendX} L{bendX + (left ? -24 : 24)} {endY} H{endX}")" pathLength="1" />
+                                    <circle class="drawing-zone" cx="@note.X" cy="@note.Y" r="14" pathLength="1" />
+                                    <circle class="drawing-zone drawing-center" cx="@note.X" cy="@note.Y" r="2.5" pathLength="1" />
                                 </g>
                             }
                         </svg>
@@ -115,7 +123,11 @@
                         <dl class="hero-annotations">
                             @for (var i = 0; i < notes.Count; i++)
                             {
-                                <div class="drawing-note" style="--i:@i"><dt>@notes[i].Item1</dt><dd>@notes[i].Item2</dd></div>
+                                var note = notes[i];
+                                <div class="drawing-note @(note.Position % 2 == 0 ? "drawing-note-start" : "drawing-note-end")"
+                                     style="--i:@i;--note-row:@(note.Position / 2 + 1)">
+                                    <dt>@note.Label</dt><dd>@note.Value</dd>
+                                </div>
                             }
                         </dl>
                     }

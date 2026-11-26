@@ -3,22 +3,22 @@
 
 <div class="form-group">
     <label><input type="checkbox" asp-for="XuatHoaDon" /> Xuất hóa đơn VAT cho công ty</label>
-    <p class="text-muted">Bắt buộc nhập đủ tên công ty, mã số thuế và địa chỉ khi tick ô này. Hóa đơn trong app là <strong>hóa đơn demo</strong>, chưa phải hóa đơn điện tử hợp pháp.</p>
+    <p class="text-muted">Khi chọn xuất hóa đơn, nhập tên, mã số thuế và địa chỉ công ty. Hóa đơn dùng cho mục đích giả lập.</p>
 </div>
-<div id="vat-fields" hidden>
+<div id="vat-fields">
     <div class="form-group">
         <label asp-for="TenCongTy">Tên công ty</label>
-        <input asp-for="TenCongTy" class="form-control" aria-describedby="TenCongTy-error" />
+        <input asp-for="TenCongTy" autocomplete="organization" maxlength="200" class="form-control" aria-describedby="TenCongTy-error" />
         <span asp-validation-for="TenCongTy" id="TenCongTy-error" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="MaSoThue">Mã số thuế</label>
-        <input asp-for="MaSoThue" class="form-control" aria-describedby="MaSoThue-error" />
+        <input asp-for="MaSoThue" maxlength="20" class="form-control" aria-describedby="MaSoThue-error" />
         <span asp-validation-for="MaSoThue" id="MaSoThue-error" class="text-danger"></span>
     </div>
     <div class="form-group">
         <label asp-for="DiaChiCongTy">Địa chỉ công ty</label>
-        <textarea asp-for="DiaChiCongTy" class="form-control" aria-describedby="DiaChiCongTy-error" rows="2"></textarea>
+        <textarea asp-for="DiaChiCongTy" autocomplete="section-company street-address" maxlength="500" class="form-control" aria-describedby="DiaChiCongTy-error" rows="2"></textarea>
         <span asp-validation-for="DiaChiCongTy" id="DiaChiCongTy-error" class="text-danger"></span>
     </div>
 </div>

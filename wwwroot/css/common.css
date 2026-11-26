@@ -124,13 +124,13 @@ input:is([type="radio"], [type="checkbox"]) { accent-color: var(--color-primary)
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
-.price-tag {
+:is(.price-tag, .order-receipt .total > :last-child) {
   position: relative; display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: .15rem .55rem;
   max-inline-size: 100%; padding: .35rem .65rem .35rem 1.2rem; border-radius: 6px;
   background: var(--color-tag); color: var(--color-tag-ink);
   font-family: var(--font-mono); font-variant-numeric: tabular-nums;
 }
-.price-tag::before {
+:is(.price-tag, .order-receipt .total > :last-child)::before {
   content: ""; position: absolute; inset-inline-start: .45rem; inset-block-start: calc(50% - .2rem);
   inline-size: .4rem; block-size: .4rem; border-radius: 50%; background: var(--color-background);
 }

@@ -7,11 +7,17 @@
     ViewData["Title"] = vuaDat ? "Đặt hàng thành công" : hoaDon ? "Tra cứu hóa đơn" : "Tra cứu đơn hàng";
 }
 
-<header class="market-heading order-heading">
+<header class="@(vuaDat ? "purchase-heading order-confirmed" : "market-heading order-heading")">
     <nav class="market-path" aria-label="Đường dẫn">
         <a asp-controller="Products" asp-action="Index">Ngành hàng</a><span aria-hidden="true">/</span>
         <span aria-current="page">Đơn #@Model.OrderId</span>
     </nav>
+    @if (vuaDat)
+    {
+        <nav class="purchase-progress" aria-label="Tiến trình mua hàng">
+            <ol><li>Giỏ hàng</li><li>Thanh toán</li><li><span aria-current="step">Xác nhận</span></li></ol>
+        </nav>
+    }
     <h1>@ViewData["Title"]</h1>
     <p>Đơn hàng #@Model.OrderId</p>
 </header>
@@ -28,6 +34,7 @@
             <h2 id="lookup-receipt-title">Phiếu tra cứu</h2>
             <p class="alert alert-info">Mã tra cứu đơn hàng của bạn <strong class="lookup-token">@maMoi</strong></p>
             <p>Lưu mã trước khi rời trang. Mã chỉ hiện một lần và dùng để xem đơn hoặc tra cứu bảo hành trong 30 ngày.</p>
+            <a asp-controller="Products" asp-action="Index" class="btn btn-secondary">Tiếp tục mua sắm</a>
         </section>
     }
     <form asp-action="@Model.HanhDong" method="post" class="warranty-lookup lookup-form">
@@ -45,5 +52,6 @@
 </div>
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/purchase.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

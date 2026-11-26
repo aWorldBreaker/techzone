@@ -1,14 +1,28 @@
 @model TechZone.Models.CheckoutViewModel
 @{
-    ViewData["Title"] = "Đặt hàng";
+    ViewData["Title"] = "Thanh toán";
+    var deliveryFields = new[]
+    {
+        (nameof(Model.HoTenNhan), Model.HoTenNhan, "Nhập họ tên người nhận.", "Họ tên tối đa 100 ký tự."),
+        (nameof(Model.SoDienThoai), Model.SoDienThoai, "Nhập số điện thoại liên hệ.", "Số điện thoại tối đa 20 ký tự."),
+        (nameof(Model.DiaChi), Model.DiaChi, "Nhập địa chỉ giao hàng.", "Địa chỉ tối đa 500 ký tự.")
+    };
+    string? firstInvalid = null;
+    foreach (var (name, value, requiredMessage, lengthMessage) in deliveryFields)
+    {
+        if (!ViewData.ModelState.TryGetValue(name, out var state) || state.Errors.Count == 0) continue;
+        firstInvalid ??= name;
+        state.Errors.Clear();
+        state.Errors.Add(string.IsNullOrWhiteSpace(value) ? requiredMessage : lengthMessage);
+    }
     var diaChiDaLuu = ViewBag.DiaChiDaLuu as List<TechZone.Models.Address>;
     var diaChiDangDung = diaChiDaLuu?.FirstOrDefault(address => address.HoTenNhan == Model.HoTenNhan &&
         address.SoDienThoai == Model.SoDienThoai && address.DiaChi == Model.DiaChi);
 }
 
-<header class="market-heading">
+<header class="purchase-heading">
     <partial name="_MarketPurchasePath" model="true" />
-    <h1>Quầy thanh toán</h1>
+    <h1>Thanh toán</h1>
 </header>
 
 @* Bước 4a: giá đổi giữa GET và POST — POST trả về lại trang này với tổng
@@ -20,7 +34,7 @@
     @if (ViewBag.GiaCu is decimal giaCu && ViewBag.GiaMoi is decimal giaMoi && ViewBag.ChenhLech is decimal chenhLech)
     {
         <div class="alert alert-warning" role="alert">
-            Giá đã thay đổi: tổng cũ @giaCu.ToString("N0")đ → tổng mới @giaMoi.ToString("N0")đ (chênh lệch @(chenhLech >= 0 ? "+" : "")@chenhLech.ToString("N0")đ). Vui lòng kiểm tra lại tổng tiền mới bên dưới trước khi xác nhận đặt hàng.
+            Giá đã thay đổi từ @giaCu.ToString("N0")đ thành @giaMoi.ToString("N0")đ (chênh lệch @(chenhLech >= 0 ? "+" : "")@chenhLech.ToString("N0")đ). Vui lòng kiểm tra lại tổng tiền mới bên dưới trước khi xác nhận đặt hàng.
         </div>
     }
     else
@@ -31,11 +45,11 @@
     }
 }
 
-<div class="cart-layout">
+<div class="cart-layout checkout-page">
     <form asp-action="Checkout" method="post" id="checkout-form" class="checkout-form">
         @* Key chong dat don trung (Sprint 1): cung key POST 2 lan chi tao 1 don. *@
         <input type="hidden" asp-for="IdempotencyKey" />
-        <section class="card">
+        <section class="checkout-section">
             <h2 class="checkout-heading">Thông tin giao hàng</h2>
             @if (diaChiDaLuu is { Count: > 0 })
             {
@@ -56,43 +70,43 @@
             <div class="delivery-fields">
                 <div class="form-group">
                     <label asp-for="HoTenNhan">Họ tên người nhận</label>
-                    <input asp-for="HoTenNhan" class="form-control" aria-describedby="HoTenNhan-error" />
+                    <input asp-for="HoTenNhan" class="form-control" aria-describedby="HoTenNhan-error" autocomplete="shipping name" required maxlength="100" autofocus="@(firstInvalid == nameof(Model.HoTenNhan))" />
                     <span asp-validation-for="HoTenNhan" id="HoTenNhan-error" class="text-danger"></span>
                 </div>
                 <div class="form-group">
                     <label asp-for="SoDienThoai">Số điện thoại</label>
-                    <input asp-for="SoDienThoai" class="form-control" aria-describedby="SoDienThoai-error" />
+                    <input asp-for="SoDienThoai" type="tel" class="form-control" aria-describedby="SoDienThoai-error" autocomplete="shipping tel" required maxlength="20" autofocus="@(firstInvalid == nameof(Model.SoDienThoai))" />
                     <span asp-validation-for="SoDienThoai" id="SoDienThoai-error" class="text-danger"></span>
                 </div>
             </div>
             <div class="form-group">
                 <label asp-for="DiaChi">Địa chỉ giao hàng</label>
-                <textarea asp-for="DiaChi" class="form-control" aria-describedby="DiaChi-error" rows="2"></textarea>
+                <textarea asp-for="DiaChi" class="form-control" aria-describedby="DiaChi-error" autocomplete="shipping street-address" required maxlength="500" autofocus="@(firstInvalid == nameof(Model.DiaChi))" rows="2"></textarea>
                 <span asp-validation-for="DiaChi" id="DiaChi-error" class="text-danger"></span>
             </div>
         </section>
-        <section class="card">
+        <section class="checkout-section">
             <h2 class="checkout-heading">Thanh toán</h2>
             <fieldset class="form-group payment-methods">
                 <legend>Phương thức thanh toán (giả lập)</legend>
                 <div>
-                    <label><input type="radio" asp-for="PhuongThucTT" value="COD" id="pay-COD" /> Thanh toán khi nhận hàng (COD)</label>
+                    <label><input type="radio" asp-for="PhuongThucTT" value="COD" id="pay-COD" /> <span>Thanh toán khi nhận hàng (COD)<small>Ghi nhận thanh toán lúc nhận hàng trong đơn giả lập.</small></span></label>
                 </div>
                 <div>
-                    <label><input type="radio" asp-for="PhuongThucTT" value="ChuyenKhoan" id="pay-ChuyenKhoan" /> Chuyển khoản ngân hàng (giả lập)</label>
+                    <label><input type="radio" asp-for="PhuongThucTT" value="ChuyenKhoan" id="pay-ChuyenKhoan" /> <span>Chuyển khoản ngân hàng (giả lập)<small>Chọn phương thức chuyển khoản cho đơn hàng này.</small></span></label>
                 </div>
                 <div>
-                    <label><input type="radio" asp-for="PhuongThucTT" value="MoMo" id="pay-MoMo" /> Ví MoMo (giả lập)</label>
+                    <label><input type="radio" asp-for="PhuongThucTT" value="MoMo" id="pay-MoMo" /> <span>Ví MoMo (giả lập)<small>Xác nhận thanh toán trên trang chi tiết đơn.</small></span></label>
                 </div>
                 <div>
-                    <label><input type="radio" asp-for="PhuongThucTT" value="ZaloPay" id="pay-ZaloPay" /> Ví ZaloPay (giả lập)</label>
+                    <label><input type="radio" asp-for="PhuongThucTT" value="ZaloPay" id="pay-ZaloPay" /> <span>Ví ZaloPay (giả lập)<small>Xác nhận thanh toán trên trang chi tiết đơn.</small></span></label>
                 </div>
                 <div>
-                    <label><input type="radio" asp-for="PhuongThucTT" value="VNPay" id="pay-VNPay" /> Ví VNPay (giả lập)</label>
+                    <label><input type="radio" asp-for="PhuongThucTT" value="VNPay" id="pay-VNPay" /> <span>Ví VNPay (giả lập)<small>Xác nhận thanh toán trên trang chi tiết đơn.</small></span></label>
                 </div>
                 <div class="qr-box" id="qr-box" hidden>
                     <p class="qr-code" aria-hidden="true">QR</p>
-                    <p>Mã QR giả lập — quét bằng app ví (demo, không trừ tiền thật)</p>
+                    <p>Mã QR minh họa cho thanh toán bằng ví (giả lập).</p>
                     <p class="qr-amount">Cần trả: @Model.GioHang.TongCong.ToString("N0")đ</p>
                     <p class="text-muted">Sau khi đặt hàng, vào chi tiết đơn và bấm “Tôi đã thanh toán” để xác nhận.</p>
                 </div>
@@ -123,14 +137,14 @@
                 <p class="text-muted">Đăng nhập để dùng điểm tích lũy (1 điểm = 1.000đ).</p>
             }
         </section>
-        <section class="card">
+        <section class="checkout-section">
             <h2 class="checkout-heading">Hóa đơn</h2>
             <partial name="_HoaDonVat" model="Model" />
         </section>
     </form>
 
     <aside class="summary market-receipt" aria-label="Tóm tắt đơn hàng">
-        <h2>Phiếu tính tiền</h2>
+        <h2>Tóm tắt đơn hàng</h2>
         <ul class="receipt-items">
         @foreach (var line in Model.GioHang.Lines)
         {
@@ -141,7 +155,7 @@
             </li>
         }
         </ul>
-        <div class="summary-row"><span>Tạm tính</span><span>@Model.GioHang.TamTinh.ToString("N0")đ</span></div>
+        <div class="summary-row"><span>Tạm tính (@Model.GioHang.Lines.Sum(l => l.SoLuong) sản phẩm)</span><span>@Model.GioHang.TamTinh.ToString("N0")đ</span></div>
         @if (Model.GioHang.GiamGia > 0)
         {
             <div class="summary-row"><span>Giảm voucher (@Model.GioHang.MaVoucher)</span><span>- @Model.GioHang.GiamGia.ToString("N0")đ</span></div>
@@ -162,7 +176,7 @@
         {
             <div class="summary-row"><span>Tạm tính sau giảm</span><span>@Model.GioHang.SauGiam.ToString("N0")đ</span></div>
         }
-        <div class="summary-row"><span>Phí ship</span><span>@(Model.GioHang.PhiShip == 0 ? "Miễn phí" : Model.GioHang.PhiShip.ToString("N0") + "đ")</span></div>
+        <div class="summary-row"><span>Phí vận chuyển</span><span>@(Model.GioHang.PhiShip == 0 ? "Miễn phí" : Model.GioHang.PhiShip.ToString("N0") + "đ")</span></div>
         @* Sprint 6 Module 4 — tom tat cung hien tong cu + chenh lech
            (tong moi la dong "Tổng cộng" ben duoi). *@
         @if (ViewBag.GiaCu is decimal giaCuTomTat && ViewBag.ChenhLech is decimal chenhLechTomTat)
@@ -170,10 +184,11 @@
             <div class="summary-row"><span>Tổng trước khi đổi giá</span><span>@giaCuTomTat.ToString("N0")đ</span></div>
             <div class="summary-row"><span>Chênh lệch</span><span>@(chenhLechTomTat >= 0 ? "+" : "")@chenhLechTomTat.ToString("N0")đ</span></div>
         }
-        <div class="summary-row total"><span>Tổng cộng</span><span>@Model.GioHang.TongCong.ToString("N0")đ</span></div>
+        <div class="summary-row total"><span>Tổng cộng</span><span class="price-tag"><strong class="price-amount">@Model.GioHang.TongCong.ToString("N0")đ</strong></span></div>
         <p class="text-muted">Giá đã bao gồm VAT (thuế GTGT được tách ra trên hóa đơn, tổng thanh toán không đổi).</p>
-        <p class="text-muted">Miễn phí ship đơn từ 2.000.000đ • Đổi trả online</p>
-        <button type="submit" form="checkout-form" class="btn btn-primary btn-block checkout-submit">Đặt hàng — @Model.GioHang.TongCong.ToString("N0")đ</button>
+        <p class="text-muted">Miễn phí vận chuyển cho đơn từ 2.000.000đ.</p>
+        <button type="submit" form="checkout-form" class="btn btn-primary btn-block checkout-submit">Đặt hàng</button>
+        <a asp-controller="Cart" asp-action="Index" class="checkout-back">Quay lại giỏ hàng</a>
         <p class="text-muted">Bằng cách đặt hàng, bạn đồng ý với Điều khoản &amp; Chính sách bảo mật của TechZone.</p>
     </aside>
 </div>
@@ -242,6 +257,22 @@
             }
             if (traGop) traGop.addEventListener('change', capNhatGop);
             capNhatGop();
+
+            var checkoutForm = document.getElementById('checkout-form');
+            var submit = document.querySelector('.checkout-submit');
+            var submitting = false;
+            checkoutForm.addEventListener('submit', function (event) {
+                if (submitting) {
+                    event.preventDefault();
+                    return;
+                }
+                submitting = true;
+                submit.disabled = true;
+            });
+            window.addEventListener('pageshow', function () {
+                submitting = false;
+                submit.disabled = false;
+            });
 
             var invalidFields = Array.from(document.querySelectorAll('.checkout-form .input-validation-error'));
             invalidFields.forEach(function (field) { field.setAttribute('aria-invalid', 'true'); });

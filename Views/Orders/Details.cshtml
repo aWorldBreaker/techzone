@@ -1,6 +1,7 @@
 @model TechZone.Models.Order
 @{
     ViewData["Title"] = $"Đơn hàng #{Model.Id}";
+    var justPlaced = ViewBag.OrderJustPlaced is true;
     var laChuDon = ViewBag.LaChuDon is true;
     var doiDuocDiaChi = laChuDon
         && (Model.TrangThai == OrderStatus.ChoXacNhan || Model.TrangThai == OrderStatus.DaXacNhan);
@@ -13,7 +14,7 @@
     var laVi = new[] { "MoMo", "ZaloPay", "VNPay" }.Contains(Model.PhuongThucTT);
 }
 
-<header class="market-heading order-heading">
+<header class="@(justPlaced ? "purchase-heading order-confirmed" : "market-heading order-heading")">
     <nav class="market-path" aria-label="Đường dẫn">
         @if (laChuDon)
         {
@@ -25,50 +26,26 @@
         }
         <span aria-hidden="true">/</span><span aria-current="page">Đơn #@Model.Id</span>
     </nav>
-    @if (ViewBag.OrderJustPlaced is true)
+    @if (justPlaced)
     {
-        <p class="order-confirmation" role="status">Đặt hàng thành công</p>
+        <nav class="purchase-progress" aria-label="Tiến trình mua hàng">
+            <ol><li>Giỏ hàng</li><li>Thanh toán</li><li><span aria-current="step">Xác nhận</span></li></ol>
+        </nav>
     }
     <div class="section-head">
-        <h1>Đơn hàng #@Model.Id</h1>
+        <h1>@(justPlaced ? "Đặt hàng thành công" : $"Đơn hàng #{Model.Id}")</h1>
         <partial name="_TrangThaiBadge" model="Model.TrangThai" />
     </div>
+    @if (justPlaced) { <p>Mã đơn: <strong>#@Model.Id</strong></p> }
     <p>Ngày đặt @Model.NgayDat.ToString("dd/MM/yyyy HH:mm")</p>
 </header>
-
-<section class="card tracking-card">
-    <h2>Theo dõi đơn hàng</h2>
-    @if (Model.TrangThai == OrderStatus.DaHuy)
-    {
-        var mocHuy = lichSu.FirstOrDefault(h => h.TrangThai == OrderStatus.DaHuy);
-        <p class="alert alert-error">Đơn hàng đã hủy@(mocHuy is not null ? $" lúc {mocHuy.NgayCapNhat:dd/MM/yyyy HH:mm}" : "").</p>
-    }
-    else
-    {
-        <ol class="timeline">
-            @foreach (var buoc in OrderStatus.Timeline)
-            {
-                var moc = lichSu.FirstOrDefault(h => h.TrangThai == buoc);
-                var hienTai = Model.TrangThai == buoc;
-                <li aria-current="@(hienTai ? "step" : null)" class="timeline-step @(moc is not null ? "done" : "") @(hienTai ? "current" : "")">
-                    <span class="timeline-dot" aria-hidden="true"></span>
-                    <span class="timeline-ten">@buoc</span>
-                    @if (moc is not null)
-                    {
-                        <span class="timeline-moc">@moc.NgayCapNhat.ToString("dd/MM/yyyy HH:mm")</span>
-                    }
-                </li>
-            }
-        </ol>
-    }
-</section>
 
 <div class="order-layout mt">
     <div class="order-column">
         <section class="card order-delivery">
             <h2>Giao hàng và thanh toán</h2>
             <p><strong>Giao đến</strong><br />@Model.DiaChiGiao</p>
-            <p>Phương thức: @Model.PhuongThucTT @(Model.PhuongThucTT == "COD" ? "(thanh toán khi nhận hàng — giả lập)" : "(giả lập)")</p>
+            <p>Phương thức: @Model.PhuongThucTT @(Model.PhuongThucTT == "COD" ? "(thanh toán khi nhận hàng, giả lập)" : "(giả lập)")</p>
 
             @if (Model.InstallmentMonths.HasValue)
             {
@@ -111,10 +88,10 @@
                             <span class="text-muted">@line.DonGia.ToString("N0")đ × @line.SoLuong</span>
                             @if (!string.IsNullOrEmpty(line.TenKhuyenMai))
                             {
-                                <small>@line.TenKhuyenMai · Giá gốc <s>@line.GiaGoc.ToString("N0")đ</s></small>
+                                <small>@line.TenKhuyenMai</small><small>Giá gốc <s>@line.GiaGoc.ToString("N0")đ</s></small>
                             }
                         </div>
-                        <strong class="price-amount">@line.ThanhTien.ToString("N0")đ</strong>
+                        <strong class="order-line-total">@line.ThanhTien.ToString("N0")đ</strong>
                     </li>
                 }
             </ul>
@@ -139,8 +116,36 @@
     <aside class="card market-receipt order-receipt" aria-labelledby="order-receipt-title">
         <h2 id="order-receipt-title">Phiếu tính tiền</h2>
         <partial name="_BangTienDon" model="Model" />
+        <a asp-controller="Products" asp-action="Index" class="btn btn-primary order-continue">Tiếp tục mua sắm</a>
     </aside>
 </div>
+
+<section class="card tracking-card order-tracking mt">
+    <h2>Theo dõi đơn hàng</h2>
+    @if (Model.TrangThai == OrderStatus.DaHuy)
+    {
+        var mocHuy = lichSu.FirstOrDefault(h => h.TrangThai == OrderStatus.DaHuy);
+        <p class="alert alert-error">Đơn hàng đã hủy@(mocHuy is not null ? $" lúc {mocHuy.NgayCapNhat:dd/MM/yyyy HH:mm}" : "").</p>
+    }
+    else
+    {
+        <ol class="timeline">
+            @foreach (var buoc in OrderStatus.Timeline)
+            {
+                var moc = lichSu.FirstOrDefault(h => h.TrangThai == buoc);
+                var hienTai = Model.TrangThai == buoc;
+                <li aria-current="@(hienTai ? "step" : null)" class="timeline-step @(moc is not null ? "done" : "") @(hienTai ? "current" : "")">
+                    <span class="timeline-dot" aria-hidden="true"></span>
+                    <span class="timeline-ten">@buoc</span>
+                    @if (moc is not null)
+                    {
+                        <span class="timeline-moc">@moc.NgayCapNhat.ToString("dd/MM/yyyy HH:mm")</span>
+                    }
+                </li>
+            }
+        </ol>
+    }
+</section>
 
 @if (doiDuocDiaChi)
 {
@@ -167,9 +172,10 @@
 
 @if (laChuDon)
 {
-    <p class="mt"><a asp-action="MyOrders">← Về danh sách đơn của tôi</a></p>
+    <p class="mt"><a asp-action="MyOrders">Về danh sách đơn của tôi</a></p>
 }
 
 @section Styles {
+    <link rel="stylesheet" href="~/css/purchase.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/css/order-detail.css" asp-append-version="true" />
 }

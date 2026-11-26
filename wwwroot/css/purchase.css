@@ -29,18 +29,18 @@
 .receipt-items img { border-radius: .35rem; background: var(--market-photo); object-fit: contain; }
 .receipt-items small { display: block; color: var(--color-muted-foreground); }
 .checkout-form { display: grid; gap: var(--space-md); }
-.checkout-form .card { min-inline-size: 0; }
+.checkout-section { min-inline-size: 0; padding-block-end: 1rem; border-block-end: 1px solid var(--color-border); }
 .checkout-form .checkout-heading { color: var(--color-primary-text); border-block-end: 1px solid var(--color-border); padding-block-end: .75rem; }
 .checkout-form fieldset { min-inline-size: 0; border: 0; padding: 0; margin-inline: 0; }
 .payment-methods { display: grid; gap: .5rem; }
 .payment-methods legend { margin-block-end: .5rem; }
 .payment-methods label {
-  display: flex; align-items: center; gap: .5rem; min-block-size: 2.75rem; margin: 0;
+  display: flex; align-items: start; gap: .55rem; min-block-size: 2.75rem; margin: 0;
   background: var(--color-muted); border: 1px solid var(--color-border); border-radius: var(--radius);
   padding: .4rem .65rem; font-weight: 600; cursor: pointer;
 }
 .payment-methods label:has(:checked) { background: var(--color-primary-ghost); border-color: var(--color-primary); }
-@media (min-width: 1025px) {
+@media (min-width: 1024px) {
   .delivery-fields, .payment-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
   .payment-methods .qr-box { grid-column: 1 / -1; }
 }
@@ -84,3 +84,10 @@
   .cart-payment .summary-row.total { border: 0; margin: 0; padding: 0; flex-wrap: wrap; gap: .25rem .5rem; font-size: .95rem; }
   .cart-payment .btn { padding-inline: .55rem; }
 }
+
+.payment-methods label input { flex: 0 0 auto; margin-block-start: .38rem; }
+.payment-methods label small { display: block; font-weight: 400; color: var(--color-muted-foreground); }
+.checkout-page .summary-row.total > .price-tag { color: var(--color-tag-ink); }
+.checkout-back { display: block; text-align: center; margin-block: .5rem; }
+.checkout-page .field-validation-error { display: block; padding-block-start: .25rem; }
+.checkout-section :is(p, small) { max-inline-size: 76ch; }

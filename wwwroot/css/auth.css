@@ -1,7 +1,7 @@
-.auth-body { background: linear-gradient(180deg, var(--market-green) 0 13rem, var(--color-background) 13rem); }
-.auth-logo { color: var(--market-on-canopy); }
-.auth-logo span { color: var(--market-yellow); }
-.auth-header :focus-visible { outline-color: var(--market-yellow); }
+.auth-body { background: var(--color-background); }
+.auth-logo { color: var(--color-foreground); }
+.auth-logo span { color: var(--color-primary-text); }
+.auth-header :focus-visible { outline-color: var(--color-primary-text); }
 .auth-header {
   display: flex; align-items: center; justify-content: space-between;
   width: min(100%, 82rem); margin-inline: auto;

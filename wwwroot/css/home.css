@@ -5,6 +5,11 @@
 .home-blueprint h1 { margin-block-end: 1.25rem; max-inline-size: 32ch; }
 .need-finder { display: flex; flex-wrap: wrap; gap: .85rem 1.4rem; align-items: end; }
 .need-finder .btn { min-height: 2.75rem; }
+.need-finder .choice-chip { font-size: .9rem; }
+@media (min-width: 1280px) {
+  .need-finder { gap: .75rem; }
+  .need-finder .btn { padding-inline: .8rem; }
+}
 .home-suggestions:not(:empty) { margin-block-start: 1rem; border-block-start: 1px solid var(--color-border); padding-block-start: .75rem; }
 .home-suggestions p { margin: 0; }
 .home-suggestions ul { display: flex; flex-wrap: wrap; gap: .45rem 1rem; margin: .35rem 0 0; padding: 0; list-style: none; }

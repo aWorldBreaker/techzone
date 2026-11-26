@@ -1,3 +1,9 @@
 @model decimal
 
-<p class="installment-badge">Trả góp 0% (giả lập): <span data-installment="6">@(Math.Round(Model / 6).ToString("N0"))</span>đ/tháng × 6 tháng · <span data-installment="12">@(Math.Round(Model / 12).ToString("N0"))</span>đ/tháng × 12 tháng</p>
+<div class="installment-badge">
+    <strong>Trả góp 0% (giả lập)</strong>
+    <ul>
+        <li><span data-installment="6">@(Math.Round(Model / 6).ToString("N0"))</span>đ/tháng trong 6 tháng</li>
+        <li><span data-installment="12">@(Math.Round(Model / 12).ToString("N0"))</span>đ/tháng trong 12 tháng</li>
+    </ul>
+</div>

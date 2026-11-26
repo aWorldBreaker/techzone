@@ -7,6 +7,16 @@
 (function () {
     'use strict';
 
+    var header = document.querySelector('.site-header');
+    function measureHeader() {
+        document.documentElement.style.setProperty('--site-header-height', header.offsetHeight + 'px');
+    }
+    if (header) {
+        measureHeader();
+        if ('ResizeObserver' in window) new ResizeObserver(measureHeader).observe(header);
+        else window.addEventListener('resize', measureHeader);
+    }
+
     function wireToggle(btnId, panelId, openLabel, closeLabel) {
         var btn = document.getElementById(btnId);
         var panel = document.getElementById(panelId);

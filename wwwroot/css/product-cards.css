@@ -20,3 +20,5 @@
 .card-actions .btn { min-block-size: 2.75rem; padding: .4rem .5rem; }
 .card-actions svg { display: block; inline-size: 1.2rem; block-size: 1.2rem; }
 .installment-badge { color: var(--color-teal); font-weight: 600; font-variant-numeric: tabular-nums; margin: var(--space-sm) 0 0; }
+html[data-theme="light"] .product-image img { mix-blend-mode: multiply; }
+.installment-badge ul { display: flex; flex-wrap: wrap; gap: .2rem 1.45rem; padding-inline-start: 1.2rem; margin: .25rem 0 0; font-size: .9rem; }

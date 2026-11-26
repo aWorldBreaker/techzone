@@ -91,7 +91,7 @@ input:is([type="radio"], [type="checkbox"]) { accent-color: var(--color-primary)
 .badge-vang { background: var(--color-warning-bg); color: var(--color-warning-fg); border: 1px solid var(--color-warning-border); }
 
 .chip-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; margin: var(--space-lg) 0; }
-.chip { display: inline-flex; align-items: center; gap: var(--space-sm); padding: .5rem .85rem; text-decoration: none; border: 1px solid var(--color-border); border-radius: 999px; color: var(--color-foreground); font-weight: 600; }
+.chip { display: inline-flex; align-items: center; gap: var(--space-sm); padding: .5rem .85rem; text-decoration: none; border: 1px solid var(--color-border); border-radius: var(--radius); color: var(--color-foreground); font-weight: 600; }
 .chip:hover { border-color: var(--color-primary-text); color: var(--color-primary-text); text-decoration: none; }
 .chip-active { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
 .chip-active:hover { color: var(--color-on-primary); border-color: var(--color-primary); }
@@ -156,12 +156,13 @@ input:is([type="radio"], [type="checkbox"]) { accent-color: var(--color-primary)
 .drawing-zone { fill: var(--color-background); }
 .drawing-center { fill: var(--color-primary); }
 @media (prefers-reduced-motion: no-preference) {
+  .is-drawing :is(.drawing-stroke, .drawing-leader) { stroke-dasharray: 1; }
   .is-drawing .drawing-stroke { animation: trace-drawing 760ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(var(--i) * 120ms); }
   .is-drawing .drawing-leader { animation: trace-drawing 700ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(420ms + var(--i) * 120ms); }
   .is-drawing :is(.drawing-zone, .drawing-note) { animation: reveal-note 220ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(940ms + var(--i) * 120ms); }
   .is-dropping .drawing-price { animation: drop-price 550ms cubic-bezier(.2,.8,.3,1.1) backwards 1400ms; }
   .home-blueprint .choice-chip { transition: background-color 200ms, color 200ms, border-color 200ms; }
-  @keyframes trace-drawing { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+  @keyframes trace-drawing { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
   @keyframes reveal-note { from { opacity: 0; transform: translateX(8px); } }
   @keyframes drop-price { from { transform: translateY(-18px) rotate(-3deg); } }
 }

@@ -9,12 +9,14 @@
         _ => throw new InvalidOperationException("Loại yêu cầu không hợp lệ.")
     };
     ViewData["Title"] = $"Yêu cầu {yeuCau.Ten.ToLowerInvariant()} #{yeuCau.Id}";
-    var trangDanhSach = User.IsInRole("Admin") ? "AdminIndex" : "Index";
+    var quanTri = User.IsInRole("Admin");
+    if (quanTri) { Layout = "_AdminLayout"; }
+    var trangDanhSach = quanTri ? "AdminIndex" : "Index";
 }
 
 <header class="market-heading order-heading">
     <nav class="market-path" aria-label="Đường dẫn">
-        <a asp-action="@trangDanhSach">@(User.IsInRole("Admin") ? "Danh sách duyệt" : "Yêu cầu của tôi")</a>
+        <a asp-action="@trangDanhSach">@(quanTri ? "Danh sách duyệt" : "Yêu cầu của tôi")</a>
         <span aria-hidden="true">/</span><span aria-current="page">Yêu cầu #@yeuCau.Id</span>
     </nav>
     <div class="section-head">
@@ -34,10 +36,10 @@
             <img src="@yeuCau.AnhUrl" alt="Ảnh kèm theo yêu cầu đổi trả" class="service-attachment" />
         }
     </section>
-    <aside class="card market-receipt service-card">
+    <aside class="card market-receipt service-card @(quanTri ? "admin-editor" : null)">
         <h2>Sản phẩm liên quan</h2>
         <p><strong>@yeuCau.SanPham</strong> @yeuCau.PhienBan</p>
-        <a asp-controller="Orders" asp-action="Details" asp-route-id="@yeuCau.OrderId" class="btn btn-secondary">Xem đơn #@yeuCau.OrderId</a>
+        <a asp-controller="@(quanTri ? "Admin" : "Orders")" asp-action="@(quanTri ? "OrderDetails" : "Details")" asp-route-id="@yeuCau.OrderId" class="btn btn-secondary">Xem đơn #@yeuCau.OrderId</a>
     </aside>
 </div>
 

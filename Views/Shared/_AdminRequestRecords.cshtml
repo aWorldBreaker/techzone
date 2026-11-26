@@ -1,0 +1,77 @@
+@model (IEnumerable<ReturnRequest> DoiTra, IEnumerable<WarrantyClaim> BaoHanh, bool TongQuan)
+@{
+    var groups = new[]
+    {
+        (Key: "doitra", Title: "Đổi trả", Label: "Lý do đổi trả",
+            Items: Model.DoiTra.Select(r => (r.Id, r.OrderId, r.NgayTao, r.TrangThai, r.User, Ten: r.Product.Ten, BienThe: r.OrderDetail?.Variant?.TenBienThe, NoiDung: r.LyDo))),
+        (Key: "baohanh", Title: "Bảo hành", Label: "Mô tả lỗi",
+            Items: Model.BaoHanh.Select(w => (w.Id, w.OrderId, w.NgayTao, w.TrangThai, w.User, Ten: w.Product.Ten, BienThe: (string?)null, NoiDung: w.MoTaLoi)))
+    };
+}
+
+@foreach (var group in groups)
+{
+    <div class="mt" id="yeu-cau-@group.Key" role="region" aria-labelledby="title-@group.Key" tabindex="-1">
+        <h2 id="title-@group.Key">@group.Title (@group.Items.Count())</h2>
+        @if (!group.Items.Any())
+        {
+            <p class="admin-empty">Không có yêu cầu @group.Title.ToLowerInvariant() nào trong danh sách này.</p>
+        }
+        else
+        {
+            <div class="table-wrap admin-record-list">
+                <table class="table" role="table" aria-label="@group.Title">
+                    <thead role="rowgroup">
+                        <tr role="row"><th scope="col">Yêu cầu</th><th scope="col">Đơn hàng</th><th scope="col">Ngày gửi</th><th scope="col">Khách hàng</th><th scope="col">@group.Label</th><th scope="col">Xử lý</th></tr>
+                    </thead>
+                    <tbody role="rowgroup">
+                        @foreach (var item in group.Items)
+                        {
+                            var key = $"{group.Key}-{item.Id}";
+                            <tr role="row">
+                                <th scope="row" role="rowheader" class="admin-record-lead">
+                                    <span class="admin-record-title">
+                                        <a asp-controller="Returns" asp-action="Details" asp-route-id="@item.Id" asp-route-loai="@group.Key">#@item.Id</a>
+                                        <partial name="_TrangThaiBadge" model="item.TrangThai" />
+                                    </span>
+                                    <span class="admin-record-code">@item.Ten @item.BienThe</span>
+                                </th>
+                                <td role="cell" data-label="Đơn hàng"><a asp-controller="Admin" asp-action="OrderDetails" asp-route-id="@item.OrderId">Đơn #@item.OrderId</a></td>
+                                <td role="cell" data-label="Ngày gửi">@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td role="cell" class="admin-record-wide" data-label="Khách hàng">
+                                    @(item.User?.HoTen ?? "—")
+                                    @if (item.User?.UserName is string userName)
+                                    {
+                                        <small class="admin-record-code text-muted">@userName</small>
+                                    }
+                                </td>
+                                <td role="cell" class="admin-record-wide admin-message" data-label="@group.Label">@item.NoiDung</td>
+                                <td role="cell" class="admin-record-actions">
+                                    <form asp-controller="Returns" asp-action="Duyet" method="post" class="admin-request-action">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <input type="hidden" name="loai" value="@group.Key" />
+                                        @if (Model.TongQuan)
+                                        {
+                                            <input type="hidden" name="tuTrang" value="TongQuan" />
+                                            <input type="hidden" name="muc" value="returns" />
+                                        }
+                                        <div class="form-group">
+                                            <label for="trang-thai-@key">Trạng thái mới</label>
+                                            <select id="trang-thai-@key" name="trangThaiMoi" class="form-control" required>
+                                                <option value="">Chọn trạng thái</option>
+                                                <option>Đã duyệt</option>
+                                                <option>Từ chối</option>
+                                                <option>Hoàn thành</option>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm">Cập nhật</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}

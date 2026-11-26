@@ -16,10 +16,12 @@
         ("returns", "Đổi trả / Bảo hành"),
     };
 }
-<div class="section-head">
-    <h1>Trang tổng hợp</h1>
-    <a asp-action="Dashboard">Xem báo cáo Dashboard</a>
-</div>
+<header class="market-heading">
+    <div class="section-head">
+        <h1>Trang tổng hợp</h1>
+        <a class="btn hero-buy" asp-action="Dashboard">Xem báo cáo Dashboard</a>
+    </div>
+</header>
 <nav class="tongquan-tabs" aria-label="Các mục quản trị">
     @foreach (var muc in mucQuanTri)
     {
@@ -160,18 +162,18 @@
         }
         else
         {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Họ tên</th><th scope="col">Email</th><th scope="col">Số điện thoại</th><th scope="col">Tổng chi tiêu</th><th scope="col">Hạng</th><th scope="col">Điểm</th></tr></thead>
-                <tbody>
+            <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Danh sách khách hàng">
+                <thead role="rowgroup"><tr role="row"><th scope="col">Họ tên</th><th scope="col">Email</th><th scope="col">Số điện thoại</th><th scope="col">Hạng</th><th scope="col">Tổng chi tiêu</th><th scope="col">Điểm</th></tr></thead>
+                <tbody role="rowgroup">
                     @foreach (var k in Model.KhachHang)
                     {
-                        <tr>
-                            <td>@k.User.HoTen</td>
-                            <td>@k.User.Email</td>
-                            <td>@k.User.SoDienThoai</td>
-                            <td>@k.TongChiTieu.ToString("N0")đ</td>
-                            <td><partial name="_TrangThaiBadge" model="k.Hang" /></td>
-                            <td>@k.Diem điểm</td>
+                        <tr role="row">
+                            <th scope="row" role="rowheader" class="admin-record-lead">@k.User.HoTen</th>
+                            <td role="cell" class="admin-record-wide" data-label="Email">@k.User.Email</td>
+                            <td role="cell" data-label="Số điện thoại">@(k.User.SoDienThoai ?? "—")</td>
+                            <td role="cell" data-label="Hạng"><partial name="_TrangThaiBadge" model="k.Hang" /></td>
+                            <td role="cell" data-label="Tổng chi tiêu"><strong class="admin-money">@k.TongChiTieu.ToString("N0")đ</strong></td>
+                            <td role="cell" data-label="Điểm">@k.Diem điểm</td>
                         </tr>
                     }
                 </tbody>
@@ -195,38 +197,35 @@
         }
         else
         {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Mã</th><th scope="col">Loại</th><th scope="col">Giá trị</th><th scope="col">Đơn tối thiểu</th><th scope="col">Hết hạn</th><th scope="col">Đã dùng / Số lượng</th></tr></thead>
-                <tbody>
+            <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Voucher">
+                <thead role="rowgroup"><tr role="row"><th scope="col">Mã</th><th scope="col">Giá trị</th><th scope="col">Đơn tối thiểu</th><th scope="col">Hết hạn</th><th scope="col">Đã dùng / Số lượng</th></tr></thead>
+                <tbody role="rowgroup">
                     @foreach (var v in Model.Vouchers)
                     {
-                        <tr>
-                            <td><strong>@v.Ma</strong></td>
-                            <td>@v.LoaiGiam</td>
-                            <td>@(v.LoaiGiam == "PhanTram" ? v.GiaTri.ToString("N0") + "%" : v.GiaTri.ToString("N0") + "đ")</td>
-                            <td>@v.DieuKien.ToString("N0")đ</td>
-                            <td>@v.NgayHetHan.ToString("dd/MM/yyyy")</td>
-                            <td>@v.DaDung / @v.SoLuong</td>
+                        <tr role="row">
+                            <th scope="row" role="rowheader" class="admin-record-lead">@v.Ma</th>
+                            <td role="cell" data-label="Giá trị"><strong class="admin-money">@(v.FreeShip ? "Miễn phí vận chuyển" : v.LoaiGiam == "PhanTram" ? v.GiaTri.ToString("0.##") + "%" : v.GiaTri.ToString("N0") + "đ")</strong></td>
+                            <td role="cell" data-label="Đơn tối thiểu">@v.DieuKien.ToString("N0")đ</td>
+                            <td role="cell" data-label="Hết hạn">@v.NgayHetHan.ToString("dd/MM/yyyy")</td>
+                            <td role="cell" data-label="Đã dùng / Số lượng">@v.DaDung / @v.SoLuong</td>
                         </tr>
                     }
                 </tbody>
             </table></div>
         }
-        <h3 class="mt">Thêm voucher mới</h3>
-        @* Dot 3 (A7): form nhom thanh card 2 cot — giong Vouchers.cshtml. *@
+        <section class="card admin-editor mt">
+        <h3>Thêm voucher mới</h3>
         <form asp-action="ThemVoucher" method="post">
+            <input type="hidden" name="__Invariant" value="GiaTri" />
             <input type="hidden" name="tuTrang" value="TongQuan" />
             <input type="hidden" name="muc" value="@Model.Muc" />
             <div class="admin-form-grid">
                 <fieldset class="admin-form-card">
-                    <legend>Mã voucher</legend>
+                    <legend>Mã và mức giảm</legend>
                     <div class="form-group">
                         <label for="tq-Ma">Mã (vd: TECHZONE500)</label>
                         <input id="tq-Ma" name="Ma" class="form-control" required maxlength="50" />
                     </div>
-                </fieldset>
-                <fieldset class="admin-form-card">
-                    <legend>Giá trị</legend>
                     <div class="form-group">
                         <label for="tq-LoaiGiam">Loại giảm</label>
                         <select id="tq-LoaiGiam" name="LoaiGiam" class="form-control">
@@ -236,22 +235,19 @@
                     </div>
                     <div class="form-group">
                         <label for="tq-GiaTri">Giá trị (đ hoặc %)</label>
-                        <input id="tq-GiaTri" name="GiaTri" class="form-control" type="number" min="0" step="1000" required />
+                        <input id="tq-GiaTri" name="GiaTri" class="form-control" type="number" inputmode="decimal" min="0" step="any" required />
                     </div>
                 </fieldset>
                 <fieldset class="admin-form-card">
-                    <legend>Điều kiện</legend>
+                    <legend>Điều kiện và thời gian</legend>
                     <div class="form-group">
                         <label for="tq-DieuKien">Đơn tối thiểu (đ)</label>
-                        <input id="tq-DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1000" value="0" />
+                        <input id="tq-DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1" value="0" />
                     </div>
                     <div class="form-group">
                         <label for="tq-SoLuong">Số lượng mã</label>
                         <input id="tq-SoLuong" name="SoLuong" class="form-control" type="number" min="1" value="100" required />
                     </div>
-                </fieldset>
-                <fieldset class="admin-form-card">
-                    <legend>Thời gian</legend>
                     <div class="form-group">
                         <label for="tq-NgayHetHan">Ngày hết hạn</label>
                         <input id="tq-NgayHetHan" name="NgayHetHan" class="form-control" type="date" required />
@@ -260,6 +256,7 @@
             </div>
             <button type="submit" class="btn btn-primary">Thêm voucher</button>
         </form>
+        </section>
     </section>
 }
 
@@ -278,33 +275,38 @@
         }
         else
         {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Tên combo</th><th scope="col">% giảm</th><th scope="col">Hiệu lực</th><th scope="col">Đã bán / Giới hạn</th><th scope="col">Trạng thái</th><th scope="col">Món trong combo</th><th scope="col"><span class="visually-hidden">Thao tac</span></th></tr></thead>
-                <tbody>
+            <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Combo">
+                <thead role="rowgroup"><tr role="row"><th scope="col">Tên combo</th><th scope="col">% giảm</th><th scope="col">Trạng thái</th><th scope="col">Hiệu lực</th><th scope="col">Đã bán / Giới hạn</th><th scope="col">Món trong combo</th><th scope="col">Thao tác</th></tr></thead>
+                <tbody role="rowgroup">
                     @foreach (var c in Model.Combos)
                     {
-                        <tr>
-                            <td><strong>@c.Ten</strong>@if (!string.IsNullOrEmpty(c.MoTa)) { <br /><span class="text-muted">@c.MoTa</span> }</td>
-                            <td>@c.PhanTramGiam.ToString("0.##")%</td>
-                            <td>@c.BatDau.ToString("dd/MM/yyyy") – @c.KetThuc.ToString("dd/MM/yyyy")</td>
-                            <td>@c.DaBan / @(c.GioiHanSL?.ToString() ?? "∞")</td>
-                            <td><partial name="_TrangThaiBadge" model="@(c.IsActive ? "Đang bật" : "Đã tắt")" /></td>
-                            <td>
-                                <ul>
+                        <tr role="row">
+                            <th scope="row" role="rowheader" class="admin-record-lead"><strong>@c.Ten</strong>@if (!string.IsNullOrEmpty(c.MoTa)) { <span class="admin-record-code text-muted">@c.MoTa</span> }</th>
+                            <td role="cell" data-label="Mức giảm"><strong class="admin-money">@c.PhanTramGiam.ToString("0.##")%</strong></td>
+                            <td role="cell" data-label="Trạng thái"><partial name="_TrangThaiBadge" model="@(c.IsActive ? "Đang bật" : "Đã tắt")" /></td>
+                            <td role="cell" data-label="Hiệu lực">@c.BatDau.ToString("dd/MM/yyyy") – @c.KetThuc.ToString("dd/MM/yyyy")</td>
+                            <td role="cell" data-label="Đã bán / Giới hạn">@c.DaBan / @(c.GioiHanSL?.ToString() ?? "∞")</td>
+                            <td role="cell" class="admin-record-wide">
+                                <details class="admin-combo-items">
+                                <summary>Xem @c.Items.Count món</summary>
+                                <ul class="admin-item-list" role="list">
                                     @foreach (var item in c.Items)
                                     {
                                         <li><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />@item.Product.Ten × @item.SoLuong</span></li>
                                     }
                                 </ul>
+                                </details>
                             </td>
-                            <td>
-                                <a asp-action="SuaCombo" asp-route-id="@c.Id" class="btn btn-secondary">Sửa</a>
+                            <td role="cell" class="admin-record-actions">
+                                <div class="admin-row-actions">
+                                <a asp-action="SuaCombo" asp-route-id="@c.Id" class="btn btn-secondary btn-sm" aria-label="Sửa @c.Ten">Sửa</a>
                                 <form asp-action="BatTatCombo" method="post" class="inline-form">
                                     <input type="hidden" name="id" value="@c.Id" />
                                     <input type="hidden" name="tuTrang" value="TongQuan" />
                                     <input type="hidden" name="muc" value="@Model.Muc" />
-                                    <button type="submit" class="btn btn-secondary">@(c.IsActive ? "Tắt" : "Bật")</button>
+                                    <button type="submit" class="btn btn-secondary btn-sm" aria-label="@(c.IsActive ? "Tắt" : "Bật") @c.Ten">@(c.IsActive ? "Tắt" : "Bật")</button>
                                 </form>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -333,8 +335,12 @@
         {
             @foreach (var s in Model.FlashSaleSlots)
             {
+                <section class="card admin-editor mt">
                 <div class="section-head">
-                    <h3 class="mt">Khung @s.Ten @(s.IsActive ? "" : "(đang tắt)")</h3>
+                    <div class="admin-slot-title">
+                        <h3>Khung @s.Ten</h3>
+                        <partial name="_TrangThaiBadge" model="@(s.IsActive ? "Đang bật" : "Đã tắt")" />
+                    </div>
                     @* Dot 2 (B6): bat/tat slot — POST BatTatSlot moi, chi doi co
                        IsActive (gia sale van do PriceCalculationService tinh). *@
                     <form asp-action="BatTatSlot" method="post" class="inline-form">
@@ -350,35 +356,38 @@
                 }
                 else
                 {
-                    <div class="table-wrap"><table class="table">
-                        <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Giá sale</th></tr></thead>
-                        <tbody>
+                    <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Sản phẩm trong khung @s.Ten">
+                        <thead role="rowgroup"><tr role="row"><th scope="col">Sản phẩm</th><th scope="col">Giá sale</th></tr></thead>
+                        <tbody role="rowgroup">
                             @foreach (var item in s.Items)
                             {
-                                <tr>
-                                    <td><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />@item.Product.Ten</span></td>
-                                    <td>@item.GiaSale.ToString("N0")đ</td>
+                                <tr role="row">
+                                    <th scope="row" role="rowheader" class="admin-record-lead"><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />@item.Product.Ten</span></th>
+                                    <td role="cell" class="admin-record-wide" data-label="Giá sale"><strong class="admin-money">@item.GiaSale.ToString("N0")đ</strong></td>
                                 </tr>
                             }
                         </tbody>
                     </table></div>
                 }
+                </section>
             }
         }
-        <h3 class="mt">Thêm khung giờ mới</h3>
-        <form asp-action="ThemSlot" method="post">
+        <section class="card admin-editor mt">
+        <h3>Thêm khung giờ mới</h3>
+        <form asp-action="ThemSlot" method="post" class="admin-inline-fields admin-slot-hours">
             <input type="hidden" name="tuTrang" value="TongQuan" />
-                        <input type="hidden" name="muc" value="@Model.Muc" />
+            <input type="hidden" name="muc" value="@Model.Muc" />
             <div class="form-group">
                 <label for="tq-GioBatDau">Giờ bắt đầu (0–23)</label>
-                <input id="tq-GioBatDau" name="gioBatDau" class="form-control input-narrow" type="number" min="0" max="23" required />
+                <input id="tq-GioBatDau" name="gioBatDau" class="form-control" type="number" min="0" max="23" required />
             </div>
             <div class="form-group">
                 <label for="tq-GioKetThuc">Giờ kết thúc (1–24)</label>
-                <input id="tq-GioKetThuc" name="gioKetThuc" class="form-control input-narrow" type="number" min="1" max="24" required />
+                <input id="tq-GioKetThuc" name="gioKetThuc" class="form-control" type="number" min="1" max="24" required />
             </div>
             <button type="submit" class="btn btn-primary">Thêm khung giờ</button>
         </form>
+        </section>
     </section>
 }
 
@@ -391,38 +400,7 @@
             <a asp-action="Banners">Xem đầy đủ →</a>
         </div>
         <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-banners" placeholder="Lọc theo tiêu đề banner…" aria-label="Lọc banner theo tiêu đề" />
-        @if (!Model.Banners.Any())
-        {
-            <p class="text-muted">Chưa có banner nào.</p>
-        }
-        else
-        {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Ảnh</th><th scope="col">Tiêu đề</th><th scope="col">Link</th><th scope="col">Thứ tự</th><th scope="col">Trạng thái</th><th scope="col"><span class="visually-hidden">Thao tac</span></th></tr></thead>
-                <tbody>
-                    @foreach (var b in Model.Banners)
-                    {
-                        <tr>
-                            <td><img class="banner-thumb" src="@b.AnhUrl" alt="@b.TieuDe" /></td>
-                            <td><strong>@b.TieuDe</strong></td>
-                            <td>@(string.IsNullOrEmpty(b.LinkUrl) ? "—" : b.LinkUrl)</td>
-                            <td>@b.ThuTu</td>
-                            <td><partial name="_TrangThaiBadge" model="@(b.IsActive ? "Đang bật" : "Đang tắt")" /></td>
-                            <td>
-                                @* Dot 3 (B8): sua banner — giong trang Banners cu. *@
-                                <a asp-action="SuaBanner" asp-route-id="@b.Id" class="btn btn-secondary btn-sm">Sửa</a>
-                                <form asp-action="DoiTrangThaiBanner" method="post" class="inline-form">
-                                    <input type="hidden" name="id" value="@b.Id" />
-                                    <input type="hidden" name="tuTrang" value="TongQuan" />
-                                    <input type="hidden" name="muc" value="@Model.Muc" />
-                                    <button type="submit" class="btn btn-secondary btn-sm">@(b.IsActive ? "Tắt" : "Bật")</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table></div>
-        }
+        <partial name="_BannerRecords" model="((IEnumerable<Banner>)Model.Banners, true)" />
     </section>
 }
 
@@ -434,81 +412,7 @@
             <h2>Đánh giá &amp; hỏi đáp</h2>
             <a asp-action="Reviews">Xem đầy đủ →</a>
         </div>
-        <h3>Đánh giá chờ duyệt (@Model.ReviewsChoDuyet.Count)</h3>
-        @if (!Model.ReviewsChoDuyet.Any())
-        {
-            <p class="text-muted">Không có đánh giá nào chờ duyệt.</p>
-        }
-        else
-        {
-            @foreach (var r in Model.ReviewsChoDuyet)
-            {
-                <div class="review-item">
-                    <p><strong>@r.Sao ★</strong> — @r.Product.Ten</p>
-                    <p>@r.NoiDung</p>
-                    <p class="text-muted">@(r.User?.HoTen ?? r.User?.Email ?? "Khách") — @r.NgayDanhGia.ToString("dd/MM/yyyy HH:mm")</p>
-                    <form asp-action="DuyetDanhGia" method="post" class="inline-form">
-                        <input type="hidden" name="id" value="@r.Id" />
-                        <input type="hidden" name="tuTrang" value="TongQuan" />
-                        <input type="hidden" name="muc" value="@Model.Muc" />
-                        <button type="submit" class="btn btn-primary btn-sm">Duyệt</button>
-                    </form>
-                    <form asp-action="AnDanhGia" method="post" class="inline-form">
-                        <input type="hidden" name="id" value="@r.Id" />
-                        <input type="hidden" name="tuTrang" value="TongQuan" />
-                        <input type="hidden" name="muc" value="@Model.Muc" />
-                        <button type="submit" class="btn btn-secondary btn-sm">Ẩn</button>
-                    </form>
-                </div>
-            }
-        }
-        <h3 class="mt">Đánh giá đã duyệt gần nhất</h3>
-        @if (!Model.ReviewsDaDuyetGanDay.Any())
-        {
-            <p class="text-muted">Chưa có đánh giá nào được duyệt.</p>
-        }
-        else
-        {
-            @foreach (var r in Model.ReviewsDaDuyetGanDay)
-            {
-                <div class="review-item">
-                    <p><strong>@r.Sao ★</strong> — @r.Product.Ten</p>
-                    <p>@r.NoiDung</p>
-                    <p class="text-muted">@(r.User?.HoTen ?? r.User?.Email ?? "Khách") — @r.NgayDanhGia.ToString("dd/MM/yyyy HH:mm")</p>
-                    <form asp-action="AnDanhGia" method="post" class="inline-form">
-                        <input type="hidden" name="id" value="@r.Id" />
-                        <input type="hidden" name="tuTrang" value="TongQuan" />
-                        <input type="hidden" name="muc" value="@Model.Muc" />
-                        <button type="submit" class="btn btn-secondary btn-sm">Ẩn</button>
-                    </form>
-                </div>
-            }
-        }
-        <h3 class="mt">Câu hỏi chưa trả lời (@Model.CauHoiChuaTraLoi.Count)</h3>
-        @if (!Model.CauHoiChuaTraLoi.Any())
-        {
-            <p class="text-muted">Không có câu hỏi nào chưa trả lời.</p>
-        }
-        else
-        {
-            @foreach (var q in Model.CauHoiChuaTraLoi)
-            {
-                <div class="review-item">
-                    <p><strong>@q.Product.Ten</strong> — @(q.User?.HoTen ?? q.User?.Email ?? "Khách") hỏi lúc @q.NgayHoi.ToString("dd/MM/yyyy HH:mm")</p>
-                    <p>@q.CauHoi</p>
-                    <form asp-action="TraLoiCauHoi" method="post">
-                        <input type="hidden" name="questionId" value="@q.Id" />
-                        <input type="hidden" name="tuTrang" value="TongQuan" />
-                        <input type="hidden" name="muc" value="@Model.Muc" />
-                        <div class="form-group">
-                            <label for="tq-traLoi-@q.Id">Trả lời</label>
-                            <textarea id="tq-traLoi-@q.Id" name="traLoi" class="form-control" rows="3" maxlength="2000" required></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-sm">Trả lời</button>
-                    </form>
-                </div>
-            }
-        }
+        <partial name="_AdminModeration" model="((IEnumerable<Review>)Model.ReviewsChoDuyet, (IEnumerable<Review>)Model.ReviewsDaDuyetGanDay, (IEnumerable<ProductQuestion>)Model.CauHoiChuaTraLoi, true)" />
     </section>
 }
 
@@ -529,23 +433,34 @@
         }
         else
         {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>
-                <tbody>
+            <div class="table-wrap admin-record-list"><table data-tongquan-records class="table" role="table" aria-label="Tồn kho sản phẩm">
+                <thead role="rowgroup"><tr role="row"><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>
+                <tbody role="rowgroup">
                     @foreach (var p in Model.SanPhamKho)
                     {
-                        <tr>
-                            <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
-                            <td class="@(p.TonKho == 0 ? "low-stock" : p.TonKho <= 10 ? "low-stock-soft" : "")">@p.TonKho@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
-                            <td>@p.LuotBan</td>
-                            <td>
-                                <form asp-action="NhapKho" method="post" class="stock-form">
+                        <tr role="row">
+                            <th scope="row" role="rowheader" class="admin-record-lead">
+                                <span class="product-thumb-cell">
+                                    <img class="product-thumb" src="@p.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />
+                                    <span><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a><small class="admin-record-code text-muted">Mã #@p.Id</small></span>
+                                </span>
+                            </th>
+                            <td role="cell" data-label="Tồn kho"><span class="badge @(p.TonKho == 0 ? "low-stock" : p.TonKho <= 10 ? "low-stock-soft" : "badge-xong")">@(p.TonKho == 0 ? "Hết hàng · 0" : $"Còn {p.TonKho}")</span></td>
+                            <td role="cell" data-label="Đã bán">@p.LuotBan</td>
+                            <td role="cell" class="admin-record-actions">
+                                <form asp-action="NhapKho" method="post" class="admin-inline-fields admin-stock-entry">
                                     <input type="hidden" name="productId" value="@p.Id" />
                                     <input type="hidden" name="tuTrang" value="TongQuan" />
                                     <input type="hidden" name="muc" value="@Model.Muc" />
-                                    <input type="number" name="soLuong" class="form-control input-narrow" min="1" value="10" required aria-label="Số lượng nhập cho @p.Ten" />
-                                    <input type="text" name="ghiChu" class="form-control" placeholder="Ghi chú (không bắt buộc)" maxlength="200" />
-                                    <button type="submit" class="btn btn-primary btn-sm">Nhập kho</button>
+                                    <div class="form-group">
+                                        <label for="nhap-@p.Id">Số lượng nhập</label>
+                                        <input id="nhap-@p.Id" type="number" name="soLuong" class="form-control" min="1" value="10" required />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ghichu-@p.Id">Ghi chú <small>(tùy chọn)</small></label>
+                                        <input id="ghichu-@p.Id" type="text" name="ghiChu" class="form-control" maxlength="200" />
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-sm" aria-label="Nhập kho @p.Ten">Nhập kho</button>
                                 </form>
                             </td>
                         </tr>
@@ -560,16 +475,16 @@
         }
         else
         {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Ngày nhập</th><th scope="col">Sản phẩm</th><th scope="col">Số lượng</th><th scope="col">Ghi chú</th></tr></thead>
-                <tbody>
+            <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Lịch sử nhập kho">
+                <thead role="rowgroup"><tr role="row"><th scope="col">Sản phẩm</th><th scope="col">Ngày nhập</th><th scope="col">Số lượng</th><th scope="col">Ghi chú</th></tr></thead>
+                <tbody role="rowgroup">
                     @foreach (var s in Model.NhapKhoGanDay)
                     {
-                        <tr>
-                            <td>@s.NgayNhap.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>@s.Product.Ten</td>
-                            <td>+@s.SoLuong</td>
-                            <td>@s.GhiChu</td>
+                        <tr role="row">
+                            <th scope="row" role="rowheader" class="admin-record-lead">@s.Product.Ten</th>
+                            <td role="cell" data-label="Ngày nhập">@s.NgayNhap.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td role="cell" data-label="Số lượng"><strong class="admin-money">+@s.SoLuong</strong></td>
+                            <td role="cell" class="admin-record-wide" data-label="Ghi chú">@(string.IsNullOrWhiteSpace(s.GhiChu) ? "—" : s.GhiChu)</td>
                         </tr>
                     }
                 </tbody>
@@ -588,7 +503,8 @@
         </div>
         @* Dot 2 (B7): o loc cho tab Thong bao (truoc day chua co). *@
         <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-notifications" placeholder="Lọc theo tiêu đề / người nhận…" aria-label="Lọc thông báo theo tiêu đề hoặc người nhận" />
-        @* Dot 3 (A7): form nhom thanh card 2 cot — giong Notifications.cshtml. *@
+        <div class="card admin-editor">
+            <h3>Soạn thông báo</h3>
         <form asp-action="GuiThongBao" method="post">
             <input type="hidden" name="tuTrang" value="TongQuan" />
             <input type="hidden" name="muc" value="@Model.Muc" />
@@ -598,6 +514,7 @@
                     <div class="form-group">
                         <label for="tq-UserId">Gửi tới</label>
                         <select id="tq-UserId" name="userId" class="form-control" required>
+                            <option value="">Chọn người nhận</option>
                             <option value="all">Tất cả khách hàng</option>
                             @foreach (var u in Model.NguoiNhanThongBao)
                             {
@@ -620,29 +537,9 @@
             </div>
             <button type="submit" class="btn btn-primary">Gửi thông báo</button>
         </form>
+        </div>
         <h3 class="mt">20 thông báo gần nhất</h3>
-        @if (!Model.ThongBaoGanDay.Any())
-        {
-            <p class="text-muted">Chưa có thông báo nào.</p>
-        }
-        else
-        {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Ngày gửi</th><th scope="col">Người nhận</th><th scope="col">Tiêu đề</th><th scope="col">Nội dung</th><th scope="col">Đã đọc</th></tr></thead>
-                <tbody>
-                    @foreach (var n in Model.ThongBaoGanDay)
-                    {
-                        <tr>
-                            <td>@n.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>@(n.User?.HoTen ?? n.User?.Email ?? n.UserId)</td>
-                            <td><strong>@n.TieuDe</strong></td>
-                            <td>@n.NoiDung</td>
-                            <td><partial name="_TrangThaiBadge" model="@(n.DaDoc ? "Rồi" : "Chưa")" /></td>
-                        </tr>
-                    }
-                </tbody>
-            </table></div>
-        }
+        <partial name="_AdminNotificationRecords" model="Model.ThongBaoGanDay" />
     </section>
 }
 
@@ -657,81 +554,6 @@
         @* Dot 2 (B7): o loc cho tab Doi tra (truoc day chua co) — loc ca 2 bang
            doi tra + bao hanh trong panel (admin.js loc moi tbody tr). *@
         <input type="search" class="form-control tongquan-filter" data-tongquan-filter="tq-returns" placeholder="Lọc theo khách / sản phẩm / lý do…" aria-label="Lọc đổi trả và bảo hành" />
-        <h3>Đổi trả chờ duyệt (@Model.DoiTraChoDuyet.Count)</h3>
-        @if (!Model.DoiTraChoDuyet.Any())
-        {
-            <p class="text-muted">Không có yêu cầu đổi trả nào chờ duyệt.</p>
-        }
-        else
-        {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Lý do</th><th scope="col">Ngày tạo</th><th scope="col">Duyệt</th></tr></thead>
-                <tbody>
-                    @foreach (var r in Model.DoiTraChoDuyet)
-                    {
-                        <tr>
-                            <td>#@r.Id</td>
-                            <td>@r.User?.HoTen (@r.User?.UserName)</td>
-                            <td><a asp-action="OrderDetails" asp-route-id="@r.OrderId">#@r.OrderId</a></td>
-                            <td>@r.Product.Ten @r.OrderDetail?.Variant?.TenBienThe</td>
-                            <td>@r.LyDo</td>
-                            <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>
-                                <form asp-controller="Returns" asp-action="Duyet" method="post" class="admin-duyet">
-                                    <input type="hidden" name="id" value="@r.Id" />
-                                    <input type="hidden" name="loai" value="doitra" />
-                                    <input type="hidden" name="tuTrang" value="TongQuan" />
-                                    <input type="hidden" name="muc" value="@Model.Muc" />
-                                    <select name="trangThaiMoi" class="form-control" aria-label="Trạng thái mới">
-                                        <option>Đã duyệt</option>
-                                        <option>Từ chối</option>
-                                        <option>Hoàn thành</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-primary btn-sm">Cập nhật</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table></div>
-        }
-        <h3 class="mt">Bảo hành chờ duyệt (@Model.BaoHanhChoDuyet.Count)</h3>
-        @if (!Model.BaoHanhChoDuyet.Any())
-        {
-            <p class="text-muted">Không có yêu cầu bảo hành nào chờ duyệt.</p>
-        }
-        else
-        {
-            <div class="table-wrap"><table class="table">
-                <thead><tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Mô tả lỗi</th><th scope="col">Ngày tạo</th><th scope="col">Duyệt</th></tr></thead>
-                <tbody>
-                    @foreach (var w in Model.BaoHanhChoDuyet)
-                    {
-                        <tr>
-                            <td>#@w.Id</td>
-                            <td>@w.User?.HoTen (@w.User?.UserName)</td>
-                            <td><a asp-action="OrderDetails" asp-route-id="@w.OrderId">#@w.OrderId</a></td>
-                            <td>@w.Product.Ten</td>
-                            <td>@w.MoTaLoi</td>
-                            <td>@w.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td>
-                                <form asp-controller="Returns" asp-action="Duyet" method="post" class="admin-duyet">
-                                    <input type="hidden" name="id" value="@w.Id" />
-                                    <input type="hidden" name="loai" value="baohanh" />
-                                    <input type="hidden" name="tuTrang" value="TongQuan" />
-                                    <input type="hidden" name="muc" value="@Model.Muc" />
-                                    <select name="trangThaiMoi" class="form-control" aria-label="Trạng thái mới">
-                                        <option>Đã duyệt</option>
-                                        <option>Từ chối</option>
-                                        <option>Hoàn thành</option>
-                                    </select>
-                                    <button type="submit" class="btn btn-primary btn-sm">Cập nhật</button>
-                                </form>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table></div>
-        }
+        <partial name="_AdminRequestRecords" model="((IEnumerable<ReturnRequest>)Model.DoiTraChoDuyet, (IEnumerable<WarrantyClaim>)Model.BaoHanhChoDuyet, true)" />
     </section>
 }

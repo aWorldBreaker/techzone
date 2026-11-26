@@ -329,7 +329,7 @@ public class AdminWave3Tests
         Assert.Contains("min-height: 44px", css);
         Assert.Contains(".table--card-mobile", css);
         Assert.Contains("data-label", css);
-        Assert.Contains("scroll-snap-type: x mandatory", css);
+        Assert.Matches(@"\.tongquan-tabs\s*\{[^}]*overflow-x:\s*auto", css);
         Assert.Contains(".chart { overflow-x: visible", Doc("wwwroot", "css", "dashboard.css"));
         Assert.Contains("table--card-mobile", Doc("Views", "Admin", "Products.cshtml"));
         Assert.Contains("table--card-mobile", Doc("Views", "Admin", "Orders.cshtml"));
@@ -352,8 +352,9 @@ public class AdminWave3Tests
         Assert.Contains("Thời gian", Doc("Views", "Admin", "Vouchers.cshtml"));
 
         // B8: nut Sua banner + form them mon o SuaCombo + view SuaBanner.
-        Assert.Contains("SuaBanner", Doc("Views", "Admin", "Banners.cshtml"));
-        Assert.Contains("SuaBanner", tq);
+        Assert.Contains("_BannerRecords", Doc("Views", "Admin", "Banners.cshtml"));
+        Assert.Contains("_BannerRecords", tq);
+        Assert.Contains("SuaBanner", Doc("Views", "Admin", "_BannerRecords.cshtml"));
         Assert.Contains("ThemMonCombo", Doc("Views", "Admin", "SuaCombo.cshtml"));
         Assert.Contains("XoaMonCombo", Doc("Views", "Admin", "SuaCombo.cshtml"));
         Assert.Contains("tuTrang\" value=\"SuaCombo\"", Doc("Views", "Admin", "SuaCombo.cshtml"));

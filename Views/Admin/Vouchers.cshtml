@@ -2,11 +2,17 @@
 @{
     ViewData["Title"] = "Admin — Quản lý voucher";
     var tuKhoa = (string?)ViewBag.TuKhoa;
+    var hienTai = DateTime.Now;
 }
-<h1>Quản lý voucher</h1>
+<header class="market-heading">
+    <div class="section-head">
+        <h1>Quản lý voucher</h1>
+        <a class="btn hero-buy" href="#them-voucher">Thêm voucher</a>
+    </div>
+</header>
 
 @* Dot 2 (B1): tim kiem theo ma voucher + phan trang server 10/trang. *@
-<form method="get" asp-action="Vouchers" class="admin-search" role="search">
+<form method="get" asp-action="Vouchers" class="admin-search admin-search-compact" role="search">
     <input type="search" name="tuKhoa" class="form-control" placeholder="Tìm theo mã voucher…" value="@tuKhoa" aria-label="Tìm voucher theo mã" />
     <button type="submit" class="btn btn-primary">Tìm</button>
     @if (tuKhoa is not null)
@@ -18,26 +24,31 @@
 
 @if (!Model.Any())
 {
-    <p class="admin-empty" role="status">🔍 Không tìm thấy voucher nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử mã khác hoặc <a asp-action="Vouchers">xóa bộ lọc</a>.</p>
+    <p class="admin-empty" role="status">Không tìm thấy voucher nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : ""). <a asp-action="Vouchers">Xem danh sách đầy đủ</a>.</p>
 }
 else
 {
-<div class="table-wrap"><table class="table">
-    <thead><tr><th scope="col">Mã</th><th scope="col">Loại</th><th scope="col">Giá trị</th><th scope="col">Đơn tối thiểu</th><th scope="col">Hết hạn</th><th scope="col">Đã dùng / Số lượng</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr></thead>
-    <tbody>
+<div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Danh sách voucher">
+    <thead role="rowgroup"><tr role="row"><th scope="col">Mã voucher</th><th scope="col">Giá trị</th><th scope="col">Đơn tối thiểu</th><th scope="col">Hết hạn</th><th scope="col">Đã dùng / Số lượng</th><th scope="col">Thao tác</th></tr></thead>
+    <tbody role="rowgroup">
         @foreach (var v in Model)
         {
-            <tr>
-                <td><strong>@v.Ma</strong></td>
-                <td>@v.LoaiGiam</td>
-                <td>@(v.LoaiGiam == "PhanTram" ? v.GiaTri.ToString("N0") + "%" : v.GiaTri.ToString("N0") + "đ")</td>
-                <td>@v.DieuKien.ToString("N0")đ</td>
-                <td>@v.NgayHetHan.ToString("dd/MM/yyyy")</td>
-                <td>@v.DaDung / @v.SoLuong</td>
-                <td>
+            var conHieuLuc = v.ConHieuLuc(hienTai);
+            <tr role="row">
+                <th scope="row" role="rowheader" class="admin-record-lead">
+                    <span class="admin-record-title">
+                        <strong>@v.Ma</strong>
+                        <span class="badge @(conHieuLuc ? "badge-xong" : "badge-tat")">@(conHieuLuc ? "Còn hiệu lực" : hienTai > v.NgayHetHan ? "Hết hạn" : "Hết lượt")</span>
+                    </span>
+                </th>
+                <td role="cell" data-label="Giá trị"><strong class="admin-money">@(v.FreeShip ? "Miễn phí vận chuyển" : v.LoaiGiam == "PhanTram" ? v.GiaTri.ToString("0.##") + "%" : v.GiaTri.ToString("N0") + "đ")</strong></td>
+                <td role="cell" data-label="Đơn tối thiểu">@v.DieuKien.ToString("N0")đ</td>
+                <td role="cell" data-label="Hết hạn">@v.NgayHetHan.ToString("dd/MM/yyyy")</td>
+                <td role="cell" data-label="Đã dùng / Số lượng">@v.DaDung / @v.SoLuong</td>
+                <td role="cell" class="admin-record-actions">
                     <form asp-action="XoaVoucher" method="post" class="inline-form">
                         <input type="hidden" name="id" value="@v.Id" />
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa voucher @v.Ma?');">Xóa</button>
+                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Xóa voucher @v.Ma" data-confirm="Xóa voucher @v.Ma?" onclick="return confirm(this.dataset.confirm);">Xóa</button>
                     </form>
                 </td>
             </tr>
@@ -61,20 +72,17 @@ else
     </nav>
 }
 
-<h2 class="mt">Thêm voucher mới</h2>
-@* Dot 3 (A7): form nhom thanh card 2 cot (desktop) / 1 cot (mobile);
-   giu nguyen field + validation. *@
+<section class="card admin-editor mt" id="them-voucher" aria-labelledby="them-voucher-title" tabindex="-1">
+<h2 id="them-voucher-title">Thêm voucher mới</h2>
 <form asp-action="ThemVoucher" method="post">
+    <input type="hidden" name="__Invariant" value="GiaTri" />
     <div class="admin-form-grid">
         <fieldset class="admin-form-card">
-            <legend>Mã voucher</legend>
+            <legend>Mã và mức giảm</legend>
             <div class="form-group">
                 <label for="Ma">Mã (vd: TECHZONE500)</label>
-                <input id="Ma" name="Ma" class="form-control" required maxlength="50" />
+                <input id="Ma" name="Ma" class="form-control" required maxlength="50" autocapitalize="characters" spellcheck="false" />
             </div>
-        </fieldset>
-        <fieldset class="admin-form-card">
-            <legend>Giá trị</legend>
             <div class="form-group">
                 <label for="LoaiGiam">Loại giảm</label>
                 <select id="LoaiGiam" name="LoaiGiam" class="form-control">
@@ -84,28 +92,26 @@ else
             </div>
             <div class="form-group">
                 <label for="GiaTri">Giá trị (đ hoặc %)</label>
-                <input id="GiaTri" name="GiaTri" class="form-control" type="number" min="0" step="1000" required />
+                <input id="GiaTri" name="GiaTri" class="form-control" type="number" inputmode="decimal" min="0" step="any" required />
             </div>
         </fieldset>
         <fieldset class="admin-form-card">
-            <legend>Điều kiện</legend>
+            <legend>Điều kiện và thời gian</legend>
             <div class="form-group">
                 <label for="DieuKien">Đơn tối thiểu (đ)</label>
-                <input id="DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1000" value="0" />
+                <input id="DieuKien" name="DieuKien" class="form-control" type="number" min="0" step="1" value="0" />
             </div>
             <div class="form-group">
                 <label for="SoLuong">Số lượng mã</label>
                 <input id="SoLuong" name="SoLuong" class="form-control" type="number" min="1" value="100" required />
             </div>
-        </fieldset>
-        <fieldset class="admin-form-card">
-            <legend>Thời gian</legend>
             <div class="form-group">
-                <label for="NgayHetHan">Ngày hết hạn</label>
+                <label for="NgayHetHan">Thời gian hết hạn</label>
                 <input id="NgayHetHan" name="NgayHetHan" class="form-control" type="date" required />
             </div>
         </fieldset>
     </div>
     <button type="submit" class="btn btn-primary">Thêm voucher</button>
 </form>
+</section>
 <p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

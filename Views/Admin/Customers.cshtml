@@ -3,11 +3,14 @@
     ViewData["Title"] = "Admin — Khách hàng";
     var tuKhoa = (string?)ViewBag.TuKhoa;
 }
-<h1>Khách hàng</h1>
+<header class="market-heading order-heading">
+    <h1>Khách hàng</h1>
+    <p>Thông tin liên hệ, hạng thành viên và điểm tích lũy.</p>
+</header>
 
 @* Dot 2 (B1): tim kiem + phan trang server 10/trang. Tong chi tieu van
    tinh in-memory nhu cu — chi loc tren ket qua da co (ten/email/SDT). *@
-<form method="get" asp-action="KhachHang" class="admin-search" role="search">
+<form method="get" asp-action="KhachHang" class="admin-search admin-search-compact" role="search">
     <input type="search" name="tuKhoa" class="form-control" placeholder="Tìm theo tên, email hoặc SĐT…" value="@tuKhoa" aria-label="Tìm khách hàng theo tên, email hoặc số điện thoại" />
     <button type="submit" class="btn btn-primary">Tìm</button>
     @if (tuKhoa is not null)
@@ -19,22 +22,22 @@
 
 @if (!Model.Any())
 {
-    <p class="admin-empty" role="status">🔍 Không tìm thấy khách hàng nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : "") . Thử từ khóa khác hoặc <a asp-action="KhachHang">xóa bộ lọc</a>.</p>
+    <p class="admin-empty" role="status">Không tìm thấy khách hàng nào@(tuKhoa is not null ? $" phù hợp với “{tuKhoa}”" : ""). <a asp-action="KhachHang">Xem danh sách đầy đủ</a>.</p>
 }
 else
 {
-    <div class="table-wrap"><table class="table">
-        <thead><tr><th scope="col">Họ tên</th><th scope="col">Email</th><th scope="col">Số điện thoại</th><th scope="col">Tổng chi tiêu</th><th scope="col">Hạng</th><th scope="col">Điểm</th></tr></thead>
-        <tbody>
+    <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Danh sách khách hàng">
+        <thead role="rowgroup"><tr role="row"><th scope="col">Họ tên</th><th scope="col">Email</th><th scope="col">Số điện thoại</th><th scope="col">Hạng</th><th scope="col">Tổng chi tiêu</th><th scope="col">Điểm</th></tr></thead>
+        <tbody role="rowgroup">
             @foreach (var k in Model)
             {
-                <tr>
-                    <td>@k.User.HoTen</td>
-                    <td>@k.User.Email</td>
-                    <td>@k.User.SoDienThoai</td>
-                    <td>@k.TongChiTieu.ToString("N0")đ</td>
-                    <td><partial name="_TrangThaiBadge" model="k.Hang" /></td>
-                    <td>@k.Diem điểm</td>
+                <tr role="row">
+                    <th scope="row" role="rowheader" class="admin-record-lead">@k.User.HoTen</th>
+                    <td role="cell" class="admin-record-wide" data-label="Email">@k.User.Email</td>
+                    <td role="cell" data-label="Số điện thoại">@(k.User.SoDienThoai ?? "—")</td>
+                    <td role="cell" data-label="Hạng"><partial name="_TrangThaiBadge" model="k.Hang" /></td>
+                    <td role="cell" data-label="Tổng chi tiêu"><strong class="admin-money">@k.TongChiTieu.ToString("N0")đ</strong></td>
+                    <td role="cell" data-label="Điểm">@k.Diem điểm</td>
                 </tr>
             }
         </tbody>

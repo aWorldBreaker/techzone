@@ -104,8 +104,15 @@ public class AdminTongQuanTests
         Assert.Contains("Trang tổng hợp", view);
         Assert.Contains("asp-route-muc=", view);
         Assert.Contains("aria-current=", view);
-        Assert.Equal(11, Regex.Matches(view, "<section class=").Count);
-        Assert.True(Regex.Matches(view, "name=\"muc\"").Count >= 10);
+        Assert.Equal(11, Regex.Matches(view, "<section class=\"tongquan-panel\"").Count);
+        var fastActions = view + string.Concat(new[]
+        {
+            Path.Combine("Admin", "_BannerRecords.cshtml"),
+            Path.Combine("Admin", "_AdminModeration.cshtml"),
+            Path.Combine("Admin", "_AdminReviewQueue.cshtml"),
+            Path.Combine("Shared", "_AdminRequestRecords.cshtml")
+        }.Select(path => File.ReadAllText(Path.Combine(projectDir, "Views", path))));
+        Assert.True(Regex.Matches(fastActions, "name=\"muc\"").Count >= 10);
         Assert.DoesNotContain("chart-data-table", view);
         Assert.DoesNotContain("Xiaomi 15", view);
     }

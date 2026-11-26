@@ -41,9 +41,19 @@
     var panel = document.querySelector('.tongquan-panel');
     if (!panel) return;
     var activeLink = document.querySelector('.tongquan-tabs [aria-current="page"]');
-    if (activeLink && window.matchMedia('(max-width: 768px)').matches) {
+    if (activeLink) {
         var nav = activeLink.parentElement;
-        nav.scrollLeft = activeLink.offsetLeft - nav.offsetLeft;
+        function hienMucDangMo() {
+            if (nav.scrollWidth <= nav.clientWidth) return;
+            var khung = nav.getBoundingClientRect();
+            var muc = activeLink.getBoundingClientRect();
+            if (muc.left < khung.left || muc.right > khung.right) {
+                nav.scrollLeft += muc.left - khung.left;
+            }
+        }
+        hienMucDangMo();
+        new ResizeObserver(hienMucDangMo).observe(nav);
+        if (document.fonts) document.fonts.ready.then(hienMucDangMo);
     }
 
     // Loc client-side: input[data-tongquan-filter="<id panel>"] loc cac
@@ -55,8 +65,11 @@
     // (o <td>) van giu lai nen loc theo trang thai hoat dong dung.
     // Dot 2 (B7): sau moi lan loc, cap nhat dem "N ket qua" (aria-live)
     // + empty state khi loc ra 0 dong (co nut "Xoa bo loc").
+    function dongLoc(panel) {
+        return (panel.querySelector('[data-tongquan-records]') || panel).querySelectorAll('tbody tr, .review-item');
+    }
     function capNhatDem(panel, input) {
-        var rows = panel.querySelectorAll('tbody tr, .review-item');
+        var rows = dongLoc(panel);
         var hien = 0;
         rows.forEach(function (row) { if (row.style.display !== 'none') hien++; });
         var dem = panel.querySelector('.tongquan-count');
@@ -100,7 +113,7 @@
             var panel = document.getElementById(input.getAttribute('data-tongquan-filter'));
             if (!panel) return;
             var tuKhoa = input.value.trim().toLowerCase();
-            panel.querySelectorAll('tbody tr, .review-item').forEach(function (row) {
+            dongLoc(panel).forEach(function (row) {
                 var text;
                 if (row.querySelector('select')) {
                     var banSao = row.cloneNode(true);

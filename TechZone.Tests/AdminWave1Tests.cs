@@ -162,16 +162,16 @@ public class AdminWave1Tests
         // A2: trang thai hien qua partial, khong con chu thuong o cac bang.
         Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "Orders.cshtml"));
         Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "Customers.cshtml"));
-        Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "Banners.cshtml"));
+        Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "_BannerRecords.cshtml"));
         Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "Combos.cshtml"));
-        Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "Notifications.cshtml"));
-        Assert.Contains("_TrangThaiBadge", Doc("Views", "Returns", "AdminIndex.cshtml"));
+        Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "_AdminNotificationRecords.cshtml"));
+        Assert.Contains("_TrangThaiBadge", Doc("Views", "Shared", "_AdminRequestRecords.cshtml"));
         Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "Dashboard.cshtml"));
         Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "TongQuan.cshtml"));
         Assert.Contains("_TrangThaiBadge", Doc("Views", "Admin", "OrderDetails.cshtml"));
 
         // A8: Xoa do, Sua vien; khong con nut Xoa dang link-button.
-        foreach (var f in new[] { "Products", "Vouchers", "Banners", "Combos", "FlashSaleSlots" })
+        foreach (var f in new[] { "Products", "Vouchers", "_BannerRecords", "Combos", "FlashSaleSlots" })
         {
             var view = Doc("Views", "Admin", f + ".cshtml");
             Assert.Contains("btn btn-danger btn-sm", view);

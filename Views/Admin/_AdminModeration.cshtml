@@ -1,0 +1,43 @@
+@model (IEnumerable<Review> ChoDuyet, IEnumerable<Review> DaDuyet, IEnumerable<ProductQuestion> CauHoi, bool TongQuan)
+@{
+    var choDuyet = ("cho-duyet", $"Đánh giá chờ duyệt ({Model.ChoDuyet.Count()})", "Không có đánh giá nào chờ duyệt.", Model.ChoDuyet, true, Model.TongQuan);
+    var daDuyet = ("da-duyet", "Đánh giá đã duyệt gần nhất", "Chưa có đánh giá nào được duyệt.", Model.DaDuyet, false, Model.TongQuan);
+}
+<partial name="_AdminReviewQueue" model="choDuyet" />
+
+<div class="mt" id="cau-hoi" role="region" aria-labelledby="cau-hoi-title" tabindex="-1">
+    <h2 id="cau-hoi-title">Câu hỏi chưa trả lời (@Model.CauHoi.Count())</h2>
+    @if (!Model.CauHoi.Any())
+    {
+        <p class="admin-empty">Không có câu hỏi nào chưa trả lời.</p>
+    }
+    else
+    {
+        <div class="admin-feedback-list">
+            @foreach (var q in Model.CauHoi)
+            {
+                <article class="card admin-editor admin-feedback">
+                    <h3>@q.Product.Ten</h3>
+                    <p class="text-muted">@(q.User?.HoTen ?? q.User?.Email ?? "Khách") · @q.NgayHoi.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="admin-message">@q.CauHoi</p>
+                    <form asp-action="TraLoiCauHoi" method="post">
+                        <input type="hidden" name="questionId" value="@q.Id" />
+                        @if (Model.TongQuan)
+                        {
+                            <input type="hidden" name="tuTrang" value="TongQuan" />
+                            <input type="hidden" name="muc" value="reviews" />
+                        }
+                        <div class="form-group">
+                            <label for="traLoi-@q.Id">Câu trả lời</label>
+                            <textarea id="traLoi-@q.Id" name="traLoi" class="form-control" rows="3" maxlength="2000" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Trả lời</button>
+                    </form>
+                </article>
+            }
+        </div>
+    }
+</div>
+
+<partial name="_AdminReviewQueue" model="daDuyet" />
+

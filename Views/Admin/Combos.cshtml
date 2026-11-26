@@ -3,65 +3,95 @@
     ViewData["Title"] = "Admin — Quản lý combo";
     var products = (List<TechZone.Models.Product>)ViewBag.Products;
 }
-<h1>Quản lý combo</h1>
+<header class="market-heading">
+    <div class="section-head">
+        <h1>Quản lý combo</h1>
+        <a class="btn hero-buy" href="#them-combo">Thêm combo</a>
+    </div>
+</header>
 
-<div class="table-wrap"><table class="table">
-    <thead><tr><th scope="col">Tên combo</th><th scope="col">% giảm</th><th scope="col">Hiệu lực</th><th scope="col">Đã bán / Giới hạn</th><th scope="col">Trạng thái</th><th scope="col">Món trong combo</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr></thead>
-    <tbody>
+@if (Model.Count == 0)
+{
+    <p class="admin-empty">Chưa có combo nào.</p>
+}
+else
+{
+<div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Danh sách combo">
+    <thead role="rowgroup"><tr role="row"><th scope="col">Tên combo</th><th scope="col">% giảm</th><th scope="col">Trạng thái</th><th scope="col">Đã bán / Giới hạn</th><th scope="col">Hiệu lực</th><th scope="col">Món trong combo</th><th scope="col">Thao tác</th></tr></thead>
+    <tbody role="rowgroup">
         @foreach (var c in Model)
         {
-            <tr>
-                <td><strong>@c.Ten</strong>@if (!string.IsNullOrEmpty(c.MoTa)) { <br /><span class="text-muted">@c.MoTa</span> }</td>
-                <td>@c.PhanTramGiam.ToString("0.##")%</td>
-                <td>@c.BatDau.ToString("dd/MM/yyyy") – @c.KetThuc.ToString("dd/MM/yyyy")</td>
-                <td>@c.DaBan / @(c.GioiHanSL?.ToString() ?? "∞")</td>
-                <td><partial name="_TrangThaiBadge" model="@(c.IsActive ? "Đang bật" : "Đã tắt")" /></td>
-                <td>
-                    <ul>
+            <tr role="row">
+                <th scope="row" role="rowheader" class="admin-record-lead">
+                    <a asp-action="SuaCombo" asp-route-id="@c.Id">@c.Ten</a>
+                    @if (!string.IsNullOrWhiteSpace(c.MoTa))
+                    {
+                        <span class="admin-record-code text-muted">@c.MoTa</span>
+                    }
+                </th>
+                <td role="cell" data-label="Mức giảm"><strong class="admin-money">@c.PhanTramGiam.ToString("0.##")%</strong></td>
+                <td role="cell" data-label="Trạng thái"><partial name="_TrangThaiBadge" model="@(c.IsActive ? "Đang bật" : "Đã tắt")" /></td>
+                <td role="cell" data-label="Đã bán / Giới hạn">@c.DaBan / @(c.GioiHanSL?.ToString() ?? "∞")</td>
+                <td role="cell" data-label="Hiệu lực">@c.BatDau.ToString("dd/MM/yyyy") – @c.KetThuc.ToString("dd/MM/yyyy")</td>
+                <td role="cell" class="admin-record-wide">
+                    <details class="admin-combo-items">
+                    <summary>Quản lý @c.Items.Count món</summary>
+                    <ul class="admin-item-list" role="list">
                         @foreach (var item in c.Items)
                         {
                             <li class="product-thumb-cell">
-                                <img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />
+                                <img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />
                                 <span>@item.Product.Ten × @item.SoLuong</span>
                                 <form asp-action="XoaMonCombo" method="post" class="inline-form">
                                     <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa món này khỏi combo?');">Xóa</button>
+                                    <button type="submit" class="btn btn-danger btn-sm" aria-label="Xóa @item.Product.Ten khỏi combo" onclick="return confirm('Xóa món này khỏi combo?');">Xóa</button>
                                 </form>
                             </li>
                         }
                     </ul>
-                    <form asp-action="ThemMonCombo" method="post" class="inline-form">
+                    <form asp-action="ThemMonCombo" method="post" class="admin-inline-fields admin-add-item">
                         <input type="hidden" name="comboId" value="@c.Id" />
-                        <select name="productId" class="form-control" required>
+                        <div class="form-group">
+                        <label for="mon-@c.Id">Sản phẩm</label>
+                        <select id="mon-@c.Id" name="productId" class="form-control" required>
                             <option value="">— Thêm món —</option>
                             @foreach (var p in products)
                             {
                                 <option value="@p.Id">@p.Ten (@p.GiaBan.ToString("N0")đ)</option>
                             }
                         </select>
-                        <input type="number" name="soLuong" class="form-control quantity-input" min="1" value="1" />
-                        <button type="submit" class="btn btn-secondary">Thêm món</button>
+                        </div>
+                        <div class="form-group">
+                            <label for="soluong-@c.Id">Số lượng</label>
+                            <input id="soluong-@c.Id" type="number" name="soLuong" class="form-control" min="1" value="1" />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm">Thêm món</button>
                     </form>
+                    </details>
                 </td>
-                <td>
-                    <a asp-action="SuaCombo" asp-route-id="@c.Id" class="btn btn-secondary">Sửa</a>
+                <td role="cell" class="admin-record-actions">
+                    <div class="admin-row-actions admin-row-actions-three">
+                    <a asp-action="SuaCombo" asp-route-id="@c.Id" class="btn btn-secondary btn-sm" aria-label="Sửa @c.Ten">Sửa</a>
                     <form asp-action="BatTatCombo" method="post" class="inline-form">
                         <input type="hidden" name="id" value="@c.Id" />
-                        <button type="submit" class="btn btn-secondary">@(c.IsActive ? "Tắt" : "Bật")</button>
+                        <button type="submit" class="btn btn-secondary btn-sm" aria-label="@(c.IsActive ? "Tắt" : "Bật") @c.Ten">@(c.IsActive ? "Tắt" : "Bật")</button>
                     </form>
                     <form asp-action="XoaCombo" method="post" class="inline-form">
                         <input type="hidden" name="id" value="@c.Id" />
-                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa combo @c.Ten? Đơn cũ vẫn giữ số tiền đã giảm.');">Xóa</button>
+                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Xóa @c.Ten" data-confirm="Xóa combo @c.Ten? Đơn cũ vẫn giữ số tiền đã giảm." onclick="return confirm(this.dataset.confirm);">Xóa</button>
                     </form>
+                    </div>
                 </td>
             </tr>
         }
     </tbody>
 </table></div>
+}
 
-<h2 class="mt">Thêm combo mới</h2>
-@* Dot 3 (A7): form nhom thanh card 2 cot; giu nguyen field + validation. *@
+<section class="card admin-editor mt" id="them-combo" aria-labelledby="them-combo-title" tabindex="-1">
+<h2 id="them-combo-title">Thêm combo mới</h2>
 <form asp-action="ThemCombo" method="post">
+    <input type="hidden" name="__Invariant" value="phanTramGiam" />
     <div class="admin-form-grid">
         <fieldset class="admin-form-card">
             <legend>Thông tin</legend>
@@ -123,3 +153,4 @@
     </div>
     <button type="submit" class="btn btn-primary">Thêm combo</button>
 </form>
+</section>

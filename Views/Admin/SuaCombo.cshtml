@@ -3,44 +3,58 @@
     ViewData["Title"] = "Admin — Sửa combo";
     var products = (List<TechZone.Models.Product>)ViewBag.Products;
 }
-<h1>Sửa combo — @Model.Ten</h1>
-
-<p>Đã bán: <strong>@Model.DaBan bộ</strong> (không hạ giới hạn xuống dưới số này).</p>
+<header class="market-heading order-heading">
+    <div class="section-head">
+        <h1>Sửa combo — @Model.Ten</h1>
+        <a class="btn hero-buy" href="#thong-tin-combo">Sửa thông tin</a>
+    </div>
+    <p>Đã bán @Model.DaBan bộ. Giới hạn số bộ phải từ mức này trở lên.</p>
+</header>
 
 @* Dot 3 (B8): them/xoa mon ngay o trang Sua — tai dung action ThemMonCombo /
    XoaMonCombo da co (gui kem tuTrang=SuaCombo de quay lai day thay vi ve
    danh sach; xem AdminController.VeCombosHoacSuaCombo). *@
-<h2>Món trong combo (@Model.Items.Count)</h2>
-<ul>
+<section class="card admin-editor" aria-labelledby="mon-combo-title">
+<h2 id="mon-combo-title">Món trong combo (@Model.Items.Count)</h2>
+<ul class="admin-item-list" role="list">
     @foreach (var item in Model.Items)
     {
         <li>
-            <span class="product-thumb-cell">@item.Product.Ten × @item.SoLuong</span>
+            <span>@item.Product.Ten <strong>× @item.SoLuong</strong></span>
             <form asp-action="XoaMonCombo" method="post" class="inline-form">
                 <input type="hidden" name="id" value="@item.Id" />
                 <input type="hidden" name="tuTrang" value="SuaCombo" />
-                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa món này khỏi combo?');">Xóa món</button>
+                <button type="submit" class="btn btn-danger btn-sm" aria-label="Xóa món @item.Product.Ten" onclick="return confirm('Xóa món này khỏi combo?');">Xóa món</button>
             </form>
         </li>
     }
 </ul>
-<form asp-action="ThemMonCombo" method="post" class="inline-form">
+<form asp-action="ThemMonCombo" method="post" class="admin-inline-fields admin-add-item">
     <input type="hidden" name="comboId" value="@Model.Id" />
     <input type="hidden" name="tuTrang" value="SuaCombo" />
-    <select name="productId" class="form-control" required aria-label="Sản phẩm thêm vào combo">
+    <div class="form-group">
+    <label for="mon-combo">Sản phẩm</label>
+    <select id="mon-combo" name="productId" class="form-control" required>
         <option value="">— Thêm món —</option>
         @foreach (var p in products)
         {
             <option value="@p.Id">@p.Ten (@p.GiaBan.ToString("N0")đ)</option>
         }
     </select>
-    <input type="number" name="soLuong" class="form-control quantity-input" min="1" value="1" aria-label="Số lượng món thêm" />
-    <button type="submit" class="btn btn-secondary">Thêm món</button>
+    </div>
+    <div class="form-group">
+        <label for="so-luong-combo">Số lượng</label>
+        <input id="so-luong-combo" type="number" name="soLuong" class="form-control" min="1" value="1" />
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Thêm món</button>
 </form>
+</section>
 
-<h2 class="mt">Thông tin combo</h2>
+<section class="card admin-editor mt" id="thong-tin-combo" aria-labelledby="thong-tin-combo-title" tabindex="-1">
+<h2 id="thong-tin-combo-title">Thông tin combo</h2>
 <form asp-action="SuaCombo" method="post">
     <input type="hidden" name="id" value="@Model.Id" />
+    <input type="hidden" name="__Invariant" value="phanTramGiam" />
     <div class="admin-form-grid">
         <fieldset class="admin-form-card">
             <legend>Thông tin</legend>
@@ -57,7 +71,7 @@
             <legend>Giảm giá &amp; thời gian</legend>
             <div class="form-group">
                 <label for="PhanTramGiam">% giảm trên tổng giá cả bộ (0 &lt; % &lt; 100)</label>
-                <input id="PhanTramGiam" name="phanTramGiam" class="form-control" type="number" min="0.01" max="99.99" step="0.01" value="@Model.PhanTramGiam" required />
+                <input id="PhanTramGiam" name="phanTramGiam" class="form-control" type="number" min="0.01" max="99.99" step="0.01" value="@Model.PhanTramGiam.ToString(System.Globalization.CultureInfo.InvariantCulture)" required />
             </div>
             <div class="form-group">
                 <label for="BatDau">Bắt đầu</label>
@@ -76,6 +90,9 @@
             </div>
         </fieldset>
     </div>
-    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
-    <a asp-action="Combos" class="btn btn-secondary">Về danh sách combo</a>
+    <div class="admin-row-actions">
+        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+        <a asp-action="Combos" class="btn btn-secondary">Về danh sách combo</a>
+    </div>
 </form>
+</section>

@@ -19,9 +19,11 @@
         ("Admin", "SuaCombo") => "Combos",
         ("Admin", "FlashSaleSlots") => "FlashSaleSlots",
         ("Admin", "Banners") => "Banners",
+        ("Admin", "SuaBanner") => "Banners",
         ("Admin", "Reviews") => "Reviews",
         ("Admin", "ThongBao") => "ThongBao",
         ("Returns", "AdminIndex") => "Returns",
+        ("Returns", "Details") => "Returns",
         _ => ""
     };
     var active = NhomActive(controller, action);
@@ -54,6 +56,7 @@
         ("Admin", "ProductForm") => title.Contains("Thêm") ? "Thêm sản phẩm" : "Sửa sản phẩm",
         ("Admin", "OrderDetails") => title.Replace("Admin — ", ""),
         ("Admin", "SuaCombo") => "Sửa combo",
+        ("Admin", "SuaBanner") => "Sửa banner",
         _ => null
     };
 }
@@ -127,7 +130,7 @@
                         }
                         else
                         {
-                            <a asp-controller="Admin" asp-action="@(active == "Products" ? "Products" : active == "Orders" ? "Orders" : "Combos")">@TenMuc(active)</a>
+                            <a asp-controller="Admin" asp-action="@active">@TenMuc(active)</a>
                             <span aria-hidden="true"> / </span>
                             <span aria-current="page">@trangCon</span>
                         }

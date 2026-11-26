@@ -3,24 +3,33 @@
     ViewData["Title"] = "Admin — Khung Flash Sale";
     var products = ViewBag.Products as List<TechZone.Models.Product> ?? new List<TechZone.Models.Product>();
 }
-<h1>Khung Flash Sale</h1>
+<header class="market-heading order-heading">
+    <div class="section-head">
+        <h1>Khung Flash Sale</h1>
+        <a class="btn hero-buy" href="#them-khung">Thêm khung giờ</a>
+    </div>
+    <p>@Model.Count(s => s.IsActive) / @Model.Count khung giờ đang bật</p>
+</header>
 
 @if (!Model.Any())
 {
-    <p class="text-muted">Chưa có khung Flash Sale nào.</p>
+    <p class="admin-empty">Chưa có khung Flash Sale nào.</p>
 }
 else
 {
     @foreach (var s in Model)
     {
-        <section class="mt">
+        <section class="card admin-editor mt" aria-labelledby="khung-@s.Id">
             <div class="section-head">
-                <h2>Khung @s.Ten @(s.IsActive ? "" : "(đang tắt)")</h2>
+                <div class="admin-slot-title">
+                    <h2 id="khung-@s.Id">Khung @s.Ten</h2>
+                    <partial name="_TrangThaiBadge" model="@(s.IsActive ? "Đang bật" : "Đã tắt")" />
+                </div>
                 @* Dot 2 (B6): bat/tat slot — POST BatTatSlot moi, chi doi co
                    IsActive (gia sale van do PriceCalculationService tinh). *@
                 <form asp-action="BatTatSlot" method="post" class="inline-form">
                     <input type="hidden" name="id" value="@s.Id" />
-                    <button type="submit" class="btn btn-secondary btn-sm">@(s.IsActive ? "Tắt khung" : "Bật khung")</button>
+                    <button type="submit" class="btn btn-secondary btn-sm" aria-label="@(s.IsActive ? "Tắt khung" : "Bật khung") @s.Ten">@(s.IsActive ? "Tắt khung" : "Bật khung")</button>
                 </form>
             </div>
             @if (!s.Items.Any())
@@ -29,18 +38,18 @@ else
             }
             else
             {
-                <div class="table-wrap"><table class="table">
-                    <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Giá sale</th><th scope="col"><span class="visually-hidden">Thao tác</span></th></tr></thead>
-                    <tbody>
+                <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Sản phẩm trong khung @s.Ten">
+                    <thead role="rowgroup"><tr role="row"><th scope="col">Sản phẩm</th><th scope="col">Giá sale</th><th scope="col">Thao tác</th></tr></thead>
+                    <tbody role="rowgroup">
                         @foreach (var item in s.Items)
                         {
-                            <tr>
-                                <td><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" loading="lazy" />@item.Product.Ten</span></td>
-                                <td>@item.GiaSale.ToString("N0")đ</td>
-                                <td>
+                            <tr role="row">
+                                <th scope="row" role="rowheader" class="admin-record-lead"><span class="product-thumb-cell"><img class="product-thumb" src="@item.Product.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />@item.Product.Ten</span></th>
+                                <td role="cell" data-label="Giá sale"><strong class="admin-money">@item.GiaSale.ToString("N0")đ</strong></td>
+                                <td role="cell" class="admin-slot-item-action">
                                     <form asp-action="XoaSlotItem" method="post" class="inline-form">
                                         <input type="hidden" name="id" value="@item.Id" />
-                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa @item.Product.Ten khỏi khung @s.Ten?');">Xóa</button>
+                                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Xóa @item.Product.Ten khỏi khung @s.Ten" data-confirm="Xóa @item.Product.Ten khỏi khung @s.Ten?" onclick="return confirm(this.dataset.confirm);">Xóa</button>
                                     </form>
                                 </td>
                             </tr>
@@ -48,11 +57,12 @@ else
                     </tbody>
                 </table></div>
             }
-            <form asp-action="ThemSlotItem" method="post" class="filter-bar">
+            <form asp-action="ThemSlotItem" method="post" class="admin-inline-fields admin-add-item mt">
                 <input type="hidden" name="slotId" value="@s.Id" />
                 <div class="form-group">
                     <label for="productId-@s.Id">Sản phẩm</label>
                     <select id="productId-@s.Id" name="productId" class="form-control" required>
+                        <option value="">Chọn sản phẩm</option>
                         @foreach (var p in products)
                         {
                             <option value="@p.Id">@p.Ten — @p.GiaBan.ToString("N0")đ</option>
@@ -61,7 +71,7 @@ else
                 </div>
                 <div class="form-group">
                     <label for="giaSale-@s.Id">Giá sale (đ)</label>
-                    <input id="giaSale-@s.Id" name="giaSale" class="form-control input-narrow" type="number" min="1" step="1000" required />
+                    <input id="giaSale-@s.Id" name="giaSale" class="form-control" type="number" inputmode="numeric" min="1" required />
                 </div>
                 <button type="submit" class="btn btn-primary btn-sm">Thêm vào khung</button>
             </form>
@@ -69,17 +79,19 @@ else
     }
 }
 
-<h2 class="mt">Thêm khung giờ mới</h2>
-<form asp-action="ThemSlot" method="post">
+<section class="card admin-editor mt" id="them-khung" aria-labelledby="them-khung-title" tabindex="-1">
+<h2 id="them-khung-title">Thêm khung giờ mới</h2>
+<form asp-action="ThemSlot" method="post" class="admin-inline-fields admin-slot-hours">
     <div class="form-group">
         <label for="GioBatDau">Giờ bắt đầu (0–23)</label>
-        <input id="GioBatDau" name="gioBatDau" class="form-control input-narrow" type="number" min="0" max="23" required />
+        <input id="GioBatDau" name="gioBatDau" class="form-control" type="number" inputmode="numeric" min="0" max="23" required />
     </div>
     <div class="form-group">
         <label for="GioKetThuc">Giờ kết thúc (1–24)</label>
-        <input id="GioKetThuc" name="gioKetThuc" class="form-control input-narrow" type="number" min="1" max="24" required />
+        <input id="GioKetThuc" name="gioKetThuc" class="form-control" type="number" inputmode="numeric" min="1" max="24" required />
     </div>
     <button type="submit" class="btn btn-primary">Thêm khung giờ</button>
 </form>
+</section>
 
 <p class="mt"><a asp-action="Dashboard">← Về Dashboard</a></p>

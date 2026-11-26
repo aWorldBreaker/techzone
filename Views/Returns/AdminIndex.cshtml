@@ -1,107 +1,24 @@
-@model List<TechZone.Models.ReturnRequest>
+@model List<ReturnRequest>
 @{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Duyệt đổi trả / bảo hành";
-    var baoHanh = (List<TechZone.Models.WarrantyClaim>)ViewBag.BaoHanh;
+    var baoHanh = (List<WarrantyClaim>)ViewBag.BaoHanh;
     var trangThai = (string?)ViewBag.TrangThai;
     var locs = new[] { (string?)null, "Chờ duyệt", "Đã duyệt", "Từ chối", "Hoàn thành" };
+    var requests = ((IEnumerable<ReturnRequest>)Model, (IEnumerable<WarrantyClaim>)baoHanh, false);
 }
 
-<h1>Duyệt đổi trả / bảo hành</h1>
-<p class="filter-links">
-    Lọc theo trạng thái:
+<header class="market-heading order-heading">
+    <h1>Duyệt đổi trả / bảo hành</h1>
+    <p>@Model.Count yêu cầu đổi trả · @baoHanh.Count yêu cầu bảo hành</p>
+</header>
+
+<nav class="chip-row" aria-label="Lọc theo trạng thái">
     @foreach (var loc in locs)
     {
-        @if (loc == trangThai)
-        {
-            <strong>@(loc ?? "Tất cả")</strong>
-        }
-        else
-        {
-            <a asp-action="AdminIndex" asp-route-trangThai="@loc">@(loc ?? "Tất cả")</a>
-        }
-        @(" ")
+        <a asp-action="AdminIndex" asp-route-trangThai="@loc" class="chip @(loc == trangThai ? "chip-active" : null)"
+           aria-current="@(loc == trangThai ? "true" : null)">@(loc ?? "Tất cả")</a>
     }
-</p>
+</nav>
 
-<h2>Đổi trả</h2>
-@if (!Model.Any())
-{
-    <p>Không có yêu cầu đổi trả nào@(trangThai is not null ? $" ở trạng thái “{trangThai}”" : "").</p>
-}
-else
-{
-    <div class="table-wrap"><table class="table">
-        <thead>
-            <tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Lý do</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Duyệt</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var r in Model)
-            {
-                <tr>
-                    <td>#@r.Id</td>
-                    <td>@r.User?.HoTen (@r.User?.UserName)</td>
-                    <td><a asp-controller="Admin" asp-action="OrderDetails" asp-route-id="@r.OrderId">#@r.OrderId</a></td>
-                    <td>@r.Product.Ten @r.OrderDetail?.Variant?.TenBienThe</td>
-                    <td>@r.LyDo</td>
-                    <td>@r.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td><partial name="_TrangThaiBadge" model="r.TrangThai" /></td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@r.Id" asp-route-loai="doitra">Xem</a>
-                        <form asp-action="Duyet" method="post" class="admin-duyet">
-                            <input type="hidden" name="id" value="@r.Id" />
-                            <input type="hidden" name="loai" value="doitra" />
-                            <select name="trangThaiMoi" class="form-control" aria-label="Trạng thái mới">
-                                <option>Đã duyệt</option>
-                                <option>Từ chối</option>
-                                <option>Hoàn thành</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary btn-sm">Cập nhật</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table></div>
-}
-
-<h2>Bảo hành</h2>
-@if (!baoHanh.Any())
-{
-    <p>Không có yêu cầu bảo hành nào@(trangThai is not null ? $" ở trạng thái “{trangThai}”" : "").</p>
-}
-else
-{
-    <div class="table-wrap"><table class="table">
-        <thead>
-            <tr><th scope="col">Mã</th><th scope="col">Khách</th><th scope="col">Đơn</th><th scope="col">Sản phẩm</th><th scope="col">Mô tả lỗi</th><th scope="col">Ngày tạo</th><th scope="col">Trạng thái</th><th scope="col">Duyệt</th></tr>
-        </thead>
-        <tbody>
-            @foreach (var w in baoHanh)
-            {
-                <tr>
-                    <td>#@w.Id</td>
-                    <td>@w.User?.HoTen (@w.User?.UserName)</td>
-                    <td><a asp-controller="Admin" asp-action="OrderDetails" asp-route-id="@w.OrderId">#@w.OrderId</a></td>
-                    <td>@w.Product.Ten</td>
-                    <td>@w.MoTaLoi</td>
-                    <td>@w.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td><partial name="_TrangThaiBadge" model="w.TrangThai" /></td>
-                    <td>
-                        <a asp-action="Details" asp-route-id="@w.Id" asp-route-loai="baohanh">Xem</a>
-                        <form asp-action="Duyet" method="post" class="admin-duyet">
-                            <input type="hidden" name="id" value="@w.Id" />
-                            <input type="hidden" name="loai" value="baohanh" />
-                            <select name="trangThaiMoi" class="form-control" aria-label="Trạng thái mới">
-                                <option>Đã duyệt</option>
-                                <option>Từ chối</option>
-                                <option>Hoàn thành</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary btn-sm">Cập nhật</button>
-                        </form>
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table></div>
-}
+<partial name="_AdminRequestRecords" model="requests" />

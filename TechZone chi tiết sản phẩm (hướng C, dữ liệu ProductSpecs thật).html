@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TechZone: chi tiết sản phẩm (bản thử hướng C)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<script>
+(function(){var t=null;try{t=localStorage.getItem('tzc-theme')}catch(e){}
+if(!t){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+document.documentElement.setAttribute('data-theme',t)})();
+</script>
+<style>
+:root{--bg:#F3F5F4;--grid:#DDE3E0;--fg:#16212B;--muted:#4A5A67;--pri:#0F6B5C;--on-pri:#fff;--tag:#FFD23F;--sale:#B3261E;--line:#C3CCC8;--surf:#E6EBE9;--card:#fff;--hi:#E1F1EC;
+  --sans:'IBM Plex Sans','Noto Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:border-box}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F161C;--grid:#1C2831;--fg:#E8EEF2;--muted:#9FB0BD;--pri:#4FD1B5;--on-pri:#0F161C;--line:#33444F;--surf:#17212B;--card:#17212B;--hi:#17332E;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F161C;--grid:#1C2831;--fg:#E8EEF2;--muted:#9FB0BD;--pri:#4FD1B5;--on-pri:#0F161C;--line:#33444F;--surf:#17212B;--card:#17212B;--hi:#17332E;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.55 var(--sans)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+h1,h2,p{margin:0}a{color:inherit}button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+.skip{position:absolute;left:12px;top:-60px;background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;z-index:20}.skip:focus{top:12px}
+.head{display:flex;align-items:center;gap:18px;padding:18px 0}
+.logo{font:700 22px var(--mono);text-decoration:none}
+.nav{margin-left:auto;display:flex;align-items:center;gap:18px;font-size:14px;font-weight:600}.nav a{text-decoration:none}
+.tbtn{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 14px;font:600 14px var(--sans);cursor:pointer}
+.crumb{font-size:14px;color:var(--muted);padding:4px 0 14px}
+.sw-demo{display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:18px}
+.sw-demo button{border:1px solid var(--line);background:transparent;border-radius:4px;padding:5px 12px;font:500 13px var(--mono);cursor:pointer}
+.sw-demo button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+.pd{display:grid;gap:28px}
+@media (min-width:980px){.pd{grid-template-columns:7fr 5fr;gap:44px;align-items:start}.buy{position:sticky;top:16px}}
+/* lưới 32px CHỈ trong khung bản vẽ */
+.bp{border:1px solid var(--line);border-radius:14px;overflow:hidden;
+  background-color:var(--bg);background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:32px 32px}
+.bp svg{display:block;width:100%;height:auto;font:700 13px var(--mono)}
+.bp figcaption{padding:10px 16px;font-size:13px;color:var(--muted);background:color-mix(in srgb,var(--bg) 88%,transparent);border-top:1px solid var(--line)}
+.d{fill:none;stroke:var(--fg);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.in{stroke-width:1.3}
+.h{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 4}
+.z circle{fill:var(--card);stroke:var(--pri);stroke-width:2;transition:fill .2s}
+.z text{fill:var(--fg);text-anchor:middle;dominant-baseline:central}
+.z.on circle{fill:var(--pri)}.z.on text{fill:var(--on-pri)}
+@media (prefers-reduced-motion:no-preference){
+  .d{stroke-dasharray:1;stroke-dashoffset:0;animation:draw .8s cubic-bezier(.4,0,.2,1) both;animation-delay:calc(var(--i,0)*90ms)}
+  .z,.h{animation:fade .35s ease-out both;animation-delay:.9s}
+  @keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+}
+
+.buy h1{font:700 clamp(26px,3.4vw,36px)/1.12 var(--sans)}
+.brand{font:500 13px var(--mono);color:var(--muted);margin-bottom:6px}
+.price-tag{--hole:var(--bg);position:relative;display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:.1rem .7rem;margin-top:18px;padding:.5rem 1rem .5rem 1.5rem;background:var(--tag);color:#16212B;border-radius:6px;font:700 1.9rem var(--mono);font-variant-numeric:tabular-nums}
+.price-tag::before{content:"";position:absolute;left:.6rem;top:50%;width:.5rem;height:.5rem;margin-top:-.25rem;border-radius:50%;background:var(--hole)}
+.price-tag s{font-size:.95rem;font-weight:500;opacity:.75}
+.save{margin-top:8px;font-weight:600}
+.chip-giam{display:inline-block;background:var(--sale);color:#fff;border-radius:999px;padding:.05rem .55rem;font:700 .8rem var(--sans);margin-left:8px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px}
+.qty{display:inline-flex;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+.qty button{width:40px;height:44px;border:0;background:transparent;font-size:20px;cursor:pointer}
+.qty output{min-width:34px;display:grid;place-items:center;font:700 16px var(--mono)}
+.btn{border:0;border-radius:6px;background:var(--pri);color:var(--on-pri);padding:13px 24px;font:600 16px var(--sans);cursor:pointer}
+.btn:active,.qty button:active{transform:scale(.97)}
+.ok{list-style:none;margin:22px 0 0;padding:16px 0 0;border-top:1px solid var(--line);display:grid;gap:6px;font-size:15px}
+.ok small{color:var(--muted)}
+
+.specs{margin-top:44px}
+.specs h2{font:700 26px/1.1 var(--sans)}
+.need{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0 12px}
+.need span.l{font-weight:600;font-size:14px;color:var(--muted);margin-right:4px}
+.chip{position:relative}.chip input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.chip span{display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:4px;background:var(--bg);font:500 14px var(--mono);transition:background-color .2s,color .2s}
+.chip input:checked+span{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip input:focus-visible+span{outline:3px solid var(--pri);outline-offset:2px}
+.sl{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.sl li{display:grid;grid-template-columns:34px 130px 1fr;gap:10px;align-items:center;padding:12px 8px;border-bottom:1px solid var(--line);border-left:4px solid transparent}
+.sl li.on{background:var(--hi);border-left-color:var(--pri)}
+.sl .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;border:2px solid var(--pri);font:700 12px var(--mono)}
+.sl li.on .n{background:var(--pri);color:var(--on-pri)}
+.sl .k{color:var(--muted);font-size:14px}.sl .v{font-weight:600}
+.sl .nz{font-size:12px;color:var(--muted)}
+.note{margin-top:14px;font-size:13px;color:var(--muted);max-width:70ch}
+</style>
+</head>
+<body>
+<a class="skip" href="#noi-dung">Bỏ qua tới nội dung</a>
+<div class="wrap">
+<header class="head"><a class="logo" href="#">TechZone</a>
+  <nav class="nav" aria-label="Điều hướng chính"><a href="#">So sánh</a><a href="#">Yêu thích</a><a id="cart" href="#" aria-label="Giỏ hàng, 0 sản phẩm">Giỏ (0)</a><button id="tt" class="tbtn" type="button" aria-pressed="false">Chế độ tối</button></nav></header>
+<main id="noi-dung">
+  <p class="crumb" id="crumb"></p>
+  <div class="sw-demo" role="group" aria-label="Chọn loại sản phẩm để xem thử">Chỉ có ở bản thử, xem loại sản phẩm:
+    <button type="button" data-p="0" aria-pressed="true">Điện thoại</button><button type="button" data-p="1" aria-pressed="false">Laptop</button><button type="button" data-p="2" aria-pressed="false">Tai nghe</button></div>
+  <div class="pd">
+    <figure class="bp" style="margin:0"><svg id="bp" viewBox="0 0 400 300" role="img"></svg>
+      <figcaption id="cap">Bản vẽ minh họa. Trên site thật, chú thích đặt lên ảnh sản phẩm.</figcaption></figure>
+    <div class="buy">
+      <p class="brand" id="brand"></p><h1 id="nm"></h1>
+      <div><span class="price-tag" id="pt"></span></div><p class="save" id="sv"></p>
+      <div class="row"><div class="qty" role="group" aria-label="Số lượng"><button type="button" id="mi" aria-label="Giảm số lượng">−</button><output id="q" aria-live="polite">1</output><button type="button" id="pl" aria-label="Tăng số lượng">+</button></div>
+        <button class="btn" id="add" type="button">Thêm vào giỏ</button></div>
+      <ul class="ok"><li>Hàng chính hãng, bảo hành 24 tháng</li><li>Trả góp 0% <small>(giả lập)</small></li></ul>
+    </div>
+  </div>
+  <section class="specs" aria-labelledby="h-sp">
+    <h2 id="h-sp">Thông số</h2>
+    <fieldset style="border:0;margin:0;padding:0"><legend class="vh" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Bạn đang cần</legend>
+    <div class="need"><span class="l">Bạn đang cần</span>
+      <label class="chip"><input type="radio" name="NhuCau" value="" checked><span>Tất cả</span></label>
+      <label class="chip"><input type="radio" name="NhuCau" value="lam-viec"><span>Làm việc</span></label>
+      <label class="chip"><input type="radio" name="NhuCau" value="chup-anh"><span>Chụp ảnh</span></label>
+      <label class="chip"><input type="radio" name="NhuCau" value="nghe-nhac"><span>Nghe nhạc</span></label></div></fieldset>
+    <ul class="sl" id="sl"></ul>
+    <p class="note">Chú thích chỉ gắn vào vùng của những thông số có trong cơ sở dữ liệu. Thông số nào không có vùng phù hợp chỉ hiện trong danh sách, không được đoán.</p>
+  </section>
+</main></div>
+<script>
+/* Dữ liệu lấy từ Data/SeedData.cs: các trường của ProductSpecs (Chip, Ram, Rom, Pin, ManHinh, Camera, CardDoHoa, ThongSoKhac) */
+var PR=[
+{cat:'Điện thoại',br:'Xiaomi',n:'Xiaomi 15 5G',g:15990000,b:12990000,t:'dt',s:{Chip:'Snapdragon 8 Elite',Ram:'12GB',Rom:'256GB',Pin:'5400mAh',ManHinh:'6.7" AMOLED 120Hz',Camera:'50MP'}},
+{cat:'Laptop',br:'ASUS',n:'Laptop ASUS TUF Gaming F15',g:24650000,b:18490000,t:'lt',s:{Chip:'Intel Core i5-12450H',Ram:'8GB',Rom:'512GB SSD',Pin:'48Wh',ManHinh:'15.6" FHD 144Hz',CardDoHoa:'NVIDIA RTX 3050'}},
+{cat:'Tai nghe',br:'Sony',n:'Tai nghe Sony WH-CH520',g:1150000,b:890000,t:'tn',s:{Pin:'50 giờ',ThongSoKhac:'Bluetooth 5.2, chống ồn, mic đàm thoại'}}];
+/* Vùng đặt chú thích cố định theo danh mục (toạ độ trong khung 400x300) */
+var Z={dt:{Camera:[200,50],ManHinh:[200,125],Chip:[184,198],Bo:[216,198],Pin:[200,248]},
+ lt:{ManHinh:[200,105],Chip:[146,210],CardDoHoa:[254,210],Bo:[200,212],Pin:[200,247]},
+ tn:{Pin:[100,212],X:[[200,36],[300,212],[100,252]]}};
+var SH={
+dt:'<rect class="d" pathLength="1" style="--i:0" x="165" y="12" width="70" height="278" rx="16"/><rect class="d in" pathLength="1" style="--i:1" x="172" y="30" width="56" height="240" rx="8"/><circle class="d" pathLength="1" style="--i:2" cx="200" cy="50" r="8"/><rect class="h" x="170" y="187" width="26" height="22" rx="3"/><rect class="h" x="204" y="187" width="26" height="22" rx="3"/><rect class="h" x="176" y="226" width="48" height="44" rx="4"/>',
+lt:'<rect class="d" pathLength="1" style="--i:0" x="90" y="38" width="220" height="132" rx="8"/><rect class="d in" pathLength="1" style="--i:1" x="100" y="48" width="200" height="112" rx="3"/><path class="d" pathLength="1" style="--i:2" d="M58 184H342L364 266H36Z"/><rect class="h" x="124" y="196" width="44" height="28" rx="3"/><rect class="h" x="232" y="196" width="44" height="28" rx="3"/><rect class="h" x="184" y="204" width="32" height="16" rx="2"/><rect class="h" x="150" y="234" width="100" height="22" rx="3"/>',
+tn:'<path class="d" pathLength="1" style="--i:0" d="M100 168V130a100 100 0 0 1 200 0v38"/><rect class="d" pathLength="1" style="--i:1" x="78" y="162" width="44" height="106" rx="20"/><rect class="d" pathLength="1" style="--i:2" x="278" y="162" width="44" height="106" rx="20"/><rect class="h" x="88" y="188" width="24" height="48" rx="4"/>'};
+var NEED={'chup-anh':['Camera','ManHinh','Pin'],'lam-viec':['Chip','Bo','CardDoHoa','ManHinh','Pin'],'nghe-nhac':['Pin','X'],'':[]};
+var LAB={ManHinh:'Màn hình',Chip:'Chip',Bo:'Bộ nhớ',Camera:'Camera',CardDoHoa:'Card đồ họa',Pin:'Pin',X:'Tính năng'};
+var $=function(i){return document.getElementById(i)},vnd=function(n){return n.toLocaleString('vi-VN')+'đ'};
+var cur=0,qty=1,cartN=0,need='';
+
+function rows(p){var s=p.s,r=[];
+  ['ManHinh','Chip'].forEach(function(k){if(s[k])r.push({k:k,v:s[k]})});
+  if(s.Ram||s.Rom)r.push({k:'Bo',v:[s.Ram&&'RAM '+s.Ram,s.Rom&&(p.t==='dt'?'ROM ':'')+s.Rom].filter(Boolean).join(', ')});
+  ['Camera','CardDoHoa','Pin'].forEach(function(k){if(s[k])r.push({k:k,v:s[k]})});
+  if(s.ThongSoKhac)s.ThongSoKhac.split(', ').forEach(function(v){r.push({k:'X',v:v})});
+  return r}
+function pos(p,rs){var z=Z[p.t],xi=0;
+  rs.forEach(function(r){var a=null;
+    if(r.k==='X'){a=z.X&&z.X[xi++]}else a=z[r.k];
+    r.z=a||null});
+  var n=0;rs.forEach(function(r){if(r.z)r.n=++n});return rs}
+var RS=[];
+function draw(){var p=PR[cur];RS=pos(p,rows(p));
+  $('bp').setAttribute('aria-label','Bản vẽ minh họa '+p.n+', có '+RS.filter(function(r){return r.z}).length+' chú thích');
+  $('bp').innerHTML=SH[p.t]+RS.filter(function(r){return r.z}).map(function(r,i){
+    return '<g class="z" data-i="'+RS.indexOf(r)+'"><circle cx="'+r.z[0]+'" cy="'+r.z[1]+'" r="13"/><text x="'+r.z[0]+'" y="'+r.z[1]+'">'+r.n+'</text></g>'}).join('');
+  $('crumb').textContent='Trang chủ / '+p.cat+' / '+p.n;
+  $('brand').textContent=p.br;$('nm').textContent=p.n;
+  var gi=Math.round((1-p.b/p.g)*100);
+  $('pt').innerHTML=vnd(p.b)+'<s>'+vnd(p.g)+'</s>';
+  $('sv').innerHTML='Tiết kiệm '+vnd(p.g-p.b)+'<span class="chip-giam">−'+gi+'%</span>';
+  $('sl').innerHTML=RS.map(function(r,i){return '<li data-i="'+i+'"><span class="n" aria-hidden="'+(!r.z)+'">'+(r.z?r.n:'')+'</span><span class="k">'+LAB[r.k]+'</span><span class="v">'+r.v+(r.z?'':' <span class="nz">(chỉ trong danh sách)</span>')+'</span></li>'}).join('');
+  mark()}
+function mark(){var on=NEED[need];
+  [].forEach.call(document.querySelectorAll('#sl li'),function(li){var r=RS[li.dataset.i];li.classList.toggle('on',on.indexOf(r.k)>-1)});
+  [].forEach.call(document.querySelectorAll('.z'),function(g){var r=RS[g.dataset.i];g.classList.toggle('on',on.indexOf(r.k)>-1)})}
+function hover(i,on){[].forEach.call(document.querySelectorAll('[data-i="'+i+'"]'),function(e){e.classList.toggle('on',on||NEED[need].indexOf(RS[i].k)>-1)})}
+document.addEventListener('mouseover',function(e){var t=e.target.closest('[data-i]');if(t)hover(t.dataset.i,true)});
+document.addEventListener('mouseout',function(e){var t=e.target.closest('[data-i]');if(t)hover(t.dataset.i,false)});
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-p]');if(b){cur=+b.dataset.p;[].forEach.call(document.querySelectorAll('[data-p]'),function(x){x.setAttribute('aria-pressed',x===b)});draw()}
+  if(e.target.closest('a[href="#"]'))e.preventDefault()});
+document.querySelectorAll('input[name=NhuCau]').forEach(function(r){r.addEventListener('change',function(){need=r.value;mark()})});
+$('mi').onclick=function(){qty=Math.max(1,qty-1);$('q').textContent=qty};
+$('pl').onclick=function(){qty=Math.min(10,qty+1);$('q').textContent=qty};
+$('add').onclick=function(){cartN+=qty;$('cart').textContent='Giỏ ('+cartN+')';$('cart').setAttribute('aria-label','Giỏ hàng, '+cartN+' sản phẩm')};
+var tt=$('tt');function sync(){var d=document.documentElement.getAttribute('data-theme')==='dark';tt.textContent=d?'Chế độ sáng':'Chế độ tối';tt.setAttribute('aria-pressed',d)}
+tt.onclick=function(){var n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('tzc-theme',n)}catch(e){}sync()};
+sync();draw();
+</script>
+</body>
+</html>

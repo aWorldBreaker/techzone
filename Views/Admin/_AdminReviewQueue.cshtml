@@ -1,0 +1,48 @@
+@model (string Id, string Title, string Empty, IEnumerable<Review> Items, bool Pending, bool TongQuan)
+
+<div class="mt" id="@Model.Id" role="region" aria-labelledby="title-@Model.Id" tabindex="-1">
+    <h2 id="title-@Model.Id">@Model.Title</h2>
+    @if (!Model.Items.Any())
+    {
+        <p class="admin-empty">@Model.Empty</p>
+    }
+    else
+    {
+        <div class="admin-feedback-list">
+            @foreach (var r in Model.Items)
+            {
+                <article class="card admin-editor admin-feedback">
+                    <div class="admin-record-title">
+                        <h3>@r.Product.Ten</h3>
+                        <span class="badge badge-vang">@r.Sao/5 sao</span>
+                    </div>
+                    <p class="text-muted">@(r.User?.HoTen ?? r.User?.Email ?? "Khách") · @r.NgayDanhGia.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p class="admin-message">@r.NoiDung</p>
+                    <div class="admin-row-actions">
+                        @if (Model.Pending)
+                        {
+                            <form asp-action="DuyetDanhGia" method="post">
+                                <input type="hidden" name="id" value="@r.Id" />
+                                @if (Model.TongQuan)
+                                {
+                                    <input type="hidden" name="tuTrang" value="TongQuan" />
+                                    <input type="hidden" name="muc" value="reviews" />
+                                }
+                                <button type="submit" class="btn btn-primary btn-sm">Duyệt</button>
+                            </form>
+                        }
+                        <form asp-action="AnDanhGia" method="post">
+                            <input type="hidden" name="id" value="@r.Id" />
+                            @if (Model.TongQuan)
+                            {
+                                <input type="hidden" name="tuTrang" value="TongQuan" />
+                                <input type="hidden" name="muc" value="reviews" />
+                            }
+                            <button type="submit" class="btn btn-secondary btn-sm">Ẩn</button>
+                        </form>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>

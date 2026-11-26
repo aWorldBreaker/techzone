@@ -3,26 +3,40 @@
     ViewData["Title"] = "Admin — Quản lý kho";
     var nhapGanDay = ViewBag.NhapGanDay as List<TechZone.Models.StockIn> ?? new List<TechZone.Models.StockIn>();
 }
-<header class="section-head">
-    <h1>Quản lý kho</h1>
-    <a class="btn btn-secondary" asp-action="XuatCsvKho">Xuất CSV kho (@Model.Count sản phẩm)</a>
+<header class="market-heading order-heading">
+    <div class="section-head">
+        <h1>Quản lý kho</h1>
+        <a class="btn hero-buy" asp-action="XuatCsvKho">Xuất CSV kho</a>
+    </div>
+    <p>@Model.Count sản phẩm trong danh sách</p>
 </header>
 
-<div class="table-wrap"><table class="table">
-    <thead><tr><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>
-    <tbody>
+<div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Tồn kho sản phẩm">
+    <thead role="rowgroup"><tr role="row"><th scope="col">Sản phẩm</th><th scope="col">Tồn kho</th><th scope="col">Đã bán</th><th scope="col">Nhập thêm</th></tr></thead>
+    <tbody role="rowgroup">
         @foreach (var p in Model)
         {
-            <tr>
-                <td><span class="product-thumb-cell"><img class="product-thumb" src="@p.AnhDaiDien" alt="" loading="lazy" /><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a></span></td>
-                <td class="@(p.TonKho == 0 ? "low-stock" : p.TonKho <= 10 ? "low-stock-soft" : "")">@p.TonKho@if (p.TonKho == 0) { <span class="badge badge-huy">Hết hàng</span> }</td>
-                <td>@p.LuotBan</td>
-                <td>
-                    <form asp-action="NhapKho" method="post" class="stock-form">
+            <tr role="row">
+                <th scope="row" role="rowheader" class="admin-record-lead">
+                    <span class="product-thumb-cell">
+                        <img class="product-thumb" src="@p.AnhDaiDien" alt="" width="48" height="48" loading="lazy" />
+                        <span><a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id">@p.Ten</a><small class="admin-record-code text-muted">Mã #@p.Id</small></span>
+                    </span>
+                </th>
+                <td role="cell" data-label="Tồn kho"><span class="badge @(p.TonKho == 0 ? "low-stock" : p.TonKho <= 10 ? "low-stock-soft" : "badge-xong")">@(p.TonKho == 0 ? "Hết hàng · 0" : $"Còn {p.TonKho}")</span></td>
+                <td role="cell" data-label="Đã bán">@p.LuotBan</td>
+                <td role="cell" class="admin-record-actions">
+                    <form asp-action="NhapKho" method="post" class="admin-inline-fields admin-stock-entry">
                         <input type="hidden" name="productId" value="@p.Id" />
-                        <input type="number" name="soLuong" class="form-control input-narrow" min="1" value="10" required aria-label="Số lượng nhập cho @p.Ten" />
-                        <input type="text" name="ghiChu" class="form-control" placeholder="Ghi chú (không bắt buộc)" maxlength="200" />
-                        <button type="submit" class="btn btn-primary btn-sm">Nhập kho</button>
+                        <div class="form-group">
+                            <label for="nhap-@p.Id">Số lượng nhập</label>
+                            <input id="nhap-@p.Id" type="number" name="soLuong" class="form-control" min="1" value="10" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="ghichu-@p.Id">Ghi chú <small>(tùy chọn)</small></label>
+                            <input id="ghichu-@p.Id" type="text" name="ghiChu" class="form-control" maxlength="200" />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm" aria-label="Nhập kho @p.Ten">Nhập kho</button>
                     </form>
                 </td>
             </tr>
@@ -38,16 +52,16 @@
     }
     else
     {
-        <div class="table-wrap"><table class="table">
-            <thead><tr><th scope="col">Ngày nhập</th><th scope="col">Sản phẩm</th><th scope="col">Số lượng</th><th scope="col">Ghi chú</th></tr></thead>
-            <tbody>
+        <div class="table-wrap admin-record-list"><table class="table" role="table" aria-label="Lịch sử nhập kho">
+            <thead role="rowgroup"><tr role="row"><th scope="col">Sản phẩm</th><th scope="col">Ngày nhập</th><th scope="col">Số lượng</th><th scope="col">Ghi chú</th></tr></thead>
+            <tbody role="rowgroup">
                 @foreach (var s in nhapGanDay)
                 {
-                    <tr>
-                        <td>@s.NgayNhap.ToString("dd/MM/yyyy HH:mm")</td>
-                        <td>@s.Product.Ten</td>
-                        <td>+@s.SoLuong</td>
-                        <td>@s.GhiChu</td>
+                    <tr role="row">
+                        <th scope="row" role="rowheader" class="admin-record-lead">@s.Product.Ten</th>
+                        <td role="cell" data-label="Ngày nhập">@s.NgayNhap.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td role="cell" data-label="Số lượng"><strong class="admin-money">+@s.SoLuong</strong></td>
+                        <td role="cell" class="admin-record-wide" data-label="Ghi chú">@(string.IsNullOrWhiteSpace(s.GhiChu) ? "—" : s.GhiChu)</td>
                     </tr>
                 }
             </tbody>

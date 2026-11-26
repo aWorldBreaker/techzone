@@ -1,0 +1,53 @@
+@model (IEnumerable<Banner> Items, bool TongQuan)
+
+@if (!Model.Items.Any())
+{
+    <p class="admin-empty">Chưa có banner nào.</p>
+}
+else
+{
+    <div class="table-wrap admin-record-list">
+        <table class="table" role="table" aria-label="Danh sách banner">
+            <thead role="rowgroup">
+                <tr role="row"><th scope="col">Banner</th><th scope="col">Thứ tự</th><th scope="col">Trạng thái</th><th scope="col">Đường dẫn đích</th><th scope="col">Thao tác</th></tr>
+            </thead>
+            <tbody role="rowgroup">
+                @foreach (var b in Model.Items)
+                {
+                    <tr role="row">
+                        <th scope="row" role="rowheader" class="admin-record-lead">
+                            <span class="product-thumb-cell">
+                                <img class="banner-thumb" src="@b.AnhUrl" alt="" width="96" height="54" loading="lazy" />
+                                <span>@b.TieuDe</span>
+                            </span>
+                        </th>
+                        <td role="cell" data-label="Thứ tự">@b.ThuTu</td>
+                        <td role="cell" data-label="Trạng thái"><partial name="_TrangThaiBadge" model="@(b.IsActive ? "Đang bật" : "Đang tắt")" /></td>
+                        <td role="cell" class="admin-record-wide" data-label="Đường dẫn đích">@(string.IsNullOrEmpty(b.LinkUrl) ? "—" : b.LinkUrl)</td>
+                        <td role="cell" class="admin-record-actions">
+                            <div class="admin-row-actions @(Model.TongQuan ? null : "admin-row-actions-three")">
+                                <a asp-action="SuaBanner" asp-route-id="@b.Id" class="btn btn-secondary btn-sm" aria-label="Sửa banner @b.TieuDe">Sửa</a>
+                                <form asp-action="DoiTrangThaiBanner" method="post">
+                                    <input type="hidden" name="id" value="@b.Id" />
+                                    @if (Model.TongQuan)
+                                    {
+                                        <input type="hidden" name="tuTrang" value="TongQuan" />
+                                        <input type="hidden" name="muc" value="banners" />
+                                    }
+                                    <button type="submit" class="btn btn-secondary btn-sm" aria-label="@(b.IsActive ? "Tắt" : "Bật") banner @b.TieuDe">@(b.IsActive ? "Tắt" : "Bật")</button>
+                                </form>
+                                @if (!Model.TongQuan)
+                                {
+                                    <form asp-action="XoaBanner" method="post">
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Xóa banner @b.TieuDe?" aria-label="Xóa banner @b.TieuDe" onclick="return confirm(this.dataset.confirm);">Xóa</button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

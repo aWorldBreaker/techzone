@@ -1,0 +1,28 @@
+@model IEnumerable<Notification>
+
+@if (!Model.Any())
+{
+    <p class="admin-empty">Chưa có thông báo nào.</p>
+}
+else
+{
+    <div class="table-wrap admin-record-list">
+        <table class="table" role="table" aria-label="Thông báo đã gửi">
+            <thead role="rowgroup">
+                <tr role="row"><th scope="col">Tiêu đề</th><th scope="col">Ngày gửi</th><th scope="col">Trạng thái</th><th scope="col">Người nhận</th><th scope="col">Nội dung</th></tr>
+            </thead>
+            <tbody role="rowgroup">
+                @foreach (var n in Model)
+                {
+                    <tr role="row">
+                        <th scope="row" role="rowheader" class="admin-record-lead">@n.TieuDe</th>
+                        <td role="cell" data-label="Ngày gửi">@n.NgayTao.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td role="cell" data-label="Trạng thái"><partial name="_TrangThaiBadge" model="@(n.DaDoc ? "Đã đọc" : "Chưa đọc")" /></td>
+                        <td role="cell" class="admin-record-wide" data-label="Người nhận">@(n.User?.HoTen ?? n.User?.Email ?? n.UserId)</td>
+                        <td role="cell" class="admin-record-wide admin-message" data-label="Nội dung">@(string.IsNullOrWhiteSpace(n.NoiDung) ? "—" : n.NoiDung)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

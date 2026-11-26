@@ -8,6 +8,13 @@
     var compact = window.matchMedia('(max-width: 1023px)');
     var mobileOpen = false;
     var closeButton = document.getElementById('filter-close');
+    var outsideDrawer = [];
+    for (var branch = panel; branch !== document.body; branch = branch.parentElement) {
+        Array.from(branch.parentElement.children).forEach(function (sibling) {
+            if (sibling !== branch && !sibling.inert) outsideDrawer.push(sibling);
+        });
+    }
+
     var pricePresets = panel.querySelector('.price-presets');
     pricePresets.hidden = false;
     pricePresets.addEventListener('click', function (event) {
@@ -18,10 +25,12 @@
     });
 
     function sync() {
+        if (!compact.matches) mobileOpen = false;
         var open = !compact.matches || mobileOpen;
         panel.hidden = !open;
         var drawerOpen = compact.matches && mobileOpen;
         panel.classList.toggle('filter-drawer-open', drawerOpen);
+        outsideDrawer.forEach(function (element) { element.inert = drawerOpen; });
         if (drawerOpen) {
             panel.setAttribute('role', 'dialog');
             panel.setAttribute('aria-modal', 'true');

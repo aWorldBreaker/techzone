@@ -32,6 +32,7 @@
   #filter-panel.filter-drawer-open {
     position: fixed; inset: 0 0 0 auto; width: min(25rem, 100%); z-index: 8;
     margin: 0; overflow: auto; align-content: start; box-shadow: var(--shadow-lg);
+    scroll-padding-block: .5rem 3.75rem;
     padding-block-end: calc(1rem + env(safe-area-inset-bottom));
   }
   .filter-drawer-open .filter-actions { position: sticky; bottom: 0; background: var(--color-card); padding-block: .25rem; }

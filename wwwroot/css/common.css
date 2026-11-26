@@ -137,3 +137,31 @@ input:is([type="radio"], [type="checkbox"]) { accent-color: var(--color-primary)
 .price-tag .price-amount { color: inherit; font-size: clamp(.94rem, .85rem + .45vw, 1.25rem); font-weight: 700; }
 .price-tag s { font-size: .8rem; }
 .chip-giam { background: #B3261E; color: #FFFFFF; border-radius: 999px; padding: .1rem .5rem; font-size: .8rem; font-weight: 700; }
+
+.blueprint {
+  border-radius: 14px;
+  background-color: var(--color-background);
+  background-image: linear-gradient(var(--color-grid) 1px, transparent 1px), linear-gradient(90deg, var(--color-grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+.choice-row { display: flex; flex-wrap: wrap; gap: .4rem; }
+.choice-chip { position: relative; cursor: pointer; padding: .35rem .7rem; background: var(--color-card); }
+.choice-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.choice-chip:has(:focus-visible) { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.choice-chip:has(:checked) { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+:is(.need-finder, .choice-fieldset) fieldset, fieldset.choice-fieldset { min-inline-size: 0; border: 0; padding: 0; margin: 0; }
+:is(.need-finder, .choice-fieldset) legend { margin-block-end: .35rem; padding: 0; font-weight: 600; }
+.drawing-fill { fill: var(--color-stage); }
+.drawing-stroke, .drawing-leader, .drawing-zone { fill: none; stroke: var(--color-primary); stroke-width: 1.5; }
+.drawing-zone { fill: var(--color-background); }
+.drawing-center { fill: var(--color-primary); }
+@media (prefers-reduced-motion: no-preference) {
+  .is-drawing .drawing-stroke { animation: trace-drawing 760ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(var(--i) * 120ms); }
+  .is-drawing .drawing-leader { animation: trace-drawing 700ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(420ms + var(--i) * 120ms); }
+  .is-drawing :is(.drawing-zone, .drawing-note) { animation: reveal-note 220ms cubic-bezier(.4,0,.2,1) backwards; animation-delay: calc(940ms + var(--i) * 120ms); }
+  .is-dropping .drawing-price { animation: drop-price 550ms cubic-bezier(.2,.8,.3,1.1) backwards 1400ms; }
+  .home-blueprint .choice-chip { transition: background-color 200ms, color 200ms, border-color 200ms; }
+  @keyframes trace-drawing { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
+  @keyframes reveal-note { from { opacity: 0; transform: translateX(8px); } }
+  @keyframes drop-price { from { transform: translateY(-18px) rotate(-3deg); } }
+}

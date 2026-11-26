@@ -5,20 +5,16 @@
     <div class="banner-strip">
         @foreach (var banner in Model)
         {
-            <div class="banner-item">
-                @if (!string.IsNullOrEmpty(banner.LinkUrl))
-                {
-                    <a href="@banner.LinkUrl">
-                        <img src="@banner.AnhUrl" alt="" loading="lazy" />
-                        <span>@banner.TieuDe</span>
-                    </a>
-                }
-                else
-                {
-                    <img src="@banner.AnhUrl" alt="" loading="lazy" />
-                    <span>@banner.TieuDe</span>
-                }
-            </div>
+            <article class="banner-item">
+                <img src="@banner.AnhUrl" alt="" width="80" height="80" loading="lazy" />
+                <div>
+                    <strong>@banner.TieuDe</strong>
+                    @if (!string.IsNullOrEmpty(banner.LinkUrl))
+                    {
+                        <a href="@banner.LinkUrl">Xem nội dung ưu đãi</a>
+                    }
+                </div>
+            </article>
         }
     </div>
 }

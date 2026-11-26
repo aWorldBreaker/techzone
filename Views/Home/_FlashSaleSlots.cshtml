@@ -10,7 +10,7 @@
 <div class="slot-section">
     @if (slotHienTai is not null)
     {
-        <h3>Đang chạy: khung @slotHienTai.Ten</h3>
+        <h3 class="chip">Đang chạy: khung @slotHienTai.Ten</h3>
         @if (items.Count == 0)
         {
             <p class="text-muted">Chưa có sản phẩm giảm giá trong khung này.</p>
@@ -23,13 +23,16 @@
                     <article class="product-card slot-card">
                         <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="product-image">
                             <img src="@item.Product.AnhDaiDien" alt="@item.Product.Ten" loading="lazy" />
-                            <span class="badge-giam">Flash Sale</span>
+                            @if (item.GiaSale < item.Product.Gia && item.Product.Gia > 0)
+                            {
+                                <span class="chip-giam">−@((int)Math.Round((1 - item.GiaSale / item.Product.Gia) * 100))%</span>
+                            }
                         </a>
                         <div class="product-info">
                             <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@item.Product.Ten</a></h3>
-                            <p class="product-price">
+                            <p class="product-price price-tag">
                                 <strong class="price-amount">@item.GiaSale.ToString("N0")đ</strong>
-                                <s>@item.Product.Gia.ToString("N0")đ</s>
+                                @if (item.GiaSale < item.Product.Gia) { <s>@item.Product.Gia.ToString("N0")đ</s> }
                             </p>
                         </div>
                     </article>
@@ -45,7 +48,7 @@
     @if (slotTiepTheo is not null && gioMoTiep.HasValue)
     {
         <div class="slot-next">
-            <p>Khung tiếp theo <strong>@slotTiepTheo.Ten</strong> · @(gioMoTiep.Value.Date == DateTime.Today ? "hôm nay" : "ngày mai")</p>
+            <p class="chip">Khung tiếp theo <strong>@slotTiepTheo.Ten</strong>, @(gioMoTiep.Value.Date == DateTime.Today ? "hôm nay" : "ngày mai")</p>
             <div class="flash-countdown" id="slot-countdown" data-ket-thuc="@gioMoTiep.Value.ToString("o")" data-countdown-ended="Đến giờ mở khung">
                 <span><b id="slot-cd-gio">--</b><small>giờ</small></span>
                 <span><b id="slot-cd-phut">--</b><small>phút</small></span>

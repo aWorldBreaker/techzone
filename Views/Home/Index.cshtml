@@ -1,5 +1,6 @@
 @using TechZone.Models
 @using Microsoft.AspNetCore.Mvc.ViewFeatures
+@using System.Globalization
 @{
     ViewData["Title"] = "Trang chủ";
     var flashSale = (List<FlashSale>)ViewBag.FlashSale;
@@ -7,131 +8,201 @@
     var banChay = (List<Product>)ViewBag.BanChay;
     var danhMuc = (List<Category>)ViewBag.DanhMuc;
     var ketThuc = (DateTime?)ViewBag.FlashSaleKetThuc;
-    // Follow-up M4-3 (hero dong): cau danh gia chi xuat hien khi Xiaomi 15
-    // co review da duyet; 0 review -> bo luon, khong hien so ghi tay.
+    var hero = ViewBag.Hero as Product;
     var heroSoDG = (int?)ViewBag.HeroSoDanhGia ?? 0;
     var heroTB = (double?)ViewBag.HeroDiemTB ?? 0;
-    var heroDanhGia = heroSoDG > 0
-        ? $" Đánh giá {heroTB.ToString("0.0", System.Globalization.CultureInfo.GetCultureInfo("vi-VN"))}/5 sao ({heroSoDG} đánh giá)."
-        : "";
-    // Phase 5 — Landing: hero dong tu DB (HomeController: ViewBag.Hero =
-    // SP Id 1 kem Specs/Images). Ten/gia/gia gach/anh/link deu lay tu DB.
-    var hero = ViewBag.Hero as Product;
-    var heroSpecs = hero?.Specs is null ? Array.Empty<string>() : new[]
-        { hero.Specs.Chip, hero.Specs.Camera, hero.Specs.ManHinh, hero.Specs.Pin }
-        .Where(s => !string.IsNullOrWhiteSpace(s)).Select(s => s!).ToArray();
     var giaHieuDung = (Dictionary<int, decimal>)ViewBag.GiaHieuDung;
     ViewData["ProductCardPrices"] = giaHieuDung;
-    var heroLead = heroSpecs.Length > 0
-        ? string.Join(" • ", heroSpecs)
-        : (hero?.MoTa ?? "");
+    var candidates = noiBat.Concat(banChay).Concat(flashSale.Select(f => f.Product))
+        .Where(p => p.TonKho > 0).DistinctBy(p => p.Id).OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id).ToList();
+    var drawings = hero is null ? candidates : candidates.Prepend(hero).DistinctBy(p => p.Id).ToList();
 }
-
-<section class="need-counter" aria-labelledby="need-title">
-    <div class="need-intro">
-        <h1 id="need-title">Bạn cần đồ công nghệ cho việc gì?</h1>
-        <a asp-controller="Products" asp-action="Index">Xem tất cả ngành hàng <span aria-hidden="true">→</span></a>
-    </div>
+<section class="blueprint home-blueprint" aria-labelledby="need-title">
+    <h1 id="need-title">Xem rõ thông số trước khi chọn</h1>
     <form id="need-finder" class="need-finder" asp-controller="Products" asp-action="Index" method="get" asp-antiforgery="false">
-        <fieldset class="need-options">
-            <legend class="visually-hidden">Chọn nhu cầu</legend>
-            @foreach (var need in ProductNeed.All)
-            {
-                var representative = danhMuc.Where(c => need.CategorySlugs.Contains(c.Slug))
-                    .SelectMany(c => c.Products).OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id).FirstOrDefault();
-                <label class="need-option">
-                    <input type="radio" name="NhuCau" value="@need.Key" required />
-                    @if (representative is not null)
-                    {
-                        <img src="@representative.AnhDaiDien" alt="" width="72" height="52" />
-                    }
-                    <span><strong>@need.Title</strong><small>@need.Departments</small></span>
-                </label>
-            }
-        </fieldset>
-        <div class="need-submit">
-            <div class="need-budget">
-                <label for="need-budget">Ngân sách tối đa</label>
-                <select name="GiaDen" id="need-budget" class="form-control">
-                    <option value="">Không giới hạn</option>
-                    <option value="2000000">2 triệu</option>
-                    <option value="15000000">15 triệu</option>
-                    <option value="25000000">25 triệu</option>
-                </select>
+        <fieldset>
+            <legend>Nhu cầu</legend>
+            <div class="choice-row">
+                @foreach (var need in ProductNeed.All)
+                {
+                    <label class="chip choice-chip">
+                        <input type="radio" name="NhuCau" value="@need.Key" required />
+                        <span>@need.Title</span>
+                    </label>
+                }
             </div>
-            <button type="submit" class="btn hero-buy">Xem sản phẩm phù hợp</button>
-        </div>
+        </fieldset>
+        <fieldset>
+            <legend>Ngân sách tối đa</legend>
+            <div class="choice-row">
+                @foreach (var budget in new[] { ("", "Không giới hạn"), ("2000000", "2 triệu"), ("15000000", "15 triệu"), ("25000000", "25 triệu") })
+                {
+                    <label class="chip choice-chip">
+                        <input type="radio" name="GiaDen" value="@budget.Item1" checked="@(budget.Item1 == "")" />
+                        <span>@budget.Item2</span>
+                    </label>
+                }
+            </div>
+        </fieldset>
+        <button type="submit" class="btn btn-primary">Xem sản phẩm phù hợp</button>
     </form>
-</section>
-
-@if (hero is not null || ViewBag.Banners is List<Banner> { Count: > 0 })
-{
-    <div class="market-floor">
-        @if (hero is not null)
+    <div class="home-suggestions" data-suggestions aria-live="polite"></div>
+    @foreach (var p in candidates)
+    {
+        var slug = danhMuc.FirstOrDefault(c => c.Id == p.CategoryId)?.Slug;
+        var keys = ProductNeed.All.Where(n => slug is not null && n.CategorySlugs.Contains(slug)).Select(n => n.Key);
+        var price = giaHieuDung.GetValueOrDefault(p.Id, p.GiaBan);
+        <template data-suggestion="@p.Id" data-needs="@string.Join(" ", keys)" data-price="@price.ToString(CultureInfo.InvariantCulture)">
+            <a asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" class="suggestion-product">
+                <img src="@p.AnhDaiDien" alt="" width="42" height="42" loading="lazy" />
+                <span>@p.Ten</span>
+                <span class="price-tag"><strong class="price-amount">@price.ToString("N0")đ</strong></span>
+            </a>
+        </template>
+    }
+    <div data-home-drawings>
+        @foreach (var p in drawings)
         {
-            var heroPrice = giaHieuDung.GetValueOrDefault(hero.Id, hero.GiaBan);
-            <section class="hero" aria-labelledby="featured-product">
-                <div class="hero-copy">
-                    <h2 id="featured-product">@hero.Ten</h2>
-                    <p class="lead">@heroLead.@heroDanhGia</p>
-                    <div class="hero-price">
-                        <strong>@heroPrice.ToString("N0")đ</strong>
-                        @if (heroPrice < hero.Gia)
+            var slug = danhMuc.FirstOrDefault(c => c.Id == p.CategoryId)?.Slug;
+            var spec = p.Specs;
+            var fields = slug switch
+            {
+                "laptop" or "tablet" => new[] { ("Màn hình", spec?.ManHinh), ("Chip", spec?.Chip), ("RAM", spec?.Ram), ("Pin", spec?.Pin) },
+                "tai-nghe" => new[] { ("Pin", spec?.Pin), ("Tính năng", spec?.ThongSoKhac?.Split(", ", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()) },
+                "dien-thoai" => new[] { ("Camera", spec?.Camera), ("Màn hình", spec?.ManHinh), ("Chip", spec?.Chip), ("Pin", spec?.Pin) },
+                _ => Array.Empty<(string, string?)>()
+            };
+            var notes = fields.Where(f => !string.IsNullOrWhiteSpace(f.Item2)).ToList();
+            var shapes = slug switch
+            {
+                "laptop" => new[] { "M248 35H472Q484 35 484 47V167H236V47Q236 35 248 35Z", "M248 48H472V154H248Z", "M236 167H484L522 197Q522 205 512 205H208Q198 205 198 197Z", "M329 185H391L401 194H319Z" },
+                "tai-nghe" => new[] { "M267 135V111a93 93 0 0 1 186 0v24h-13v-24a80 80 0 0 0-160 0v24Z", "M269 125h23q12 0 12 15v34q0 15-12 15h-23q-13 0-13-15v-34q0-15 13-15Z", "M428 125h23q13 0 13 15v34q0 15-13 15h-23q-12 0-12-15v-34q0-15 12-15Z" },
+                "tablet" => new[] { "M249 38H471Q483 38 483 50V183Q483 195 471 195H249Q237 195 237 183V50Q237 38 249 38Z", "M250 52H470V181H250Z" },
+                "dien-thoai" => new[] { "M322 12H398Q414 12 414 28V202Q414 218 398 218H322Q306 218 306 202V28Q306 12 322 12Z", "M323 20H397Q406 20 406 30V200Q406 210 397 210H323Q314 210 314 200V30Q314 20 323 20Z", "M350 27h20a4 4 0 0 1 0 8h-20a4 4 0 0 1 0-8Z" },
+                _ => Array.Empty<string>()
+            };
+            var price = giaHieuDung.GetValueOrDefault(p.Id, p.GiaBan);
+            <article class="hero-product" data-drawing="@p.Id" data-initial="@(p.Id == (hero?.Id ?? drawings[0].Id) ? "true" : null)" hidden="@(p.Id != (hero?.Id ?? drawings[0].Id))">
+                <figure class="hero-figure">
+                    @if (shapes.Length > 0)
+                    {
+                        <svg class="hero-drawing" viewBox="0 0 720 230" role="img" aria-label="Bản vẽ minh họa @p.Ten. @string.Join(". ", notes.Select(n => $"{n.Item1}: {n.Item2}"))">
+                            @for (var i = 0; i < shapes.Length; i++)
+                            {
+                                <path d="@shapes[i]" class="drawing-fill" />
+                                <path d="@shapes[i]" class="drawing-stroke" pathLength="1" style="--i:@i" />
+                            }
+                            @for (var i = 0; i < notes.Count; i++)
+                            {
+                                var left = i % 2 == 0;
+                                var x = slug == "dien-thoai" ? (left ? 326 : 392) : (left ? 274 : 444);
+                                var y = i < 2 ? (slug == "dien-thoai" ? 58 : 78) : 164;
+                                <g class="drawing-annotation" style="--i:@i">
+                                    <path class="drawing-leader" d="@($"M{(left ? 0 : 720)} {y} H{x}")" pathLength="1" />
+                                    <circle class="drawing-zone" cx="@x" cy="@y" r="14" pathLength="1" />
+                                    <circle class="drawing-zone drawing-center" cx="@x" cy="@y" r="2.5" pathLength="1" />
+                                </g>
+                            }
+                        </svg>
+                        <figcaption>Bản vẽ minh họa</figcaption>
+                    }
+                    else
+                    {
+                        <img src="@p.AnhDaiDien" alt="@p.Ten" width="480" height="230" loading="@(p.Id == hero?.Id ? "eager" : "lazy")" />
+                    }
+                    @if (notes.Count > 0)
+                    {
+                        <dl class="hero-annotations">
+                            @for (var i = 0; i < notes.Count; i++)
+                            {
+                                <div class="drawing-note" style="--i:@i"><dt>@notes[i].Item1</dt><dd>@notes[i].Item2</dd></div>
+                            }
+                        </dl>
+                    }
+                </figure>
+                <div class="hero-offer">
+                    <div>
+                        <h2>@p.Ten</h2>
+                        @if (p.Id == hero?.Id && heroSoDG > 0)
                         {
-                            <s>@hero.Gia.ToString("N0")đ</s>
+                            <p class="text-muted">@heroTB.ToString("0.0", CultureInfo.GetCultureInfo("vi-VN"))/5 sao (@heroSoDG đánh giá)</p>
                         }
                     </div>
-                    <a class="btn btn-secondary" asp-controller="Products" asp-action="Details" asp-route-id="@hero.Id">Xem sản phẩm <span aria-hidden="true">→</span></a>
+                    <div class="price-tag drawing-price">
+                        <strong class="price-amount">@price.ToString("N0")đ</strong>
+                        @if (price < p.Gia) { <s>@p.Gia.ToString("N0")đ</s> }
+                    </div>
+                    <a class="btn btn-secondary" asp-controller="Products" asp-action="Details" asp-route-id="@p.Id" data-hero-link>Xem @p.Ten</a>
                 </div>
-                <div class="hero-image">
-                    <img src="@hero.AnhDaiDien" alt="@hero.Ten" loading="lazy" />
-                </div>
-            </section>
-        }
-        @if (ViewBag.Banners is List<Banner> banners && banners.Count > 0)
-        {
-            <section class="market-promos" id="khuyen-mai">
-                <h2>Ưu đãi tại siêu thị</h2>
-                <partial name="_Banners" model="banners" />
-                <a class="promo-sale-link" href="#flash-sale">Xem khung giờ Flash Sale <span aria-hidden="true">→</span></a>
-            </section>
+            </article>
         }
     </div>
-}
+</section>
 
-<section class="proof-strip" aria-label="Số liệu cửa hàng">
-    <div class="proof-item"><b>@ViewBag.TongSanPham</b><span>sản phẩm chính hãng</span></div>
-    <div class="proof-item"><b>@ViewBag.TongHang</b><span>hãng công nghệ</span></div>
-    <div class="proof-item"><b>@ViewBag.TongDanhMuc</b><span>danh mục</span></div>
-    <div class="proof-item"><b>24 tháng</b><span>bảo hành theo ngày đặt</span></div>
+<p class="home-promise">Khám phá @ViewBag.TongSanPham sản phẩm chính hãng từ @ViewBag.TongHang hãng trong @ViewBag.TongDanhMuc danh mục, bảo hành 24 tháng và trả góp 0% (giả lập).</p>
+
+<section class="section home-categories" aria-labelledby="category-title">
+    <div class="section-head"><h2 id="category-title">Danh mục</h2><a asp-controller="Products" asp-action="Index">Xem tất cả ngành hàng</a></div>
+    <ul class="category-rail">
+        @foreach (var c in danhMuc)
+        {
+            var representative = c.Products.OrderByDescending(p => p.LuotBan).ThenBy(p => p.Id).FirstOrDefault();
+            <li>
+                <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@c.Id">
+                    <span class="category-image">
+                        @if (representative is not null) { <img src="@representative.AnhDaiDien" alt="" width="96" height="72" loading="lazy" /> }
+                    </span>
+                    <span>@c.Ten</span>
+                </a>
+            </li>
+        }
+    </ul>
 </section>
 
 <section class="section flash-sale" id="flash-sale" aria-labelledby="flash-sale-title">
-    <h2 id="flash-sale-title">Flash Sale</h2>
-    @if (flashSale.Any() && ketThuc.HasValue)
-    {
-        <div class="section-head">
-            <h3>Ưu đãi có giới hạn lượt mua</h3>
-            <span class="text-muted">Ưu đãi gần nhất hết hạn lúc @ketThuc.Value.ToString("HH:mm") ngày @ketThuc.Value.ToString("dd/MM")</span>
-        </div>
-        <div class="flash-countdown" id="flash-countdown" data-ket-thuc="@DateTime.SpecifyKind(ketThuc.Value, DateTimeKind.Local).ToString("o")" data-countdown-ended="Đã đến giờ kết thúc ưu đãi gần nhất">
-            <span><b id="cd-gio">--</b><small>giờ</small></span>
-            <span><b id="cd-phut">--</b><small>phút</small></span>
-            <span><b id="cd-giay">--</b><small>giây</small></span>
-        </div>
-        <div class="product-grid flash-grid">
-            @foreach (var f in flashSale)
+    <div class="flash-layout">
+        <div>
+            <h2 id="flash-sale-title">Flash Sale</h2>
+            @if (flashSale.Any() && ketThuc.HasValue)
             {
-                var flashCard = new ViewDataDictionary(ViewData)
-                {
-                    ["FlashRemaining"] = Math.Min(f.Product.TonKho, f.GioiHanSL - f.DaBan)
-                };
-                <partial name="_ProductCard" model="f.Product" view-data="flashCard" />
+                <p>Ưu đãi gần nhất hết hạn lúc @ketThuc.Value.ToString("HH:mm") ngày @ketThuc.Value.ToString("dd/MM").</p>
+                <div class="flash-countdown" id="flash-countdown" data-ket-thuc="@DateTime.SpecifyKind(ketThuc.Value, DateTimeKind.Local).ToString("o")" data-countdown-ended="Đã đến giờ kết thúc ưu đãi gần nhất">
+                    <span><b id="cd-gio">--</b><small>giờ</small></span>
+                    <span><b id="cd-phut">--</b><small>phút</small></span>
+                    <span><b id="cd-giay">--</b><small>giây</small></span>
+                </div>
             }
         </div>
-    }
+        @if (flashSale.Any() && ketThuc.HasValue)
+        {
+            <div class="product-grid flash-grid">
+                @foreach (var f in flashSale)
+                {
+                    var remaining = Math.Min(f.Product.TonKho, f.GioiHanSL - f.DaBan);
+                    var flashCard = new ViewDataDictionary(ViewData) { ["FlashRemaining"] = remaining };
+                    <div class="flash-item">
+                        <partial name="_ProductCard" model="f.Product" view-data="flashCard" />
+                        @if (f.GioiHanSL > 0)
+                        {
+                            <div class="flash-meter" role="img" aria-label="Còn @remaining trên @f.GioiHanSL suất">
+                                <span data-flash-meter style="--remaining:@((remaining / (double)f.GioiHanSL).ToString(CultureInfo.InvariantCulture))"></span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
     <partial name="_FlashSaleSlots" />
 </section>
+
+@if (ViewBag.Banners is List<Banner> { Count: > 0 } banners)
+{
+    <section class="section market-promos" id="khuyen-mai">
+        <div class="section-head"><h2>Ưu đãi</h2><a href="#flash-sale">Xem khung giờ Flash Sale</a></div>
+        <partial name="_Banners" model="banners" />
+    </section>
+}
 
 <section class="section market-shelf">
     <div class="section-head">
@@ -140,20 +211,16 @@
     </div>
     @if (noiBat.Any())
     {
-        <div class="product-grid">
-            @foreach (var p in noiBat)
-            {
-                <partial name="_ProductCard" model="p" />
-            }
+        <div class="product-grid featured-grid @(noiBat.Count > 1 ? "has-lead" : "")">
+            @foreach (var p in noiBat) { <partial name="_ProductCard" model="p" /> }
         </div>
     }
     else
     {
-        <p class="empty-state">Chưa có sản phẩm nổi bật — xem <a asp-controller="Products" asp-action="Index">tất cả sản phẩm</a>.</p>
+        <p class="empty-state">Chưa có sản phẩm nổi bật. <a asp-controller="Products" asp-action="Index">Xem tất cả sản phẩm</a>.</p>
     }
 </section>
 
-@* Bán chạy: danh sách xếp hạng thay vì lưới thẻ thứ hai giống hệt lưới trên. *@
 <section class="section market-shelf">
     <div class="section-head">
         <h2>Bán chạy nhất</h2>
@@ -164,34 +231,23 @@
         <ol class="rank-list">
             @foreach (var p in banChay.Take(5).Select((sp, i) => new { sp, hang = i + 1 }))
             {
-            <li class="rank-row">
-                <span class="rank-num" aria-label="Hạng @p.hang">@p.hang</span>
-                <a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id" class="rank-thumb">
-                    <img src="@p.sp.AnhDaiDien" alt="@p.sp.Ten" loading="lazy" />
-                </a>
-                <div class="rank-info">
-                    <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id">@p.sp.Ten</a></h3>
-                    @if (p.sp.SpecsNgan.Length > 0)
-                    {
-                        <p class="product-specs">@string.Join(" • ", p.sp.SpecsNgan)</p>
-                    }
-                    @* M4-3: nhu _ProductCard — TB tu review da duyet
-                       (p.sp.Reviews da loc IsApproved o controller),
-                       0 review -> "Chua co danh gia". *@
-                    @{
-                        var soDGRank = p.sp.Reviews.Count;
-                        var tbRank = soDGRank > 0 ? Math.Round(p.sp.Reviews.Average(r => r.Sao), 1) : 0;
-                    }
-                    <p class="product-meta">@(soDGRank > 0 ? $"{tbRank:0.0} sao ({soDGRank} đánh giá)" : "Chưa có đánh giá") • Đã bán @p.sp.LuotBan</p>
-                </div>
-                <p class="rank-price"><strong>@giaHieuDung.GetValueOrDefault(p.sp.Id, p.sp.GiaBan).ToString("N0")đ</strong></p>
-            </li>
+                var reviews = p.sp.Reviews.Where(r => r.IsApproved).ToList();
+                <li class="rank-row">
+                    <span class="rank-num" aria-label="Hạng @p.hang">@p.hang</span>
+                    <a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id" class="rank-thumb"><img src="@p.sp.AnhDaiDien" alt="@p.sp.Ten" width="72" height="72" loading="lazy" /></a>
+                    <div>
+                        <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@p.sp.Id">@p.sp.Ten</a></h3>
+                        <p class="product-meta">Đã bán @p.sp.LuotBan</p>
+                        <p class="product-meta">@(reviews.Count > 0 ? $"{reviews.Average(r => r.Sao):0.0} sao ({reviews.Count} đánh giá)" : "Chưa có đánh giá")</p>
+                    </div>
+                    <p class="rank-price price-tag"><strong class="price-amount">@giaHieuDung.GetValueOrDefault(p.sp.Id, p.sp.GiaBan).ToString("N0")đ</strong></p>
+                </li>
             }
         </ol>
     }
     else
     {
-        <p class="empty-state">Chưa có dữ liệu bán chạy — bảng xếp hạng sẽ hiện khi cửa hàng có đơn hàng.</p>
+        <p class="empty-state">Chưa có dữ liệu bán chạy.</p>
     }
 </section>
 
@@ -220,8 +276,10 @@
     </section>
 }
 
+
 @section Scripts {
     <script src="~/js/flash-sale-countdown.js" asp-append-version="true"></script>
+    <script src="~/js/home-blueprint.js" asp-append-version="true"></script>
 }
 
 @section Styles {

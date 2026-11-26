@@ -16,6 +16,7 @@
     };
     var soCot = Model.Count + 1;
     var day = Model.Count == 3;
+    var giaHieuDung = ViewBag.GiaHieuDung as Dictionary<int, decimal> ?? new();
 }
 
 <header class="market-heading order-heading">
@@ -69,7 +70,7 @@ else
                 </thead>
                 <tbody>
                     <tr class="compare-group"><th scope="rowgroup" colspan="@soCot"><span>Giá và tình trạng</span></th></tr>
-                    <tr class="compare-price"><th scope="row">Giá bán</th>@foreach (var p in Model) { <td><strong class="price-amount">@p.GiaBan.ToString("N0")đ</strong></td> }</tr>
+                    <tr class="compare-price"><th scope="row">Giá bán</th>@foreach (var p in Model) { <td><strong class="price-amount">@giaHieuDung.GetValueOrDefault(p.Id, p.GiaBan).ToString("N0")đ</strong></td> }</tr>
                     <tr><th scope="row">Giá gốc</th>@foreach (var p in Model) { <td class="compare-money">@p.Gia.ToString("N0")đ</td> }</tr>
                     <tr><th scope="row">Tồn kho</th>@foreach (var p in Model) { <td><partial name="_StockStatus" model="p.TonKho" /></td> }</tr>
                     <tr>

@@ -21,7 +21,8 @@
 .product-info h3 a { color: var(--color-foreground); text-decoration: none; }
 .product-info h3 a:hover { text-decoration: underline; }
 .product-specs, .product-meta { color: var(--color-muted-foreground); font-size: .875rem; margin: 0; overflow-wrap: anywhere; }
-.product-price { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .125rem .5rem; padding: .35rem .5rem; background: var(--market-ticket); border-radius: .375rem; }
+.product-stock { margin: 0; font-size: .875rem; }
+.product-price { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .125rem .5rem; padding: .35rem .5rem; border-inline-start: .2rem solid var(--color-accent); background: var(--market-ticket); border-radius: .375rem; }
 .product-price strong { font-size: clamp(1.05rem, .94rem + .5vw, 1.25rem); }
 .product-price s { color: var(--color-muted-foreground); font-size: .85rem; }
 .product-info > form:first-of-type { margin-block-start: auto; }

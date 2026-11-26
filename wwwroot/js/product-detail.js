@@ -8,9 +8,7 @@
      cap nhat poster cua model-viewer de mo lai 3D van dung anh moi.
    - Bien the: select#variantId co data-gia/data-gia-goc theo tung option
      (controller tinh bang cung TinhGiaAsync nhu khi them gio — DonGia da
-     cong GiaThem); doi select cap nhat gia hien thi ngay, khong reload.
-     Partial _InstallmentBadge chi nhan gia luc render nen KHONG cap nhat
-     live theo bien the (ghi nhan, khong pha partial). */
+     cong GiaThem); doi select cap nhat gia va bao gia tra gop. */
 (function () {
     'use strict';
 
@@ -41,6 +39,7 @@
     var selectVariant = document.getElementById('variantId');
     var giaLon = document.querySelector('.price-big');
     var giaGach = document.querySelector('.price-old');
+    var traGop = document.querySelectorAll('.detail-buy [data-installment]');
     if (!selectVariant || !giaLon) return;
 
     function capNhatGia() {
@@ -60,10 +59,12 @@
         } else if (giaGach) {
             giaGach.hidden = true;
         }
+        traGop.forEach(function (khoan) {
+            var soTien = luaChon.getAttribute('data-installment-' + khoan.dataset.installment);
+            if (soTien !== null) khoan.textContent = soTien;
+        });
     }
     selectVariant.addEventListener('change', capNhatGia);
-    // Dong bo ngay khi tai trang: gia server render theo bien the mac dinh
-    // (GiaThem = 0), option dang chon co the la bien the GiaThem > 0
-    // (seed hien tai: option dau GiaThem = 0 nen khong doi gi).
+    // Đồng bộ với phiên bản trình duyệt khôi phục khi quay về trang.
     capNhatGia();
 })();

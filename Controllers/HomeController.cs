@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechZone.Data;
 using TechZone.Models;
+using TechZone.Services;
 
 namespace TechZone.Controllers;
 
@@ -13,18 +14,16 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var homNay = DateTime.Today;
-        var flashSale = await _db.FlashSales
+        var now = DateTime.Now;
+        var campaigns = await _db.FlashSales
             .Include(f => f.Product).ThenInclude(p => p.Images)
             .Include(f => f.Product).ThenInclude(p => p.Category)
             .Include(f => f.Product).ThenInclude(p => p.Specs)
             // M4-3: the Flash Sale o Home tinh sao tu Reviews da duyet.
             .Include(f => f.Product).ThenInclude(p => p.Reviews.Where(r => r.IsApproved))
-            // Sprint 2 — B-5: chi hien sale con suat (het quota thi dung hien
-            // gia sale keo khach mua nhung checkout lai thu gia goc).
-            .Where(f => f.BatDau <= DateTime.Now && f.KetThuc >= DateTime.Now
-                && f.DaBan < f.GioiHanSL)
+            .Where(f => f.BatDau <= now && f.KetThuc >= now)
             .OrderBy(f => f.KetThuc)
+            .ThenBy(f => f.Id)
             .ToListAsync();
 
         var noiBat = await _db.Products
@@ -53,22 +52,25 @@ public class HomeController : Controller
             .OrderBy(c => c.Ten)
             .ToListAsync();
 
-        ViewBag.FlashSale = flashSale;
         ViewBag.NoiBat = noiBat;
         ViewBag.BanChay = banChay;
         ViewBag.DanhMuc = danhMuc;
-        ViewBag.FlashSaleKetThuc = flashSale.FirstOrDefault()?.KetThuc;
         // Khung gio Flash Sale + banner (nhom B): slot kem san pham, sap xep theo gio bat dau.
-        var gioHienTai = DateTime.Now.Hour;
         var slots = await _db.FlashSaleSlots
             .Include(s => s.Items).ThenInclude(i => i.Product).ThenInclude(p => p.Images)
             .Where(s => s.IsActive)
             .OrderBy(s => s.GioBatDau)
             .ToListAsync();
-        ViewBag.Slots = slots;
-        ViewBag.SlotHienTai = slots.FirstOrDefault(s => s.DangChay(gioHienTai));
-        ViewBag.SlotTiepTheo = slots.FirstOrDefault(s => s.GioBatDau > gioHienTai)
-            ?? slots.FirstOrDefault();
+        var slotHienTai = slots.FirstOrDefault(s => s.DangChay(now.Hour));
+        var slotTiepTheo = slots.FirstOrDefault(s => s.GioBatDau > now.Hour) ?? slots.FirstOrDefault();
+        ViewBag.SlotHienTai = slotHienTai;
+        ViewBag.SlotTiepTheo = slotTiepTheo;
+        if (slotTiepTheo is not null)
+        {
+            var gioMoTiep = now.Date.AddHours(slotTiepTheo.GioBatDau);
+            ViewBag.GioMoTiep = gioMoTiep <= now ? gioMoTiep.AddDays(1) : gioMoTiep;
+        }
+
         ViewBag.Banners = await _db.Banners
             .Where(b => b.IsActive)
             .OrderBy(b => b.ThuTu)
@@ -99,7 +101,7 @@ public class HomeController : Controller
         // TECHZONE500 trong view nua — chi la du lieu seed neu co trong DB.
         var vouchers = await _db.Vouchers.ToListAsync();
         ViewBag.VoucherNoiBat = vouchers
-            .Where(v => v.ConHieuLuc(DateTime.Now))
+            .Where(v => v.ConHieuLuc(now))
             .OrderByDescending(v => v.LoaiGiam == "Tien" && !v.FreeShip ? v.GiaTri : 0)
             .ThenBy(v => v.Id)
             .FirstOrDefault();
@@ -116,10 +118,29 @@ public class HomeController : Controller
             .Include(p => p.Reviews.Where(r => r.IsApproved))
             .Where(p => daXemIds.Contains(p.Id))
             .ToListAsync();
-        ViewBag.RecentlyViewed = daXemIds
+        var ganDay = daXemIds
             .Select(id => daXem.FirstOrDefault(p => p.Id == id))
             .Where(p => p is not null).Cast<Product>()
             .Take(4).ToList();
+        ViewBag.RecentlyViewed = ganDay;
+
+        var slotItems = slots.SelectMany(slot => slot.Items).ToList();
+        var sanPhamHienThi = noiBat.Concat(banChay).Concat(ganDay).Concat(campaigns.Select(f => f.Product))
+            .Concat(slotItems.Select(item => item.Product));
+        if (hero is not null) sanPhamHienThi = sanPhamHienThi.Append(hero);
+        var gia = EffectivePriceCalculator.TinhBatch(sanPhamHienThi.DistinctBy(p => p.Id), campaigns, slotItems, now);
+        ViewBag.GiaHieuDung = gia;
+
+        var flashSale = campaigns.Where(f => f.Product.TonKho > 0 && f.DaBan < f.GioiHanSL
+                && f.GiaSale > 0 && f.GiaSale < f.Product.GiaBan && f.GiaSale == gia[f.ProductId])
+            .DistinctBy(f => f.ProductId).ToList();
+        ViewBag.FlashSale = flashSale;
+        ViewBag.FlashSaleKetThuc = flashSale.FirstOrDefault()?.KetThuc;
+        var spCoChienDich = campaigns.Select(f => f.ProductId).ToHashSet();
+        ViewBag.SlotHienTaiItems = slotHienTai?.Items
+            .Where(item => item.Product.TonKho > 0 && !spCoChienDich.Contains(item.ProductId)
+                && item.GiaSale > 0 && item.GiaSale < item.Product.GiaBan && item.GiaSale == gia[item.ProductId])
+            .ToList();
         return View();
     }
 

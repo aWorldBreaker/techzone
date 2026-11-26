@@ -1,9 +1,13 @@
 @model TechZone.Models.Product
 @{
-    // Gia hien thi lay tu model (GiaBan), khong tu viet tay trong view.
-    var giam = Model.GiaKhuyenMai.HasValue && Model.Gia > 0
-        ? (int)Math.Round((1 - Model.GiaKhuyenMai.Value / Model.Gia) * 100)
+    var giaBan = ViewData["ProductCardPrices"] is Dictionary<int, decimal> prices
+        ? prices.GetValueOrDefault(Model.Id, Model.GiaBan) : Model.GiaBan;
+    var giam = giaBan < Model.Gia && Model.Gia > 0
+        ? (int)Math.Round((1 - giaBan / Model.Gia) * 100)
         : 0;
+    var need = ViewData["ProductCardNeed"] as ProductNeed;
+    var specs = need?.SpecsFor(Model) ?? Model.SpecsNgan;
+    var compareReturnUrl = ViewData["CompareReturnUrl"] as string;
 }
 <article class="product-card">
     <a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id" class="product-image">
@@ -15,17 +19,27 @@
     </a>
     <div class="product-info">
         <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@Model.Id">@Model.Ten</a></h3>
-        @if (Model.SpecsNgan.Length > 0)
-        {
-            <p class="product-specs">@string.Join(" • ", Model.SpecsNgan)</p>
-        }
         <p class="product-price">
-            <strong class="price-amount">@Model.GiaBan.ToString("N0")đ</strong>
-            @if (Model.GiaKhuyenMai.HasValue)
+            <strong class="price-amount">@giaBan.ToString("N0")đ</strong>
+            @if (giaBan < Model.Gia)
             {
                 <s>@Model.Gia.ToString("N0")đ</s>
             }
         </p>
+        <p class="product-stock">
+            @if (ViewData["FlashRemaining"] is int remaining)
+            {
+                <strong class="stock-left">Còn @remaining suất Flash Sale</strong>
+            }
+            else
+            {
+                <partial name="_StockStatus" model="Model.TonKho" />
+            }
+        </p>
+        @if (specs.Length > 0)
+        {
+            <p class="product-specs">@string.Join(" · ", specs)</p>
+        }
         @* M4-3: diem sao tinh tu review da duyet (Model.Reviews da loc
            IsApproved o controller), khong dung Model.DanhGiaTB (gia tri
            seed cu — cung ho M4-1 o Details: VD Id 1 seed 4.8 trong khi
@@ -38,9 +52,7 @@
             var soDanhGia = Model.Reviews.Count;
             var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
         }
-        <p class="product-meta">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan
-            • <partial name="_StockStatus" model="Model.TonKho" />
-        </p>
+        <p class="product-meta">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") · Đã bán @Model.LuotBan</p>
         <form asp-controller="Cart" asp-action="Add" method="post">
             <input type="hidden" name="productId" value="@Model.Id" />
             <input type="hidden" name="soLuong" value="1" />
@@ -49,6 +61,10 @@
         <div class="card-actions">
             <form asp-controller="Compare" asp-action="Add" method="post" class="compare-form">
                 <input type="hidden" name="productId" value="@Model.Id" />
+                @if (compareReturnUrl is not null)
+                {
+                    <input type="hidden" name="returnUrl" value="@compareReturnUrl" />
+                }
                 <button type="submit" class="btn btn-secondary btn-sm btn-block">＋ So sánh</button>
             </form>
             <form asp-controller="Wishlist" asp-action="Add" method="post" class="wishlist-form">

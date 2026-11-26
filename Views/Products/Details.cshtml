@@ -11,7 +11,7 @@
     // ?? GiaBan nua. Fallback GiaBan chi de view khong vo neu action
     // cu (vd test render truc tiep) khong set ViewBag.
     var giaHienThi = ViewBag.GiaHienThi as decimal? ?? Model.GiaBan;
-    var giaGoc = ViewBag.GiaGoc as decimal? ?? Model.GiaBan;
+    var giaNiemYet = Model.Gia;
     var tenKhuyenMai = ViewBag.TenKhuyenMai as string;
     var flash = ViewBag.FlashSaleApDung as TechZone.Models.FlashSale;
     var comboGiaChinh = ViewBag.ComboGiaChinh as decimal? ?? Model.GiaBan;
@@ -23,18 +23,39 @@
     // bang TinhGiaAsync, xem ProductsController.Details); view chi doc
     // de gan data-gia cho option, khong tu tinh gia.
     var giaTheoVariant = ViewBag.GiaTheoVariant as Dictionary<int, TechZone.Services.GiaApDungResult>;
+    if (Model.Variants.FirstOrDefault() is { } firstVariant &&
+        giaTheoVariant?.TryGetValue(firstVariant.Id, out var giaBanDau) == true)
+    {
+        giaHienThi = giaBanDau.DonGia;
+        giaNiemYet = giaBanDau.GiaGoc;
+    }
+    var soDanhGia = Model.Reviews.Count;
+    var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
 }
 
-<header class="market-heading detail-heading">
-    <nav class="market-path" aria-label="Đường dẫn">
-        <a asp-controller="Home" asp-action="Index">Trang chủ</a>
-        <span aria-hidden="true">/</span>
-        <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@Model.CategoryId">@Model.Category.Ten</a>
-    </nav>
-    <h1>@Model.Ten</h1>
-</header>
+<nav class="market-path detail-path" aria-label="Đường dẫn">
+    <a asp-controller="Home" asp-action="Index">Trang chủ</a>
+    <span aria-hidden="true">/</span>
+    <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@Model.CategoryId">@Model.Category.Ten</a>
+</nav>
 
-<div class="detail-layout mt">
+<div class="detail-layout">
+    <header class="detail-offer">
+        <h1>@Model.Ten</h1>
+        <div class="detail-price" aria-live="polite" aria-atomic="true">
+            <span class="price-big price-amount">@giaHienThi.ToString("N0")đ</span>
+            <s class="price-old" hidden="@(giaHienThi >= giaNiemYet)">@giaNiemYet.ToString("N0")đ</s>
+            @if (flash is not null)
+            {
+                <span class="badge">Flash Sale · đến @flash.KetThuc.ToString("HH:mm dd/MM")</span>
+            }
+            else if (!string.IsNullOrEmpty(tenKhuyenMai))
+            {
+                <span class="badge">@tenKhuyenMai</span>
+            }
+        </div>
+        <p class="detail-stock"><partial name="_StockStatus" model="Model.TonKho" /></p>
+    </header>
     <div class="detail-image">
         <h2 class="gallery-title">Hình ảnh sản phẩm</h2>
         @* Sprint 5 — viewer 3D dung chung (map Product3dModels): chi SP co model
@@ -91,48 +112,11 @@
 
     <div class="detail-buy card">
         <h2>Thông tin mua hàng</h2>
-        @* M4-1: diem sao hien thi TINH TU danh gia da duyet dang co (Model.Reviews
-           da loc IsApproved o controller), khong dung Model.DanhGiaTB (gia tri
-           seed cu, lech khoi TB that: VD Id 1 seed 4.8 trong khi 2 review 5+4
-           TB that 4.5; SP 0 review van hien "4.8 sao (0 danh gia)").
-           0 review -> "Chua co danh gia", khong hien so sao. Chi hien thi,
-           khong doi logic review/DanhGiaTB. *@
-        @{
-            var soDanhGia = Model.Reviews.Count;
-            var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
-        }
-        <p>@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") • Đã bán @Model.LuotBan • <partial name="_StockStatus" model="Model.TonKho" /></p>
-        <div class="detail-price" aria-live="polite">
-            <span class="price-big price-amount">@giaHienThi.ToString("N0")đ</span>
-            @if (giaHienThi < giaGoc)
+        <p class="detail-reviews">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") · Đã bán @Model.LuotBan</p>
+        <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add">
+            <input type="hidden" name="productId" value="@Model.Id" />
+            @if (Model.Variants.Any())
             {
-                <s class="price-old">@giaGoc.ToString("N0")đ</s>
-            }
-            else if (Model.GiaKhuyenMai.HasValue)
-            {
-                <s class="price-old">@Model.Gia.ToString("N0")đ</s>
-            }
-            @if (flash is not null)
-            {
-                <span class="badge">Flash Sale — kết thúc @flash.KetThuc.ToString("HH:mm") hôm nay</span>
-            }
-            else if (!string.IsNullOrEmpty(tenKhuyenMai))
-            {
-                <span class="badge">@tenKhuyenMai</span>
-            }
-        </div>
-
-        <div class="buy-policy">
-            <span>Bảo hành 24 tháng</span>
-            <span>Miễn phí ship từ 2.000.000đ</span>
-            <span>Đổi trả online</span>
-        </div>
-        <partial name="_InstallmentBadge" model="giaHienThi" />
-
-        @if (Model.Variants.Any())
-        {
-            <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add">
-                <input type="hidden" name="productId" value="@Model.Id" />
                 <div class="form-group">
                     <label for="variantId">Phiên bản</label>
                     <select id="variantId" name="variantId" class="form-control">
@@ -145,25 +129,34 @@
                                logic server khi them gio/thanh toan). *@
                             <option value="@v.Id"
                                 data-gia="@(giaVariant?.DonGia.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))"
-                                data-gia-goc="@(giaVariant?.GiaGoc.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))">@v.TenBienThe@(v.GiaThem > 0 ? $" (+{v.GiaThem:N0}đ)" : "")</option>
+                                data-gia-goc="@(giaVariant?.GiaGoc.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))"
+                                data-installment-6="@(giaVariant is null ? null : Math.Round(giaVariant.DonGia / 6).ToString("N0"))"
+                                data-installment-12="@(giaVariant is null ? null : Math.Round(giaVariant.DonGia / 12).ToString("N0"))">@v.TenBienThe@(v.GiaThem > 0 ? $" (+{v.GiaThem:N0}đ)" : "")</option>
                         }
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="soLuong">Số lượng</label>
-                    <input id="soLuong" name="soLuong" type="number" min="1" max="@Model.TonKho" value="1" class="form-control input-narrow" />
-                </div>
-                <button type="submit" class="btn btn-primary" @(Model.TonKho == 0 ? "disabled" : "")>Thêm vào giỏ</button>
-            </form>
-        }
-        else
-        {
-            <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add">
-                <input type="hidden" name="productId" value="@Model.Id" />
+                @if (Model.TonKho > 0)
+                {
+                    <div class="form-group">
+                        <label for="soLuong">Số lượng</label>
+                        <input id="soLuong" name="soLuong" type="number" min="1" max="@Model.TonKho" value="1" class="form-control input-narrow" />
+                    </div>
+                }
+            }
+            else
+            {
                 <input type="hidden" name="soLuong" value="1" />
-                <button type="submit" class="btn btn-primary" @(Model.TonKho == 0 ? "disabled" : "")>Thêm vào giỏ</button>
-            </form>
-        }
+            }
+            <div class="detail-buy-bar">
+                <button type="submit" id="detail-buy-submit" class="btn btn-primary" disabled="@(Model.TonKho <= 0)">@(Model.TonKho > 0 ? "Thêm vào giỏ" : "Hết hàng")</button>
+            </div>
+        </form>
+        <div class="buy-policy">
+            <span>Bảo hành 24 tháng</span>
+            <span>Miễn phí ship từ 2.000.000đ</span>
+            <span>Đổi trả online</span>
+        </div>
+        <partial name="_InstallmentBadge" model="giaHienThi" />
         <div class="detail-actions">
             <form asp-controller="Compare" asp-action="Add" method="post">
                 <input type="hidden" name="productId" value="@Model.Id" />

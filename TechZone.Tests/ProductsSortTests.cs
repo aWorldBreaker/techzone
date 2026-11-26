@@ -537,6 +537,60 @@ public class ProductsSortTests
         }
     }
 
+    [Fact]
+    public async Task LocNhuCau_KetHopDanhMucVaNganSachTheoGiaHieuDung()
+    {
+        var db = TempDbPath();
+        try
+        {
+            using var services = BuildServices(db);
+            var (taiNgheId, _, brandId, _) = await SeedCatBrandAsync(services);
+            using var scope = services.CreateScope();
+            var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var laptop = new Category { Ten = "Laptop", Slug = "laptop" };
+            var tablet = new Category { Ten = "Máy tính bảng", Slug = "tablet" };
+            ctx.Categories.AddRange(laptop, tablet);
+            await ctx.SaveChangesAsync();
+
+            await SeedProductsAsync(services, new[]
+            {
+                new Product { Id = 101, Ten = "Laptop thử", CategoryId = laptop.Id, BrandId = brandId, Gia = 17_000_000, TonKho = 5 },
+                new Product { Id = 102, Ten = "Tablet thử", CategoryId = tablet.Id, BrandId = brandId, Gia = 11_000_000, TonKho = 5 },
+                new Product { Id = 103, Ten = "Tai nghe thử", CategoryId = taiNgheId, BrandId = brandId, Gia = 800_000, TonKho = 5 }
+            });
+            var now = DateTime.Now;
+            await SeedFlashAsync(services, new FlashSale
+            {
+                ProductId = 101, GiaSale = 14_000_000, BatDau = now.AddHours(-1),
+                KetThuc = now.AddHours(1), GioiHanSL = 10
+            });
+
+            var theoNhuCau = await GoiIndexModelAsync(services, new ProductFilterViewModel
+            {
+                NhuCau = "lam-viec", GiaDen = 15_000_000, SapXep = "gia-tang"
+            });
+            Assert.Equal(new[] { 102, 101 }, theoNhuCau.KetQua.Select(p => p.Id));
+            Assert.Equal(14_000_000m, theoNhuCau.GiaHieuDung[101]);
+
+            var theoHaiLoc = await GoiIndexModelAsync(services, new ProductFilterViewModel
+            {
+                NhuCau = "lam-viec", CategoryId = tablet.Id
+            });
+            Assert.Equal(102, Assert.Single(theoHaiLoc.KetQua).Id);
+
+            var khoaKhongHopLe = await GoiIndexModelAsync(services, new ProductFilterViewModel
+            {
+                NhuCau = "khong-co", CategoryId = taiNgheId
+            });
+            Assert.Null(khoaKhongHopLe.NhuCau);
+            Assert.Equal(103, Assert.Single(khoaKhongHopLe.KetQua).Id);
+        }
+        finally
+        {
+            DeleteDb(db);
+        }
+    }
+
     // ================= Helpers =================
 
     private static ServiceProvider BuildServices(string dbPath)

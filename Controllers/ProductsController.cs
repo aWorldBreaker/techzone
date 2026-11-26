@@ -53,6 +53,10 @@ public class ProductsController : Controller
     public async Task<IActionResult> Index(ProductFilterViewModel filter)
     {
         var query = _db.Products.AsNoTracking();
+        var need = ProductNeed.Find(filter.NhuCau);
+        filter.NhuCau = need?.Key;
+        if (need is not null)
+            query = query.Where(p => need.CategorySlugs.Contains(p.Category.Slug));
         if (filter.CategoryId.HasValue)
             query = query.Where(p => p.CategoryId == filter.CategoryId.Value);
         if (filter.BrandId.HasValue)
@@ -86,7 +90,7 @@ public class ProductsController : Controller
                 Id = p.Id, Gia = p.Gia, GiaKhuyenMai = p.GiaKhuyenMai,
                 NgayTao = p.NgayTao, LuotBan = p.LuotBan, LaNoiBat = p.LaNoiBat,
             }).ToListAsync();
-            var gia = await TinhGiaDanhMucAsync(sanPham, now);
+            var gia = await _gia.TinhGiaDanhMucAsync(sanPham, now);
             var phuHop = sanPham.Where(p =>
                 (!filter.GiaTu.HasValue || gia[p.Id] >= filter.GiaTu.Value)
                 && (!filter.GiaDen.HasValue || gia[p.Id] <= filter.GiaDen.Value));
@@ -124,7 +128,7 @@ public class ProductsController : Controller
             .ToDictionaryAsync(p => p.Id);
         filter.KetQua = idsTrang.Where(trang.ContainsKey).Select(id => trang[id]).ToList();
         if (!canTinhGiaTruocPhanTrang)
-            filter.GiaHieuDung = await TinhGiaDanhMucAsync(filter.KetQua, now);
+            filter.GiaHieuDung = await _gia.TinhGiaDanhMucAsync(filter.KetQua, now);
 
         foreach (var p in filter.KetQua)
             if (filter.GiaHieuDung[p.Id] != p.GiaBan)
@@ -148,18 +152,6 @@ public class ProductsController : Controller
         filter.TrangYeuCau = filter.Trang;
         filter.TrangVuotGioiHan = filter.TongTrang > 0 && filter.Trang > filter.TongTrang;
         filter.Trang = Math.Clamp(filter.Trang, 1, Math.Max(1, filter.TongTrang));
-    }
-
-    private async Task<Dictionary<int, decimal>> TinhGiaDanhMucAsync(List<Product> sanPham, DateTime now)
-    {
-        if (sanPham.Count == 0) return new Dictionary<int, decimal>();
-        var ids = sanPham.Select(p => p.Id).ToList();
-        var flashSales = await _db.FlashSales.AsNoTracking()
-            .Where(f => ids.Contains(f.ProductId) && f.BatDau <= now && f.KetThuc >= now).ToListAsync();
-        var slotItems = await _db.FlashSaleSlotItems.AsNoTracking().Include(i => i.Slot)
-            .Where(i => ids.Contains(i.ProductId) && i.Slot.IsActive
-                && now.Hour >= i.Slot.GioBatDau && now.Hour < i.Slot.GioKetThuc).ToListAsync();
-        return EffectivePriceCalculator.TinhBatch(sanPham, flashSales, slotItems, now);
     }
 
     public async Task<IActionResult> Details(int id)

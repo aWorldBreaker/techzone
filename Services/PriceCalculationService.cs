@@ -149,6 +149,18 @@ public class PriceCalculationService
         _loyalty = loyalty;
     }
 
+    public async Task<Dictionary<int, decimal>> TinhGiaDanhMucAsync(List<Product> sanPham, DateTime now)
+    {
+        if (sanPham.Count == 0) return new Dictionary<int, decimal>();
+        var ids = sanPham.Select(p => p.Id).ToList();
+        var flashSales = await _db.FlashSales.AsNoTracking()
+            .Where(f => ids.Contains(f.ProductId) && f.BatDau <= now && f.KetThuc >= now).ToListAsync();
+        var slotItems = await _db.FlashSaleSlotItems.AsNoTracking().Include(i => i.Slot)
+            .Where(i => ids.Contains(i.ProductId) && i.Slot.IsActive
+                && now.Hour >= i.Slot.GioBatDau && now.Hour < i.Slot.GioKetThuc).ToListAsync();
+        return EffectivePriceCalculator.TinhBatch(sanPham, flashSales, slotItems, now);
+    }
+
     /// <summary>
     /// Giá 1 đơn vị cho SP (đã cộng tiền thêm biến thể vào cả GiaGoc lẫn
     /// DonGia). Mặc định soLuong = 1: giá sale chỉ áp khi đủ suất cho toàn

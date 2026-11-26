@@ -1,12 +1,16 @@
 @model TechZone.Models.ProductFilterViewModel
+@using Microsoft.AspNetCore.Mvc.ViewFeatures
 @{
     ViewData["Title"] = "Danh mục sản phẩm";
+    var need = ProductNeed.Find(Model.NhuCau);
+    var categoryTitle = Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten;
     var boLoc = new Dictionary<string, (string Label, string Value)>();
     void Them(string key, string label, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value)) boLoc.Add(key, (label, value));
     }
-    Them("CategoryId", Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten ?? "Danh mục", Model.CategoryId?.ToString());
+    Them("NhuCau", need?.Title ?? "Nhu cầu", need?.Key);
+    Them("CategoryId", categoryTitle ?? "Danh mục", Model.CategoryId?.ToString());
     Them("BrandId", Model.ThuongHieu.FirstOrDefault(b => b.Id == Model.BrandId)?.Ten ?? "Hãng", Model.BrandId?.ToString());
     Them("Chip", $"Chip {Model.Chip}", Model.Chip);
     Them("Ram", $"RAM {Model.Ram}", Model.Ram);
@@ -15,23 +19,34 @@
     Them("GiaDen", $"Đến {Model.GiaDen:N0}đ", FormattableString.Invariant($"{Model.GiaDen}"));
     Them("TuKhoa", $"Tìm: {Model.TuKhoa}", Model.TuKhoa);
     var activeFilterCount = boLoc.Count;
+    var filters = boLoc.ToDictionary(filter => filter.Key, filter => filter.Value.Value);
+    filters["SapXep"] = Model.SapXep;
+    var ungioiHan = filters.Where(filter => filter.Key is not ("GiaTu" or "GiaDen"))
+        .ToDictionary(filter => filter.Key, filter => filter.Value);
+    var resultRoute = new Dictionary<string, string>(filters);
+    if (Model.Trang > 1) resultRoute["Trang"] = Model.Trang.ToString();
+    var cardData = new ViewDataDictionary(ViewData)
+    {
+        ["ProductCardPrices"] = Model.GiaHieuDung,
+        ["ProductCardNeed"] = need,
+        ["CompareReturnUrl"] = Url.Action("Index", "Products", resultRoute) + "#catalog-results"
+    };
 }
 
 <header class="market-heading catalog-heading">
     <nav class="market-path" aria-label="Đường dẫn">
         <a asp-controller="Home" asp-action="Index">Trang chủ</a><span aria-hidden="true">/</span><span aria-current="page">Ngành hàng</span>
     </nav>
-    <h1>@(Model.DanhMuc.FirstOrDefault(c => c.Id == Model.CategoryId)?.Ten ?? "Khám phá ngành hàng")</h1>
-    <nav class="department-tabs" aria-label="Chọn ngành hàng">
-        <a asp-action="Index" class="chip @(Model.CategoryId is null ? "chip-active" : "")"
-           aria-current="@(Model.CategoryId is null ? "page" : null)">Tất cả</a>
-        @foreach (var category in Model.DanhMuc.OrderBy(c => c.Id))
-        {
-            var selected = category.Id == Model.CategoryId;
-            <a asp-action="Index" asp-route-CategoryId="@category.Id" class="chip @(selected ? "chip-active" : "")"
-               aria-current="@(selected ? "page" : null)">@category.Ten</a>
-        }
-    </nav>
+    <div class="section-head">
+        <div>
+            <h1>@(need?.Title ?? categoryTitle ?? "Khám phá ngành hàng")</h1>
+            @if (need is not null)
+            {
+                <p>@need.Departments</p>
+            }
+        </div>
+        <a asp-controller="Home" asp-action="Index" asp-fragment="need-finder">@(need is null ? "Chọn theo nhu cầu" : "Đổi nhu cầu") <span aria-hidden="true">→</span></a>
+    </div>
 </header>
 
 <div class="catalog-toolbar section-head">
@@ -67,6 +82,10 @@
 <div class="catalog-layout">
     <form method="get" id="filter-panel" class="filter-bar" aria-label="Lọc sản phẩm">
         <h2>Lọc sản phẩm</h2>
+        @if (need is not null)
+        {
+            <input type="hidden" name="NhuCau" value="@need.Key" />
+        }
         <div class="form-group">
             <label for="CategoryId">Danh mục</label>
             <select id="CategoryId" name="CategoryId" class="form-control" asp-items="@(new SelectList(Model.DanhMuc, "Id", "Ten", Model.CategoryId))">
@@ -113,12 +132,19 @@
         </div>
         <div class="filter-actions">
             <button type="submit" class="btn btn-primary">Lọc</button>
-            <a asp-action="Index" class="btn btn-secondary">Xóa lọc</a>
+            <a asp-action="Index" asp-route-NhuCau="@need?.Key" class="btn btn-secondary">Xóa lọc</a>
             <button type="button" class="btn btn-secondary filter-close" id="filter-close">Đóng</button>
         </div>
     </form>
 
-    <div class="catalog-results">
+    <div class="catalog-results" id="catalog-results" tabindex="-1">
+    <div class="catalog-compare">
+        @if (TempData["CatalogCompareStatus"] is string compareStatus)
+        {
+            <p role="status">@compareStatus</p>
+        }
+        <a asp-controller="Compare" asp-action="Index">Xem bảng so sánh <span aria-hidden="true">→</span></a>
+    </div>
     @* 3 thông báo riêng, không dùng chung một câu:
        (a) trang vượt giới hạn — controller clamp về trang cuối nên trang cuối
            LUÔN có SP, nhánh này nằm ở khối else bên dưới (khi còn kết quả),
@@ -128,7 +154,13 @@
     {
         @if (activeFilterCount > 0)
         {
-            <p class="empty-state">Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+            <div class="empty-state">
+                <p>Không tìm thấy sản phẩm nào phù hợp. Thử nới rộng bộ lọc.</p>
+                @if (Model.GiaTu.HasValue || Model.GiaDen.HasValue)
+                {
+                    <a asp-action="Index" asp-all-route-data="ungioiHan" class="btn btn-secondary">Bỏ giới hạn giá</a>
+                }
+            </div>
         }
         else
         {
@@ -149,6 +181,7 @@
                    asp-route-Ram="@Model.Ram"
                    asp-route-DungLuong="@Model.DungLuong"
                    asp-route-GiaTu="@Model.GiaTu"
+                   asp-route-NhuCau="@Model.NhuCau"
                    asp-route-GiaDen="@Model.GiaDen"
                    asp-route-SapXep="@Model.SapXep"
                    asp-route-TuKhoa="@Model.TuKhoa">Về trang cuối</a>
@@ -157,7 +190,7 @@
         <div class="product-grid">
             @foreach (var p in Model.KetQua)
             {
-                <partial name="_ProductCard" model="p" />
+                <partial name="_ProductCard" model="p" view-data="cardData" />
             }
         </div>
 
@@ -189,6 +222,7 @@
                        asp-route-Ram="@Model.Ram"
                        asp-route-DungLuong="@Model.DungLuong"
                        asp-route-GiaTu="@Model.GiaTu"
+                       asp-route-NhuCau="@Model.NhuCau"
                        asp-route-GiaDen="@Model.GiaDen"
                        asp-route-SapXep="@Model.SapXep"
                        asp-route-TuKhoa="@Model.TuKhoa">‹ Trước</a>
@@ -212,6 +246,7 @@
                        asp-route-Ram="@Model.Ram"
                        asp-route-DungLuong="@Model.DungLuong"
                        asp-route-GiaTu="@Model.GiaTu"
+                       asp-route-NhuCau="@Model.NhuCau"
                        asp-route-GiaDen="@Model.GiaDen"
                        asp-route-SapXep="@Model.SapXep"
                        asp-route-TuKhoa="@Model.TuKhoa">@soTrang</a>
@@ -226,6 +261,7 @@
                        asp-route-Ram="@Model.Ram"
                        asp-route-DungLuong="@Model.DungLuong"
                        asp-route-GiaTu="@Model.GiaTu"
+                       asp-route-NhuCau="@Model.NhuCau"
                        asp-route-GiaDen="@Model.GiaDen"
                        asp-route-SapXep="@Model.SapXep"
                        asp-route-TuKhoa="@Model.TuKhoa">Sau ›</a>

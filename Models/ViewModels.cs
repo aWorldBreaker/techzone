@@ -5,6 +5,7 @@ namespace TechZone.Models;
 /// <summary>Bo loc trang danh muc (dang dropdown o giao dien).</summary>
 public class ProductFilterViewModel
 {
+    public string? NhuCau { get; set; }
     public int? CategoryId { get; set; }
     public int? BrandId { get; set; }
     public string? Chip { get; set; }

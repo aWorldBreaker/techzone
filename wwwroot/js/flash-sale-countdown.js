@@ -1,39 +1,26 @@
-// TechZone — Nhom B: dem nguoc toi khung Flash Sale tiep theo.
-// Doc gio bat dau tu data-gio-tiep-theo cua #slot-countdown (gio trong ngay 0-23).
-// Neu gio do hom nay da qua thi dem toi cung gio ngay mai.
 (function () {
   'use strict';
 
-  function pad(n) {
-    return String(n).padStart(2, '0');
-  }
+  document.querySelectorAll('.flash-countdown[data-ket-thuc]').forEach(function (clock) {
+    var deadline = Date.parse(clock.dataset.ketThuc);
+    var numbers = clock.querySelectorAll('b');
+    if (!Number.isFinite(deadline) || numbers.length !== 3) return;
+    var interval;
 
-  function tick() {
-    var el = document.getElementById('slot-countdown');
-    if (!el) return;
-    var gio = parseInt(el.getAttribute('data-gio-tiep-theo'), 10);
-    if (isNaN(gio)) return;
+    function tick() {
+      var seconds = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      if (seconds === 0) {
+        clearInterval(interval);
+        clock.textContent = clock.dataset.countdownEnded;
+        return false;
+      }
+      var parts = [Math.floor(seconds / 3600), Math.floor(seconds % 3600 / 60), seconds % 60];
+      numbers.forEach(function (text, index) {
+        text.textContent = String(parts[index]).padStart(2, '0');
+      });
+      return true;
+    }
 
-    var dich = new Date();
-    dich.setHours(gio, 0, 0, 0);
-    var bayGio = new Date();
-    if (dich <= bayGio) dich.setDate(dich.getDate() + 1);
-
-    var chenh = Math.max(0, Math.floor((dich - bayGio) / 1000));
-    var g = Math.floor(chenh / 3600);
-    var p = Math.floor((chenh % 3600) / 60);
-    var s = chenh % 60;
-
-    var oGio = document.getElementById('slot-cd-gio');
-    var oPhut = document.getElementById('slot-cd-phut');
-    var oGiay = document.getElementById('slot-cd-giay');
-    if (oGio) oGio.textContent = pad(g);
-    if (oPhut) oPhut.textContent = pad(p);
-    if (oGiay) oGiay.textContent = pad(s);
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    tick();
-    setInterval(tick, 1000);
+    if (tick()) interval = setInterval(tick, 1000);
   });
 })();

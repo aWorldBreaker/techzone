@@ -1,26 +1,24 @@
 @using TechZone.Models
 @{
-    var slots = ViewBag.Slots as List<FlashSaleSlot> ?? new List<FlashSaleSlot>();
     var slotHienTai = ViewBag.SlotHienTai as FlashSaleSlot;
     var slotTiepTheo = ViewBag.SlotTiepTheo as FlashSaleSlot;
+    var items = ViewBag.SlotHienTaiItems as List<FlashSaleSlotItem> ?? [];
+    var campaigns = ViewBag.FlashSale as List<FlashSale> ?? [];
+    var gioMoTiep = ViewBag.GioMoTiep as DateTime?;
 }
 
-<section class="section slot-section" id="flash-sale" aria-label="Flash Sale theo khung giờ">
-    <div class="section-head">
-        <h2>Flash Sale theo khung giờ</h2>
-    </div>
-
+<div class="slot-section">
     @if (slotHienTai is not null)
     {
         <h3>Đang chạy: khung @slotHienTai.Ten</h3>
-        @if (!slotHienTai.Items.Any())
+        @if (items.Count == 0)
         {
-            <p class="text-muted">Khung này chưa có sản phẩm sale.</p>
+            <p class="text-muted">Chưa có sản phẩm giảm giá trong khung này.</p>
         }
         else
         {
             <div class="product-grid slot-grid">
-                @foreach (var item in slotHienTai.Items)
+                @foreach (var item in items)
                 {
                     <article class="product-card slot-card">
                         <a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId" class="product-image">
@@ -31,7 +29,7 @@
                             <h3><a asp-controller="Products" asp-action="Details" asp-route-id="@item.ProductId">@item.Product.Ten</a></h3>
                             <p class="product-price">
                                 <strong class="price-amount">@item.GiaSale.ToString("N0")đ</strong>
-                                <s>@item.Product.GiaBan.ToString("N0")đ</s>
+                                <s>@item.Product.Gia.ToString("N0")đ</s>
                             </p>
                         </div>
                     </article>
@@ -39,16 +37,16 @@
             </div>
         }
     }
-    else
+    else if (campaigns.Count == 0)
     {
-        <p class="text-muted">Hiện không có khung Flash Sale đang chạy.</p>
+        <p class="text-muted">Hiện chưa có ưu đãi Flash Sale đang mở.</p>
     }
 
-    @if (slotTiepTheo is not null)
+    @if (slotTiepTheo is not null && gioMoTiep.HasValue)
     {
         <div class="slot-next">
-            <p>Khung tiếp theo: <strong>@slotTiepTheo.Ten</strong></p>
-            <div class="flash-countdown" id="slot-countdown" data-gio-tiep-theo="@slotTiepTheo.GioBatDau">
+            <p>Khung tiếp theo <strong>@slotTiepTheo.Ten</strong> · @(gioMoTiep.Value.Date == DateTime.Today ? "hôm nay" : "ngày mai")</p>
+            <div class="flash-countdown" id="slot-countdown" data-ket-thuc="@gioMoTiep.Value.ToString("o")" data-countdown-ended="Đến giờ mở khung">
                 <span><b id="slot-cd-gio">--</b><small>giờ</small></span>
                 <span><b id="slot-cd-phut">--</b><small>phút</small></span>
                 <span><b id="slot-cd-giay">--</b><small>giây</small></span>
@@ -67,4 +65,4 @@
             }
         </div>
     }
-</section>
+</div>

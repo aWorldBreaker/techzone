@@ -18,7 +18,13 @@
     Them("GiaTu", $"Từ {Model.GiaTu:N0}đ", FormattableString.Invariant($"{Model.GiaTu}"));
     Them("GiaDen", $"Đến {Model.GiaDen:N0}đ", FormattableString.Invariant($"{Model.GiaDen}"));
     Them("TuKhoa", $"Tìm: {Model.TuKhoa}", Model.TuKhoa);
-    var activeFilterCount = boLoc.Count;
+    var activeFilterCount = boLoc.Keys.Count(k => k != "NhuCau");
+    var groups = new[] {
+        ("BrandId", "Hãng", Model.BrandId?.ToString(), new SelectList(Model.ThuongHieu, "Id", "Ten", Model.BrandId)),
+        ("Chip", "Chip", Model.Chip, new SelectList(Model.Chips, Model.Chip)),
+        ("Ram", "RAM", Model.Ram, new SelectList(Model.Rams, Model.Ram)),
+        ("DungLuong", "Dung lượng", Model.DungLuong, new SelectList(Model.DungLuongs, Model.DungLuong))
+    };
     var filters = boLoc.ToDictionary(filter => filter.Key, filter => filter.Value.Value);
     filters["SapXep"] = Model.SapXep;
     var ungioiHan = filters.Where(filter => filter.Key is not ("GiaTu" or "GiaDen"))
@@ -33,7 +39,7 @@
     };
 }
 
-<header class="market-heading catalog-heading">
+<header class="catalog-heading">
     <nav class="market-path" aria-label="Đường dẫn">
         <a asp-controller="Home" asp-action="Index">Trang chủ</a><span aria-hidden="true">/</span><span aria-current="page">Ngành hàng</span>
     </nav>
@@ -45,8 +51,16 @@
                 <p>@need.Departments</p>
             }
         </div>
-        <a asp-controller="Home" asp-action="Index" asp-fragment="need-finder">@(need is null ? "Chọn theo nhu cầu" : "Đổi nhu cầu") <span aria-hidden="true">→</span></a>
+        <a asp-controller="Home" asp-action="Index" asp-fragment="need-finder">@(need is null ? "Chọn theo nhu cầu" : "Đổi nhu cầu")</a>
     </div>
+    <nav class="choice-row catalog-needs" aria-label="Nhu cầu">
+        <a asp-action="Index" class="chip @(need is null ? "chip-active" : "")" aria-current="@(need is null ? "page" : null)">Tất cả</a>
+        @foreach (var option in ProductNeed.All)
+        {
+            <a asp-action="Index" asp-route-NhuCau="@option.Key" class="chip @(need?.Key == option.Key ? "chip-active" : "")"
+               aria-current="@(need?.Key == option.Key ? "page" : null)">@option.Title</a>
+        }
+    </nav>
 </header>
 
 <div class="catalog-toolbar section-head">
@@ -67,7 +81,7 @@
     </div>
 </div>
 
-@if (activeFilterCount > 0)
+@if (boLoc.Count > 0)
 {
     <div class="chip-row" role="group" aria-label="Bộ lọc đang áp dụng">
         @foreach (var (key, filter) in boLoc)
@@ -81,7 +95,7 @@
 
 <div class="catalog-layout">
     <form method="get" id="filter-panel" class="filter-bar" aria-label="Lọc sản phẩm">
-        <h2>Lọc sản phẩm</h2>
+        <div class="section-head filter-heading"><h2>Lọc sản phẩm</h2><button type="button" class="btn btn-secondary filter-close" id="filter-close">Đóng</button></div>
         @if (need is not null)
         {
             <input type="hidden" name="NhuCau" value="@need.Key" />
@@ -92,48 +106,61 @@
                 <option value="">Tất cả</option>
             </select>
         </div>
-        <div class="form-group">
-            <label for="BrandId">Hãng</label>
-            <select id="BrandId" name="BrandId" class="form-control" asp-items="@(new SelectList(Model.ThuongHieu, "Id", "Ten", Model.BrandId))">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="Chip">Chip</label>
-            <select id="Chip" name="Chip" class="form-control" asp-items="@(new SelectList(Model.Chips, Model.Chip))">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="Ram">RAM</label>
-            <select id="Ram" name="Ram" class="form-control" asp-items="@(new SelectList(Model.Rams, Model.Ram))">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="DungLuong">Dung lượng</label>
-            <select id="DungLuong" name="DungLuong" class="form-control" asp-items="@(new SelectList(Model.DungLuongs, Model.DungLuong))">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
+        @* Keep asp-items for the existing select sources. Inputs in template content are inert. *@
+        <template id="catalog-select-options">
+                <select id="BrandId" name="BrandId" class="form-control" asp-items="@(new SelectList(Model.ThuongHieu, "Id", "Ten", Model.BrandId))">
+                    <option value="">Tất cả</option>
+                </select>
+                <select id="Chip" name="Chip" class="form-control" asp-items="@(new SelectList(Model.Chips, Model.Chip))">
+                    <option value="">Tất cả</option>
+                </select>
+                <select id="Ram" name="Ram" class="form-control" asp-items="@(new SelectList(Model.Rams, Model.Ram))">
+                    <option value="">Tất cả</option>
+                </select>
+                <select id="DungLuong" name="DungLuong" class="form-control" asp-items="@(new SelectList(Model.DungLuongs, Model.DungLuong))">
+                    <option value="">Tất cả</option>
+                </select>
+        </template>
+        @foreach (var (name, label, selected, options) in groups)
+        {
+            <fieldset class="choice-fieldset">
+                <legend>@label</legend>
+                <div class="choice-row">
+                    <label class="chip choice-chip">
+                        <input type="radio" name="@name" value="" checked="@string.IsNullOrWhiteSpace(selected)" />
+                        <span>Tất cả</span>
+                    </label>
+                    @foreach (var option in options)
+                    {
+                        var value = option.Value ?? option.Text;
+                        <label class="chip choice-chip">
+                            <input type="radio" name="@name" value="@value" checked="@(value == selected)" />
+                            <span>@option.Text</span>
+                        </label>
+                    }
+                </div>
+            </fieldset>
+        }
         <div class="catalog-range">
             <div class="form-group">
                 <label for="GiaTu">Giá từ (đ)</label>
-                <input id="GiaTu" name="GiaTu" type="number" min="0" step="100000" class="form-control" value="@Model.GiaTu" />
+                <input id="GiaTu" name="GiaTu" type="number" min="0" step="any" class="form-control" value="@Model.GiaTu" />
             </div>
             <div class="form-group">
                 <label for="GiaDen">Giá đến (đ)</label>
-                <input id="GiaDen" name="GiaDen" type="number" min="0" step="100000" class="form-control" value="@Model.GiaDen" />
+                <input id="GiaDen" name="GiaDen" type="number" min="0" step="any" class="form-control" value="@Model.GiaDen" />
             </div>
         </div>
-        <div class="form-group">
-            <label for="TuKhoa">Tìm kiếm</label>
-            <input id="TuKhoa" name="TuKhoa" type="search" class="form-control" value="@Model.TuKhoa" placeholder="Tên sản phẩm..." />
+        <div class="choice-row price-presets" hidden aria-label="Mức giá nhanh">
+            <button type="button" class="chip" data-price-min="" data-price-max="2000000">Dưới 2 triệu</button>
+            <button type="button" class="chip" data-price-min="2000000" data-price-max="15000000">2–15 triệu</button>
+            <button type="button" class="chip" data-price-min="15000000" data-price-max="25000000">15–25 triệu</button>
+            <button type="button" class="chip" data-price-min="25000000" data-price-max="">Trên 25 triệu</button>
         </div>
+        <input id="TuKhoa" name="TuKhoa" type="hidden" value="@Model.TuKhoa" />
         <div class="filter-actions">
             <button type="submit" class="btn btn-primary">Lọc</button>
             <a asp-action="Index" asp-route-NhuCau="@need?.Key" class="btn btn-secondary">Xóa lọc</a>
-            <button type="button" class="btn btn-secondary filter-close" id="filter-close">Đóng</button>
         </div>
     </form>
 
@@ -143,7 +170,7 @@
         {
             <p role="status">@compareStatus</p>
         }
-        <a asp-controller="Compare" asp-action="Index">Xem bảng so sánh <span aria-hidden="true">→</span></a>
+        <a asp-controller="Compare" asp-action="Index">Xem bảng so sánh</a>
     </div>
     @* 3 thông báo riêng, không dùng chung một câu:
        (a) trang vượt giới hạn — controller clamp về trang cuối nên trang cuối
@@ -211,7 +238,7 @@
             {
                 cacTrang.Add(Model.TongTrang);
             }
-            <nav class="mt" aria-label="Phân trang">
+            <nav class="choice-row mt" aria-label="Phân trang">
                 @if (trangNav > 1)
                 {
                     <a class="chip" asp-action="Index"

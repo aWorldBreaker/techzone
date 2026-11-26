@@ -29,91 +29,191 @@
         giaHienThi = giaBanDau.DonGia;
         giaNiemYet = giaBanDau.GiaGoc;
     }
-    var soDanhGia = Model.Reviews.Count;
-    var diemTB = soDanhGia > 0 ? Math.Round(Model.Reviews.Average(r => r.Sao), 1) : 0;
+    var reviews = Model.Reviews.Where(r => r.IsApproved).ToList();
+    var soDanhGia = reviews.Count;
+    var diemTB = soDanhGia > 0 ? Math.Round(reviews.Average(r => r.Sao), 1) : 0;
+    var need = ProductNeed.Find(Context.Request.Query["NhuCau"].ToString());
+    var needFields = new Dictionary<string, string[]>
+    {
+        ["chup-anh"] = ["camera", "screen", "battery"],
+        ["lam-viec"] = ["chip", "memory", "graphics", "screen", "battery"],
+        ["nghe-nhac"] = ["battery", "feature"]
+    };
+    var selectedFields = need is null ? Array.Empty<string>() : needFields.GetValueOrDefault(need.Key) ?? [];
+    var discount = giaNiemYet > 0 && giaHienThi < giaNiemYet
+        ? (int)Math.Round((1 - giaHienThi / giaNiemYet) * 100) : 0;
+    var specRows = new List<(string Key, string Label, string Value, int Number, int X, int Y)>();
+    var zones = Model.Category.Slug switch
+    {
+        "dien-thoai" => new Dictionary<string, (int, int)>
+        {
+            ["camera"] = (200, 50), ["screen"] = (200, 125), ["chip"] = (179, 193),
+            ["memory"] = (221, 193), ["battery"] = (200, 243)
+        },
+        "laptop" => new Dictionary<string, (int, int)>
+        {
+            ["screen"] = (200, 105), ["chip"] = (146, 207), ["graphics"] = (254, 207),
+            ["memory"] = (200, 207), ["battery"] = (200, 251)
+        },
+        "tai-nghe" => new Dictionary<string, (int, int)>
+        {
+            ["battery"] = (111, 201), ["feature1"] = (200, 49),
+            ["feature2"] = (291, 201), ["feature3"] = (111, 250)
+        },
+        _ => new Dictionary<string, (int, int)>()
+    };
+    var zoneNumber = 0;
+    var hasPhoto = !Model.AnhDaiDien.EndsWith("/placeholder.svg", StringComparison.OrdinalIgnoreCase);
+    void AddSpec(string key, string label, string? value, string? zoneKey = null)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return;
+        if (hasPhoto && zones.TryGetValue(zoneKey ?? key, out var point))
+            specRows.Add((key, label, value, ++zoneNumber, point.Item1, point.Item2));
+        else
+            specRows.Add((key, label, value, 0, 0, 0));
+    }
+    if (Model.Specs is { } spec)
+    {
+        var memory = new[] { spec.Ram, spec.Rom }.Where(s => !string.IsNullOrWhiteSpace(s));
+        AddSpec("screen", "Màn hình", spec.ManHinh);
+        AddSpec("chip", "Chip", spec.Chip);
+        AddSpec("memory", "Bộ nhớ", string.Join(", ", memory));
+        AddSpec("camera", "Camera", spec.Camera);
+        AddSpec("graphics", "Card đồ họa", spec.CardDoHoa);
+        AddSpec("battery", "Pin", spec.Pin);
+        var featureIndex = 0;
+        foreach (var feature in spec.ThongSoKhac?.Split(", ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [])
+            AddSpec("feature", "Tính năng", feature, $"feature{++featureIndex}");
+    }
 }
 
 <nav class="market-path detail-path" aria-label="Đường dẫn">
     <a asp-controller="Home" asp-action="Index">Trang chủ</a>
     <span aria-hidden="true">/</span>
     <a asp-controller="Products" asp-action="Index" asp-route-CategoryId="@Model.CategoryId">@Model.Category.Ten</a>
+    <span aria-hidden="true">/</span><span aria-current="page">@Model.Ten</span>
 </nav>
 
 <div class="detail-layout">
     <header class="detail-offer">
         <h1>@Model.Ten</h1>
-        <div class="detail-price" aria-live="polite" aria-atomic="true">
-            <span class="price-big price-amount">@giaHienThi.ToString("N0")đ</span>
-            <s class="price-old" hidden="@(giaHienThi >= giaNiemYet)">@giaNiemYet.ToString("N0")đ</s>
-            @if (flash is not null)
+        <p class="detail-reviews">
+            @if (soDanhGia > 0)
             {
-                <span class="badge">Flash Sale · đến @flash.KetThuc.ToString("HH:mm dd/MM")</span>
+                <a href="#danh-gia">@diemTB.ToString("0.0")/5 sao (@soDanhGia đánh giá)</a>
             }
-            else if (!string.IsNullOrEmpty(tenKhuyenMai))
+            else
             {
-                <span class="badge">@tenKhuyenMai</span>
+                <span>Chưa có đánh giá</span>
             }
+        </p>
+        <p class="detail-reviews">Đã bán @Model.LuotBan</p>
+        <div class="detail-price" aria-live="polite" aria-atomic="true" data-detail-offer>
+            <div class="price-tag drawing-price">
+                <strong class="price-big price-amount">@giaHienThi.ToString("N0")đ</strong>
+                <s class="price-old" hidden="@(giaHienThi >= giaNiemYet)">@giaNiemYet.ToString("N0")đ</s>
+            </div>
+            <span class="chip-giam" data-detail-discount hidden="@(discount <= 0)">−@(discount)%</span>
         </div>
+        @if (flash is not null)
+        {
+            <p class="detail-promo">Flash Sale đến @flash.KetThuc.ToString("HH:mm dd/MM")</p>
+        }
+        else if (!string.IsNullOrEmpty(tenKhuyenMai))
+        {
+            <p class="detail-promo">@tenKhuyenMai</p>
+        }
         <p class="detail-stock"><partial name="_StockStatus" model="Model.TonKho" /></p>
     </header>
-    <div class="detail-image">
-        <h2 class="gallery-title">Hình ảnh sản phẩm</h2>
-        @* Sprint 5 — viewer 3D dung chung (map Product3dModels): chi SP co model
-           moi render khoi nay. Model la minh hoa generic, khong phai thiet ke
-           chinh xac cua hang. GLB chi tai khi bam Xem 3D (xem product-3d.js). *@
-        @if (model3d is not null)
-        {
-            <div class="detail-3d" id="product-3d" data-model-url="@model3d.ModelUrl">
-                <img id="product-image" src="@Model.AnhDaiDien" alt="@Model.Ten" />
-                <model-viewer id="product-viewer" class="product-viewer" hidden
-                    poster="@Model.AnhDaiDien"
-                    alt="Mô hình 3D minh họa — @Model.Ten"
-                    camera-controls touch-action="pan-y"
-                    camera-orbit="@model3d.CameraOrbit" field-of-view="45deg"
-                    min-camera-orbit="auto auto 50%" max-camera-orbit="auto auto 200%"
-                    orientation="@model3d.Orientation"
-                    environment-image="neutral" auto-rotate>
-                </model-viewer>
-                <p class="alert alert-error" id="viewer-error" hidden>Không tải được mô hình 3D — đang hiển thị ảnh sản phẩm.</p>
+    <div class="detail-image blueprint" data-annotation-panel>
+        <h2 class="gallery-title">Hình ảnh và thông số</h2>
+        <div class="detail-3d" id="@(model3d is null ? null : "product-3d")" data-model-url="@model3d?.ModelUrl">
+            <div class="gallery-stage">
+                <img id="product-image" src="@Model.AnhDaiDien" alt="@Model.Ten" width="640" height="480" />
+                @if (zoneNumber > 0)
+                {
+                    <svg class="spec-overlay" viewBox="0 0 400 300" role="img" aria-label="Ảnh @Model.Ten có @zoneNumber chú thích thông số">
+                        @foreach (var row in specRows.Where(r => r.Number > 0))
+                        {
+                            var edge = row.Number % 2 == 0 ? 388 : 12;
+                            <g id="spec-zone-@row.Number" data-spec-zone="@row.Number" data-spec-kind="@row.Key"
+                               class="spec-zone @(selectedFields.Contains(row.Key) ? "spec-highlight" : "")" style="--i:@(row.Number - 1)">
+                                <path class="drawing-leader" d="@($"M{row.X} {row.Y} H{edge}")" pathLength="1" />
+                                <circle class="drawing-zone" cx="@row.X" cy="@row.Y" r="14" pathLength="1" />
+                                <text class="drawing-note" x="@row.X" y="@row.Y" text-anchor="middle" dominant-baseline="central">@row.Number</text>
+                            </g>
+                        }
+                    </svg>
+                }
+                @if (model3d is not null)
+                {
+                    <model-viewer id="product-viewer" class="product-viewer" hidden
+                        poster="@Model.AnhDaiDien" alt="Mô hình 3D minh họa của @Model.Ten"
+                        camera-controls touch-action="pan-y"
+                        camera-orbit="@model3d.CameraOrbit" field-of-view="45deg"
+                        min-camera-orbit="auto auto 50%" max-camera-orbit="auto auto 200%"
+                        orientation="@model3d.Orientation" environment-image="neutral">
+                    </model-viewer>
+                }
+            </div>
+            @if (model3d is not null)
+            {
+                <p class="alert alert-error" id="viewer-error" hidden>Không tải được mô hình 3D. Ảnh sản phẩm đang hiển thị.</p>
                 <div class="viewer-toolbar" role="group" aria-label="Điều khiển xem 3D">
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-show">Xem 3D</button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-hide" hidden>Xem ảnh</button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-reset" hidden>Đặt lại góc nhìn</button>
-                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-rotate" hidden aria-pressed="true">Tự xoay: Bật</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-rotate" hidden aria-pressed="false">Tự xoay: Tắt</button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btn-3d-fullscreen" hidden>Toàn màn hình</button>
                 </div>
-                <p class="viewer-note text-muted">Mô hình 3D minh họa (generic), chưa phải thiết kế chính xác của hãng. Kéo để xoay, cuộn/chụm để zoom.</p>
-            </div>
-        }
-        else
-        {
-            @* Sprint 6 Module 4 — anh chinh co id de JS gallery doi duoc
-               (nhanh 3D da co id="product-image" san). *@
-            <img id="product-image" src="@Model.AnhDaiDien" alt="@Model.Ten" />
-        }
+                <p class="viewer-note text-muted">Mô hình 3D minh họa. Kéo để xoay, cuộn hoặc chụm để thay đổi độ phóng đại.</p>
+            }
+        </div>
         @if (Model.Images.Count > 1)
         {
-            @* Sprint 6 Module 4 — thumbnail tuong tac: moi anh la 1 nut
-               (xem product-detail.js); anh dau tien la anh dang chon.
-               Khong JS van xem duoc anh dau tien (anh chinh mac dinh). *@
-            <div class="chip-row" role="group" aria-label="Ảnh sản phẩm">
+            <div class="choice-row detail-thumbs" role="group" aria-label="Ảnh sản phẩm">
                 @for (var i = 0; i < Model.Images.Count; i++)
                 {
                     var img = Model.Images.ElementAt(i);
                     <button type="button" class="thumb-btn" data-full="@img.Url"
-                        aria-label="Ảnh @(i + 1) — @Model.Ten"
+                        aria-label="Ảnh @(i + 1) của @Model.Ten"
                         aria-current="@(i == 0 ? "true" : null)">
-                        <img src="@img.Url" alt="@Model.Ten" class="thumb-sm" />
+                        <img src="@img.Url" alt="@Model.Ten" class="thumb-sm" width="72" height="72" loading="lazy" />
                     </button>
                 }
             </div>
         }
+        @if (specRows.Count > 0)
+        {
+            <form class="annotation-needs choice-row" method="get" aria-label="Làm nổi thông số theo nhu cầu" data-annotation-needs>
+                <button class="chip @(need is null ? "chip-active" : "")" name="NhuCau" value="" aria-pressed="@(need is null ? "true" : "false")">Tất cả</button>
+                @foreach (var option in ProductNeed.All)
+                {
+                    <button class="chip @(need?.Key == option.Key ? "chip-active" : "")" name="NhuCau" value="@option.Key"
+                            data-fields="@string.Join(" ", needFields.GetValueOrDefault(option.Key) ?? [])"
+                            aria-pressed="@(need?.Key == option.Key ? "true" : "false")">@option.Title</button>
+                }
+            </form>
+            <dl class="spec-notes">
+                @foreach (var row in specRows)
+                {
+                    <div class="spec-note @(selectedFields.Contains(row.Key) ? "spec-highlight" : "")" data-spec-kind="@row.Key">
+                        <dt>
+                            @if (row.Number > 0)
+                            {
+                                <a class="spec-number" data-spec-target="@row.Number" href="#spec-zone-@row.Number" aria-label="Định vị chú thích @row.Number, @row.Label">@row.Number</a>
+                            }
+                            @row.Label
+                        </dt>
+                        <dd>@row.Value @if (row.Number == 0) { <small>(chỉ trong danh sách)</small> }</dd>
+                    </div>
+                }
+            </dl>
+        }
     </div>
 
-    <div class="detail-buy card">
-        <h2>Thông tin mua hàng</h2>
-        <p class="detail-reviews">@(soDanhGia > 0 ? $"{diemTB:0.0} sao ({soDanhGia} đánh giá)" : "Chưa có đánh giá") · Đã bán @Model.LuotBan</p>
-        <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add">
+    <div class="detail-buy">
+        <form asp-controller="Cart" asp-action="Add" method="post" class="detail-add" id="detail-add-form">
             <input type="hidden" name="productId" value="@Model.Id" />
             @if (Model.Variants.Any())
             {
@@ -151,44 +251,85 @@
                 <button type="submit" id="detail-buy-submit" class="btn btn-primary" disabled="@(Model.TonKho <= 0)">@(Model.TonKho > 0 ? "Thêm vào giỏ" : "Hết hàng")</button>
             </div>
         </form>
-        <div class="buy-policy">
-            <span>Bảo hành 24 tháng</span>
-            <span>Miễn phí ship từ 2.000.000đ</span>
-            <span>Đổi trả online</span>
-        </div>
+        <ul class="buy-policy">
+            <li>Bảo hành 24 tháng</li>
+            <li>Miễn phí vận chuyển từ 2.000.000đ</li>
+            <li>Đổi trả trực tuyến</li>
+        </ul>
         <partial name="_InstallmentBadge" model="giaHienThi" />
         <div class="detail-actions">
             <form asp-controller="Compare" asp-action="Add" method="post">
                 <input type="hidden" name="productId" value="@Model.Id" />
-                <button type="submit" class="btn btn-secondary">＋ So sánh</button>
+                <button type="submit" class="btn btn-secondary" aria-label="So sánh @Model.Ten">So sánh</button>
             </form>
             @if (daYeuThich)
             {
                 <form asp-controller="Wishlist" asp-action="Remove" method="post" class="wishlist-form">
                     <input type="hidden" name="productId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-secondary wishlist-btn wishlist-btn-active">♥ Đã yêu thích</button>
+                    <button type="submit" class="btn btn-secondary wishlist-btn wishlist-btn-active" aria-label="Bỏ @Model.Ten khỏi yêu thích">Bỏ yêu thích</button>
                 </form>
             }
             else
             {
                 <form asp-controller="Wishlist" asp-action="Add" method="post" class="wishlist-form">
                     <input type="hidden" name="productId" value="@Model.Id" />
-                    <button type="submit" class="btn btn-secondary wishlist-btn">♡ Yêu thích</button>
+                    <button type="submit" class="btn btn-secondary wishlist-btn" aria-label="Thêm @Model.Ten vào yêu thích">Yêu thích</button>
                 </form>
             }
         </div>
     </div>
 </div>
 
+@if (Model.TonKho > 0)
+{
+    <div class="mobile-buy" data-mobile-buy hidden>
+        <span class="price-tag"><strong class="price-amount" data-mobile-price>@giaHienThi.ToString("N0")đ</strong></span>
+        <button type="submit" form="detail-add-form" class="btn btn-primary">Thêm vào giỏ</button>
+    </div>
+}
+<nav class="detail-nav choice-row" aria-label="Nội dung sản phẩm" data-detail-nav>
+    <a class="chip" href="#thong-so" aria-current="location">Thông số</a>
+    @if (combo is not null) { <a class="chip" href="#mua-kem">Mua kèm</a> }
+    <a class="chip" href="#danh-gia">Đánh giá</a>
+    <a class="chip" href="#hoi-dap">Hỏi đáp</a>
+    @if (tuongTu.Any()) { <a class="chip" href="#tuong-tu">Tương tự</a> }
+</nav>
+
+<section class="section detail-section" id="thong-so">
+    <h2>Thông số kỹ thuật</h2>
+    @if (specRows.Count > 0)
+    {
+        <div class="table-wrap">
+            <table class="spec-table">
+                <tbody>
+                    @foreach (var row in specRows)
+                    {
+                        <tr><th scope="row">@row.Label</th><td>@row.Value</td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">Sản phẩm này chưa có bảng thông số.</p>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.MoTa))
+    {
+        <h2 class="mt">Mô tả</h2>
+        <p>@Model.MoTa</p>
+    }
+</section>
+
 @if (combo is not null)
 {
-    <section class="section combo-block">
+    <section class="section detail-section combo-block" id="mua-kem">
         <h2>Mua kèm giá tốt</h2>
         <div class="combo-items">
             @if (ViewBag.ComboMon is List<TechZone.Models.CartLineViewModel> comboMon)
             {
                 @* Sprint 6 Module 4 — combo N mon: render du moi mon
-                   (mon chinh len dau, dau ＋ giua cac mon); gia tung mon
+                   (mon chinh len dau, dau + giua cac mon); gia tung mon
                    la gia hieu dung (da ap Flash Sale), SoLuong > 1 thi
                    hien "× N". Tong/giam lay tu TinhGiaComboAsync nhu cu. *@
                 @for (var i = 0; i < comboMon.Count; i++)
@@ -196,10 +337,10 @@
                     var mon = comboMon[i];
                     if (i > 0)
                     {
-                        <span class="combo-plus" aria-hidden="true">＋</span>
+                        <span class="combo-plus" aria-hidden="true">+</span>
                     }
                     <div class="combo-item">
-                        <img src="@mon.Product.AnhDaiDien" alt="@mon.Product.Ten" />
+                        <img src="@mon.Product.AnhDaiDien" alt="@mon.Product.Ten" loading="lazy" />
                         <p>
                             @if (mon.Product.Id == Model.Id)
                             {
@@ -221,13 +362,13 @@
             else
             {
             <div class="combo-item">
-                <img src="@Model.AnhDaiDien" alt="@Model.Ten" />
+                <img src="@Model.AnhDaiDien" alt="@Model.Ten" loading="lazy" />
                 <p>@Model.Ten</p>
                 <p><strong>@comboGiaChinh.ToString("N0")đ</strong></p>
             </div>
-            <span class="combo-plus" aria-hidden="true">＋</span>
+            <span class="combo-plus" aria-hidden="true">+</span>
             <div class="combo-item">
-                <img src="@combo.AnhDaiDien" alt="@combo.Ten" />
+                <img src="@combo.AnhDaiDien" alt="@combo.Ten" loading="lazy" />
                 <p><a asp-controller="Products" asp-action="Details" asp-route-id="@combo.Id">@combo.Ten</a></p>
                 <p><strong>@comboGiaKem.ToString("N0")đ</strong></p>
             </div>
@@ -256,47 +397,29 @@
     </section>
 }
 
-<section class="section detail-section">
-    <h2>Thông số kỹ thuật</h2>
-    @if (Model.Specs is not null)
-    {
-        <table class="spec-table">
-            <tbody>
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.Chip)) { <tr><th>Chip</th><td>@Model.Specs.Chip</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.Ram)) { <tr><th>RAM</th><td>@Model.Specs.Ram</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.Rom)) { <tr><th>Bộ nhớ</th><td>@Model.Specs.Rom</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.Pin)) { <tr><th>Pin</th><td>@Model.Specs.Pin</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.ManHinh)) { <tr><th>Màn hình</th><td>@Model.Specs.ManHinh</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.Camera)) { <tr><th>Camera</th><td>@Model.Specs.Camera</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.CardDoHoa)) { <tr><th>Card đồ họa</th><td>@Model.Specs.CardDoHoa</td></tr> }
-                @if (!string.IsNullOrWhiteSpace(Model.Specs.ThongSoKhac)) { <tr><th>Khác</th><td>@Model.Specs.ThongSoKhac</td></tr> }
-            </tbody>
-        </table>
-    }
-    else
-    {
-        <p class="text-muted">Sản phẩm này chưa có bảng thông số.</p>
-    }
-    @if (!string.IsNullOrWhiteSpace(Model.MoTa))
-    {
-        <h2 class="mt">Mô tả</h2>
-        <p>@Model.MoTa</p>
-    }
-</section>
-
-<section class="section detail-section">
-    <h2>Đánh giá (@Model.Reviews.Count)</h2>
-    @if (!Model.Reviews.Any())
+<section class="section detail-section" id="danh-gia">
+    <h2>Đánh giá (@soDanhGia)</h2>
+    <div class="review-layout">
+        <aside aria-label="Tóm tắt đánh giá">
+            @if (soDanhGia > 0)
+            {
+                <p class="review-score">@diemTB.ToString("0.0")/5 sao</p>
+                <p class="text-muted">@soDanhGia đánh giá đã duyệt</p>
+            }
+            else { <p class="text-muted">Chưa có đánh giá</p> }
+        </aside>
+        <div>
+    @if (soDanhGia == 0)
     {
         <p class="text-muted">Chưa có đánh giá nào. Hãy là người đầu tiên đánh giá sản phẩm này.</p>
     }
-    @foreach (var r in Model.Reviews.OrderByDescending(r => r.NgayDanhGia))
+    @foreach (var r in reviews.OrderByDescending(r => r.NgayDanhGia))
     {
         <div class="review-item">
             <strong>@r.Sao sao</strong> — @r.User?.HoTen
             <span class="text-muted">@r.NgayDanhGia.ToString("dd/MM/yyyy")</span>
             @if (!string.IsNullOrWhiteSpace(r.NoiDung)) { <p>@r.NoiDung</p> }
-            @if (!string.IsNullOrWhiteSpace(r.ImageUrl)) { <img src="@r.ImageUrl" alt="Ảnh đánh giá của @r.User?.HoTen" class="review-image" /> }
+            @if (!string.IsNullOrWhiteSpace(r.ImageUrl)) { <img src="@r.ImageUrl" alt="Ảnh đánh giá của @r.User?.HoTen" class="review-image" loading="lazy" /> }
         </div>
     }
     @* M4-2: form danh gia chi hien khi da login (POST DanhGia co [Authorize],
@@ -325,9 +448,11 @@
     {
         <p class="mt"><a asp-controller="Account" asp-action="Login" asp-route-returnUrl="@Url.Action("Details", "Products", new { id = Model.Id })">Đăng nhập</a> để đánh giá sản phẩm này.</p>
     }
+        </div>
+    </div>
 </section>
 
-<section class="section detail-section qa-block">
+<section class="section detail-section qa-block" id="hoi-dap">
     <h2>Hỏi &amp; đáp (@cauHoi.Count)</h2>
     @if (!cauHoi.Any())
     {
@@ -368,10 +493,10 @@
 
 @if (tuongTu.Any())
 {
-    <section class="section detail-section">
+    <section class="section detail-section" id="tuong-tu">
         <div class="section-head">
             <h2>Sản phẩm tương tự</h2>
-            <a asp-action="Index" asp-route-CategoryId="@Model.CategoryId">Xem tất cả →</a>
+            <a asp-action="Index" asp-route-CategoryId="@Model.CategoryId">Xem tất cả sản phẩm</a>
         </div>
         <div class="product-grid">
             @foreach (var p in tuongTu)
@@ -389,6 +514,7 @@
    (Sprint 5 Mang 2: trang khong co model khong tai thua ~955KB). *@
 @section Scripts {
     <script src="~/js/product-detail.js" asp-append-version="true"></script>
+    <script src="~/js/product-annotations.js" asp-append-version="true"></script>
     @if (model3d is not null)
     {
         <script type="module" src="~/js/model-viewer.min.js" asp-append-version="true"></script>

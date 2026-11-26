@@ -1,19 +1,21 @@
 @model TechZone.Models.CheckoutViewModel
 @{
     ViewData["Title"] = "Thanh toán";
-    var deliveryFields = new[]
+    var fieldMessages = new[]
     {
-        (nameof(Model.HoTenNhan), Model.HoTenNhan, "Nhập họ tên người nhận.", "Họ tên tối đa 100 ký tự."),
-        (nameof(Model.SoDienThoai), Model.SoDienThoai, "Nhập số điện thoại liên hệ.", "Số điện thoại tối đa 20 ký tự."),
-        (nameof(Model.DiaChi), Model.DiaChi, "Nhập địa chỉ giao hàng.", "Địa chỉ tối đa 500 ký tự.")
+        (nameof(Model.HoTenNhan), string.IsNullOrWhiteSpace(Model.HoTenNhan) ? "Nhập họ tên người nhận." : "Họ tên tối đa 100 ký tự."),
+        (nameof(Model.SoDienThoai), string.IsNullOrWhiteSpace(Model.SoDienThoai) ? "Nhập số điện thoại liên hệ." : "Số điện thoại tối đa 20 ký tự."),
+        (nameof(Model.DiaChi), string.IsNullOrWhiteSpace(Model.DiaChi) ? "Nhập địa chỉ giao hàng." : "Địa chỉ tối đa 500 ký tự."),
+        (nameof(Model.InstallmentMonths), "Chọn kỳ hạn trả góp trong danh sách."),
+        (nameof(Model.DiemDung), "Nhập số điểm tích lũy dưới dạng số nguyên.")
     };
     string? firstInvalid = null;
-    foreach (var (name, value, requiredMessage, lengthMessage) in deliveryFields)
+    foreach (var (name, message) in fieldMessages)
     {
         if (!ViewData.ModelState.TryGetValue(name, out var state) || state.Errors.Count == 0) continue;
         firstInvalid ??= name;
         state.Errors.Clear();
-        state.Errors.Add(string.IsNullOrWhiteSpace(value) ? requiredMessage : lengthMessage);
+        state.Errors.Add(message);
     }
     var diaChiDaLuu = ViewBag.DiaChiDaLuu as List<TechZone.Models.Address>;
     var diaChiDangDung = diaChiDaLuu?.FirstOrDefault(address => address.HoTenNhan == Model.HoTenNhan &&
@@ -113,12 +115,14 @@
             </fieldset>
             <div class="form-group">
                 <label asp-for="InstallmentMonths">Trả góp 0% (giả lập)</label>
-                <select asp-for="InstallmentMonths" class="form-control" id="InstallmentMonths" data-tong-cong="@Model.GioHang.TongCong">
+                <select asp-for="InstallmentMonths" class="form-control" id="InstallmentMonths" data-tong-cong="@Model.GioHang.TongCong"
+                        aria-describedby="tien-gop-thang InstallmentMonths-error" autofocus="@(firstInvalid == nameof(Model.InstallmentMonths))">
                     <option value="">Trả 1 lần</option>
                     <option value="6">6 tháng</option>
                     <option value="12">12 tháng</option>
                 </select>
                 <p class="text-muted" id="tien-gop-thang"></p>
+                <span asp-validation-for="InstallmentMonths" id="InstallmentMonths-error" class="text-danger"></span>
             </div>
             @* P1-1 (Final Check): o diem chi hien khi da dang nhap — khach
                vang lai khong co diem de dung. An o diem tranh truong hop
@@ -128,8 +132,10 @@
             {
                 <div class="form-group">
                     <label asp-for="DiemDung">Dùng điểm tích lũy</label>
-                    <input asp-for="DiemDung" type="number" min="0" class="form-control" />
-                    <p class="text-muted">Bạn có @ViewBag.DiemHienTai điểm (1 điểm = 1.000đ)</p>
+                    <input asp-for="DiemDung" type="number" min="0" class="form-control"
+                           aria-describedby="DiemDung-help DiemDung-error" autofocus="@(firstInvalid == nameof(Model.DiemDung))" />
+                    <p class="text-muted" id="DiemDung-help">Bạn có @ViewBag.DiemHienTai điểm (1 điểm = 1.000đ)</p>
+                    <span asp-validation-for="DiemDung" id="DiemDung-error" class="text-danger"></span>
                 </div>
             }
             else

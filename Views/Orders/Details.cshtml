@@ -12,6 +12,13 @@
     var diaChiCu = diaChiParts.Length > 2 ? diaChiParts[2] : "";
     var lichSu = Model.LichSuTrangThai.OrderBy(h => h.NgayCapNhat).ToList();
     var laVi = new[] { "MoMo", "ZaloPay", "VNPay" }.Contains(Model.PhuongThucTT);
+    var phuongThuc = Model.PhuongThucTT switch
+    {
+        "COD" => "Thanh toán khi nhận hàng (COD, giả lập)",
+        "ChuyenKhoan" => "Chuyển khoản ngân hàng (giả lập)",
+        _ when laVi => $"Ví {Model.PhuongThucTT} (giả lập)",
+        _ => $"{Model.PhuongThucTT} (giả lập)"
+    };
 }
 
 <header class="@(justPlaced ? "purchase-heading order-confirmed" : "market-heading order-heading")">
@@ -45,7 +52,7 @@
         <section class="card order-delivery">
             <h2>Giao hàng và thanh toán</h2>
             <p><strong>Giao đến</strong><br />@Model.DiaChiGiao</p>
-            <p>Phương thức: @Model.PhuongThucTT @(Model.PhuongThucTT == "COD" ? "(thanh toán khi nhận hàng, giả lập)" : "(giả lập)")</p>
+            <p><strong>Phương thức thanh toán</strong><br />@phuongThuc</p>
 
             @if (Model.InstallmentMonths.HasValue)
             {

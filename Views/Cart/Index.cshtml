@@ -3,35 +3,43 @@
     ViewData["Title"] = "Giỏ hàng";
 }
 
-<header class="market-heading">
+<header class="purchase-heading">
     <partial name="_MarketPurchasePath" model="false" />
     <div class="section-head">
         <h1>Giỏ hàng</h1>
-        <a asp-controller="Products" asp-action="Index">Tiếp tục mua sắm <span aria-hidden="true">→</span></a>
+        @if (Model.Lines.Any())
+        {
+            <a asp-controller="Products" asp-action="Index">Tiếp tục mua sắm</a>
+        }
     </div>
 </header>
 
 @if (!Model.Lines.Any())
 {
-    <p class="empty-state">Giỏ hàng đang trống.</p>
+    <div class="empty-state cart-empty">
+        <p>Giỏ hàng đang trống.</p>
+        <a asp-controller="Products" asp-action="Index" class="btn btn-primary">Tiếp tục mua sắm</a>
+    </div>
 }
 else
 {
-    <div class="cart-layout">
+    <div class="cart-layout cart-page">
         <div class="basket-column">
-            <section class="cart-basket card" aria-labelledby="basket-title">
+            <section class="cart-basket" aria-labelledby="basket-title">
                 <div class="section-head basket-head"><h2 id="basket-title">Sản phẩm đã chọn</h2><span>@Model.Lines.Sum(l => l.SoLuong) sản phẩm</span></div>
                 @foreach (var line in Model.Lines)
                 {
+                    var stock = line.Product.TonKho;
+                    var stockMessageId = $"cart-stock-{line.Product.Id}-{line.Variant?.Id ?? 0}";
                     <div class="cart-item">
-                        <img src="@line.Product.AnhDaiDien" alt="@line.Product.Ten" />
+                        <img src="@line.Product.AnhDaiDien" alt="@line.Product.Ten" width="80" height="80" loading="lazy" />
                         <div>
                             <h3 class="cart-item-title"><a asp-controller="Products" asp-action="Details" asp-route-id="@line.Product.Id">@line.Product.Ten</a></h3>
                             @if (line.Variant is not null)
                             {
                                 <p class="text-muted cart-line-meta">@line.Variant.TenBienThe</p>
                             }
-                            <p class="cart-line-price price-amount"><strong>@line.DonGia.ToString("N0")đ</strong>
+                            <p class="cart-line-price"><strong>@line.DonGia.ToString("N0")đ</strong>
                             @if (line.LaGiaSale)
                             {
                                 <s class="text-muted">@line.GiaGoc.ToString("N0")đ</s>
@@ -41,20 +49,22 @@ else
                             <form asp-action="Update" method="post" class="qty">
                                 <input type="hidden" name="productId" value="@line.Product.Id" />
                                 <input type="hidden" name="variantId" value="@line.Variant?.Id" />
-                                @* Sprint 6 Module 4 — nut - / + (xem cart-qty.js):
-                                   - o 1 ve 0 = xoa dong; + kep ve TonKho. *@
-                                <button type="button" class="qty-btn" data-delta="-1" aria-label="Giảm số lượng">−</button>
-                                <input type="number" name="soLuong" min="0" max="@line.Product.TonKho" value="@line.SoLuong" aria-label="Số lượng" />
-                                <button type="button" class="qty-btn" data-delta="1" aria-label="Tăng số lượng">+</button>
-                                <button type="submit" class="link-button">Cập nhật</button>
+                                <button type="button" class="qty-btn" data-delta="-1" aria-label="Giảm số lượng @line.Product.Ten" hidden>−</button>
+                                <input type="number" name="soLuong" min="1" max="@stock" value="@line.SoLuong" aria-label="Số lượng @line.Product.Ten" aria-describedby="@stockMessageId" disabled="@(stock <= 0)" />
+                                <button type="button" class="qty-btn" data-delta="1" aria-label="Tăng số lượng @line.Product.Ten" hidden>+</button>
+                                <button type="submit" class="link-button" disabled="@(stock <= 0)">Cập nhật</button>
                             </form>
+                            <p class="cart-stock-hint" id="@stockMessageId" role="status" hidden="@(line.SoLuong < stock)">
+                                @(stock > 0 ? $"Chỉ còn {stock} sản phẩm trong kho." : "Sản phẩm đã hết hàng. Hãy xóa khỏi giỏ để tiếp tục.")
+                                @if (stock > 0 && line.SoLuong > stock) { <span>Giảm số lượng của @line.Product.Ten rồi bấm Cập nhật.</span> }
+                            </p>
                         </div>
                         <div class="cart-line-total">
                             <p><strong>@line.ThanhTien.ToString("N0")đ</strong></p>
                             <form asp-action="Remove" method="post">
                                 <input type="hidden" name="productId" value="@line.Product.Id" />
                                 <input type="hidden" name="variantId" value="@line.Variant?.Id" />
-                                <button type="submit" class="link-button">Xóa</button>
+                                <button type="submit" class="link-button" aria-label="Xóa @line.Product.Ten khỏi giỏ hàng">Xóa</button>
                             </form>
                         </div>
                     </div>
@@ -73,8 +83,8 @@ else
         </div>
 
         <aside class="summary market-receipt" aria-label="Tóm tắt đơn hàng">
-            <h2>Phiếu tính tiền</h2>
-            <div class="summary-row"><span>Tạm tính</span><span>@Model.TamTinh.ToString("N0")đ</span></div>
+            <h2>Tóm tắt đơn hàng</h2>
+            <div class="summary-row"><span>Tạm tính (@Model.Lines.Sum(l => l.SoLuong) sản phẩm)</span><span>@Model.TamTinh.ToString("N0")đ</span></div>
             @if (Model.GiamGia > 0)
             {
                 <div class="summary-row"><span>Giảm voucher (@Model.MaVoucher)</span><span>- @Model.GiamGia.ToString("N0")đ</span></div>
@@ -91,8 +101,15 @@ else
             {
                 <div class="summary-row"><span>Tạm tính sau giảm</span><span>@Model.SauGiam.ToString("N0")đ</span></div>
             }
-            <div class="summary-row"><span>Phí ship</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
-            <div class="summary-row total"><span>Tổng cộng</span><span>@Model.TongCong.ToString("N0")đ</span></div>
+            <div class="summary-row"><span>Phí vận chuyển</span><span>@(Model.PhiShip == 0 ? "Miễn phí" : Model.PhiShip.ToString("N0") + "đ")</span></div>
+            @if (Model.PhiShip > 0 && Model.SauGiam < 2_000_000m)
+            {
+                <p class="text-muted">Mua thêm @((2_000_000m - Model.SauGiam).ToString("N0"))đ để được miễn phí vận chuyển.</p>
+            }
+            <div class="cart-payment">
+                <div class="summary-row total"><span>Tổng cộng</span><span class="price-tag"><strong class="price-amount">@Model.TongCong.ToString("N0")đ</strong></span></div>
+                <a asp-controller="Orders" asp-action="Checkout" class="btn btn-primary">Tiến hành thanh toán</a>
+            </div>
             <partial name="_InstallmentBadge" model="Model.TongCong" />
 
             @* Sprint 6 Module 4 — diem tich luy (CHI HIEN THI): diem se
@@ -133,10 +150,6 @@ else
                 }
             }
 
-
-
-            <a asp-controller="Orders" asp-action="Checkout" class="btn btn-primary btn-block mt">Đến quầy thanh toán</a>
-            <p class="text-muted">Thanh toán khi nhận hàng (COD) hoặc chuyển khoản — đều là giả lập, không thu tiền thật.</p>
         </aside>
     </div>
 }

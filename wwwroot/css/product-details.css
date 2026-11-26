@@ -4,6 +4,7 @@
 .detail-stock, .detail-promo { margin-block: .65rem 0; }
 .detail-reviews { margin-block: 0 .5rem; font-size: .9rem; color: var(--color-muted-foreground); }
 .detail-price, .detail-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem .75rem; }
+.detail-price { --drawing-price-delay: 1570ms; }
 .detail-price .price-big { font-size: clamp(1.25rem, .95rem + 1.6vw, 2.1rem); }
 .price-old[hidden], .detail-price [hidden] { display: none; }
 .detail-image { border: 1px solid var(--color-border); padding: clamp(.75rem, 2vw, 1.25rem); }
